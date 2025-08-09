@@ -1,0 +1,276 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService } from '../services/apiService';
+import { User } from '../types';
+
+interface AuthContextType {
+    user: User | null;
+    isLoading: boolean;
+    login: (email: string, password: string) => Promise<boolean>;
+    signup: (email: string, password: string, name: string) => Promise<boolean>;
+    logout: () => Promise<void>;
+    validateToken: () => Promise<boolean>;
+    updateAvatar: (avatar: FormData) => Promise<boolean>;
+    refreshUser: () => Promise<void>;
+    changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+    updateProfile: (name: string) => Promise<boolean>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+    try {
+        const context = useContext(AuthContext);
+        if (!context) {
+            // Return a more complete default context instead of throwing
+            return {
+                user: null,
+                isLoading: true,
+                login: async () => false,
+                signup: async () => false,
+                logout: async () => { },
+                validateToken: async () => false,
+                updateAvatar: async () => false,
+                refreshUser: async () => { },
+                changePassword: async () => false,
+                updateProfile: async () => false,
+            };
+        }
+        return context;
+    } catch (error) {
+        console.log('Error in useAuth:', error);
+        // Return default values if there's any error
+        return {
+            user: null,
+            isLoading: true,
+            login: async () => false,
+            signup: async () => false,
+            logout: async () => { },
+            validateToken: async () => false,
+            updateAvatar: async () => false,
+            refreshUser: async () => { },
+            changePassword: async () => false,
+            updateProfile: async () => false,
+        };
+    }
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Simple initialization without immediate API calls
+        const initializeAuth = async () => {
+            try {
+                setIsLoading(true);
+                const [storedUser, storedToken] = await Promise.all([
+                    AsyncStorage.getItem('user'),
+                    AsyncStorage.getItem('token')
+                ]);
+
+                if (storedUser && storedToken) {
+                    try {
+                        const userData = JSON.parse(storedUser);
+                        setUser(userData);
+                    } catch (parseError) {
+                        console.error('Error parsing stored user data:', parseError);
+                        await clearStoredAuth();
+                        setUser(null);
+                    }
+                } else {
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error('Error initializing auth:', error);
+                setUser(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initializeAuth();
+    }, []);
+
+    const validateToken = async (): Promise<boolean> => {
+        try {
+            // Make a simple API call to validate the token
+            const response = await apiService.get('/users/stats');
+            return response && response.status === 200;
+        } catch (error: any) {
+            console.error('Token validation error:', error);
+            return false;
+        }
+    };
+
+    const clearStoredAuth = async () => {
+        try {
+            await Promise.all([
+                AsyncStorage.removeItem('user'),
+                AsyncStorage.removeItem('token')
+            ]);
+        } catch (error) {
+            console.error('Error clearing stored auth:', error);
+        }
+    };
+
+    const login = async (email: string, password: string): Promise<boolean> => {
+        try {
+            setIsLoading(true);
+            const response = await apiService.post('/users/login', { email, password });
+
+            if (response.data.success) {
+                const userData = response.data.user;
+                setUser(userData);
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+                await AsyncStorage.setItem('token', response.data.token);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Login error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const signup = async (email: string, password: string, name: string): Promise<boolean> => {
+        try {
+            setIsLoading(true);
+            const response = await apiService.post('/users/signup', { email, password, name });
+
+            if (response.data.success) {
+                const userData = response.data.user;
+                setUser(userData);
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+                await AsyncStorage.setItem('token', response.data.token);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Signup error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const logout = async () => {
+        try {
+            setIsLoading(true);
+            setUser(null);
+            await clearStoredAuth();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateAvatar = async (avatar: FormData): Promise<boolean> => {
+        try {
+            setIsLoading(true);
+            const response = await apiService.put('/users/avatar', avatar, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.success && user) {
+                // Extract filename from the backend response URL
+                const avatarUrl = response.data.avatar;
+                const filename = avatarUrl ? avatarUrl.split('/').pop() : null;
+
+                const updatedUser = { ...user, avatar: filename };
+                setUser(updatedUser);
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Update avatar error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const refreshUser = async () => {
+        try {
+            const [storedUser, storedToken] = await Promise.all([
+                AsyncStorage.getItem('user'),
+                AsyncStorage.getItem('token')
+            ]);
+
+            if (storedUser && storedToken) {
+                try {
+                    const userData = JSON.parse(storedUser);
+                    setUser(userData);
+                } catch (parseError) {
+                    console.error('Error parsing stored user data during refresh:', parseError);
+                    await clearStoredAuth();
+                    setUser(null);
+                }
+            } else {
+                setUser(null);
+            }
+        } catch (error) {
+            console.error('Error refreshing user:', error);
+            setUser(null);
+        }
+    };
+
+    const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+        try {
+            setIsLoading(true);
+            const response = await apiService.put('/users/password', { currentPassword, newPassword });
+            if (response.data.success) {
+                await refreshUser(); // Refresh user to update token if it was changed
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Change password error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateProfile = async (name: string): Promise<boolean> => {
+        try {
+            setIsLoading(true);
+            const response = await apiService.put('/users/profile', { name });
+            if (response.data.success) {
+                const updatedUser = user ? { ...user, name } : null;
+                setUser(updatedUser);
+                if (updatedUser) {
+                    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Update profile error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const value = {
+        user,
+        isLoading,
+        login,
+        signup,
+        logout,
+        validateToken,
+        updateAvatar,
+        refreshUser,
+        changePassword,
+        updateProfile,
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

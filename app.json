@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "finalpoint-mobile",
+    "name": "FinalPoint",
     "slug": "finalpoint-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finalpoint.mobile"
+      "bundleIdentifier": "com.finalpoint.mobile",
+      "infoPlist": {
+        "CFBundleDisplayName": "FinalPoint"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,6 +23,7 @@
       "edgeToEdgeEnabled": true,
       "package": "com.finalpoint.mobile",
       "versionCode": 1,
+      "label": "FinalPoint",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

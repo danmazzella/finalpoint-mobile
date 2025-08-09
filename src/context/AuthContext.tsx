@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { apiService } from '../services/apiService';
+import { apiService, authAPI } from '../services/apiService';
 import { User } from '../types';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
 
@@ -16,6 +16,8 @@ interface AuthContextType {
     refreshUser: () => Promise<void>;
     changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
     updateProfile: (name: string) => Promise<boolean>;
+    forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+    resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +38,8 @@ export const useAuth = () => {
                 refreshUser: async () => { },
                 changePassword: async () => false,
                 updateProfile: async () => false,
+                forgotPassword: async () => ({ success: false, error: 'Context not available' }),
+                resetPassword: async () => ({ success: false, error: 'Context not available' }),
             };
         }
         return context;
@@ -53,6 +57,8 @@ export const useAuth = () => {
             refreshUser: async () => { },
             changePassword: async () => false,
             updateProfile: async () => false,
+            forgotPassword: async () => ({ success: false, error: 'Context not available' }),
+            resetPassword: async () => ({ success: false, error: 'Context not available' }),
         };
     }
 };
@@ -295,6 +301,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const forgotPassword = async (email: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            const response = await authAPI.forgotPassword(email);
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'If there is an account associated with that email, you will receive a password reset link shortly.'
+                };
+            }
+            return {
+                success: false,
+                error: response.data.error || 'Failed to send password reset email. Please try again.'
+            };
+        } catch (error: any) {
+            console.error('Forgot password error:', error);
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to send password reset email. Please try again.'
+            };
+        }
+    };
+
+    const resetPassword = async (token: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            const response = await authAPI.resetPassword(token, newPassword);
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Password reset successful! You can now log in with your new password.'
+                };
+            }
+            return {
+                success: false,
+                error: response.data.error || 'Failed to reset password. The link may have expired.'
+            };
+        } catch (error: any) {
+            console.error('Reset password error:', error);
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to reset password. The link may have expired.'
+            };
+        }
+    };
+
     const value = {
         user,
         isLoading,
@@ -306,6 +356,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshUser,
         changePassword,
         updateProfile,
+        forgotPassword,
+        resetPassword,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

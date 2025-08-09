@@ -55,6 +55,10 @@ export const authAPI = {
         apiService.post('/users/login', { email, password }),
     signup: (email: string, password: string, name: string) =>
         apiService.post('/users/signup', { email, password, name }),
+    forgotPassword: (email: string) =>
+        apiService.post('/users/forgot-password', { email }),
+    resetPassword: (token: string, newPassword: string) =>
+        apiService.post('/users/reset-password', { token, newPassword }),
     getUserStats: () => apiService.get('/users/stats'),
     getGlobalStats: () => apiService.get('/users/global-stats'),
     getMonthlyStats: () => apiService.get('/users/monthly-stats'),

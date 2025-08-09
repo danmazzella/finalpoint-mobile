@@ -73,3 +73,5 @@ GoogleService-Info.plist
 .eas/
 
 app-example
+
+credentials.json

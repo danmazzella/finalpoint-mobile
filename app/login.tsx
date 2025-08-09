@@ -168,6 +168,14 @@ const LoginScreen = () => {
                         >
                             <Text style={styles.signInButtonText}>Sign in</Text>
                         </TouchableOpacity>
+
+                        {/* Forgot Password Link */}
+                        <TouchableOpacity
+                            style={styles.forgotPasswordButton}
+                            onPress={() => router.push('/forgot-password')}
+                        >
+                            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Footer Links */}
@@ -316,6 +324,15 @@ const styles = StyleSheet.create({
         color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    forgotPasswordButton: {
+        alignItems: 'center',
+        marginTop: spacing.md,
+    },
+    forgotPasswordText: {
+        fontSize: 14,
+        color: Colors.light.primary,
+        fontWeight: '600',
     },
     footerSection: {
         alignItems: 'center',

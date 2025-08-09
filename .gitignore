@@ -31,9 +31,38 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+.env.development
+.env.production
 
 # typescript
 *.tsbuildinfo
+
+# iOS
+ios/build/
+*.xcworkspace
+*.xcuserdata/
+
+# Android
+android/build/
+android/app/build/
+*.apk
+*.aab
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode/settings.json
+.idea/
+
+# Temporary files
+tmp/
+temp/
+
+# Coverage reports
+coverage/
 
 app-example

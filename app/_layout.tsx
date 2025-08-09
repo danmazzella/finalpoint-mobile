@@ -9,12 +9,36 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider, useToast } from '../src/context/ToastContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { NotificationProvider } from '../components/NotificationProvider';
 import Toast from '../components/Toast';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { toast, hideToast } = useToast();
   const colorScheme = useColorScheme();
+
+  // Notification handlers
+  const handleNotificationReceived = (notification: any) => {
+    console.log('Notification received while app is running:', notification);
+    // You can show a toast or update UI here
+  };
+
+  const handleNotificationResponse = (response: any) => {
+    console.log('User tapped notification:', response);
+    // Handle navigation or actions when user taps notification
+    const { notification } = response;
+    if (notification.request.content.data) {
+      // Handle specific notification data
+      const data = notification.request.content.data;
+      if (data.type === 'race_reminder' && data.raceId) {
+        // Navigate to race or picks screen
+        router.push(`/race-results?raceId=${data.raceId}`);
+      } else if (data.type === 'score_update' && data.leagueId) {
+        // Navigate to league standings
+        router.push(`/league/${data.leagueId}/standings`);
+      }
+    }
+  };
 
   useEffect(() => {
     // If not loading and no user, redirect to login
@@ -118,7 +142,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <ToastProvider>
-          <RootLayoutNav />
+          <NotificationProvider
+            autoRegister={true}
+            onNotificationReceived={(notification) => {
+              console.log('Notification received globally:', notification);
+            }}
+            onNotificationResponse={(response) => {
+              console.log('Notification response globally:', response);
+            }}
+          >
+            <RootLayoutNav />
+          </NotificationProvider>
         </ToastProvider>
       </AuthProvider>
     </SafeAreaProvider>

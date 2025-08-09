@@ -65,4 +65,11 @@ temp/
 # Coverage reports
 coverage/
 
+# Firebase config files (sensitive)
+google-services.json
+GoogleService-Info.plist
+
+# EAS
+.eas/
+
 app-example

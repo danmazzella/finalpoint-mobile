@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { apiService } from '../services/apiService';
 import { User } from '../types';
+import { registerForPushNotificationsAsync } from '../../utils/notifications';
 
 interface AuthContextType {
     user: User | null;
@@ -117,7 +119,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
             setIsLoading(true);
-            const response = await apiService.post('/users/login', { email, password });
+
+            // Prepare login data with optional push token
+            const loginData: any = { email, password };
+
+            // Try to get push token for mobile devices
+            try {
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    loginData.pushToken = pushToken;
+                    loginData.platform = Platform.OS;
+                    console.log(`📱 Including ${Platform.OS} push token in login request`);
+                }
+            } catch (pushError) {
+                console.log('Could not get push token during login (will register later):', pushError);
+                // Continue with login even if push token registration fails
+            }
+
+            const response = await apiService.post('/users/login', loginData);
 
             if (response.data.success) {
                 const userData = response.data.user;
@@ -138,7 +157,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const signup = async (email: string, password: string, name: string): Promise<boolean> => {
         try {
             setIsLoading(true);
-            const response = await apiService.post('/users/signup', { email, password, name });
+
+            // Prepare signup data with optional push token
+            const signupData: any = { email, password, name };
+
+            // Try to get push token for mobile devices
+            try {
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    signupData.pushToken = pushToken;
+                    signupData.platform = Platform.OS;
+                    console.log(`📱 Including ${Platform.OS} push token in signup request`);
+                }
+            } catch (pushError) {
+                console.log('Could not get push token during signup (will register later):', pushError);
+                // Continue with signup even if push token registration fails
+            }
+
+            const response = await apiService.post('/users/signup', signupData);
 
             if (response.data.success) {
                 const userData = response.data.user;

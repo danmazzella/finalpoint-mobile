@@ -14,12 +14,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { notificationsAPI } from '../src/services/apiService';
 import { NotificationPreferences } from '../src/types';
+import { useNotificationContext } from '../components/NotificationProvider';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
 
 const NotificationSettingsScreen = () => {
     const { user } = useAuth();
+    const {
+        pushToken,
+        isSupported,
+        isRegistering,
+        error: pushError,
+        register,
+        sendTokenToServer,
+        showLocalNotification,
+    } = useNotificationContext();
+
     const [preferences, setPreferences] = useState<NotificationPreferences>({
         emailReminders: true,
         emailScoreUpdates: true,
@@ -29,6 +40,7 @@ const NotificationSettingsScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isSendingToken, setIsSendingToken] = useState(false);
 
     useEffect(() => {
         loadPreferences();
@@ -90,8 +102,44 @@ const NotificationSettingsScreen = () => {
         }
     };
 
+    const handleRegisterPushNotifications = async () => {
+        try {
+            await register();
+            Alert.alert('Success', 'Successfully registered for push notifications!');
+        } catch (err) {
+            Alert.alert('Error', 'Failed to register for push notifications');
+        }
+    };
+
+    const handleSendTokenToServer = async () => {
+        if (!pushToken) {
+            Alert.alert('Error', 'No push token available');
+            return;
+        }
+
+        try {
+            setIsSendingToken(true);
+            await sendTokenToServer(user?.id?.toString());
+            Alert.alert('Success', 'Push token sent to server successfully!');
+        } catch (err) {
+            Alert.alert('Error', 'Failed to send push token to server');
+        } finally {
+            setIsSendingToken(false);
+        }
+    };
+
     const testNotification = async (type: 'email' | 'push') => {
         try {
+            if (type === 'push') {
+                await showLocalNotification(
+                    'Test Push Notification',
+                    'This is a test push notification from FinalPoint!',
+                    { test: true, type: 'test' }
+                );
+                Alert.alert('Success', 'Test push notification sent!');
+                return;
+            }
+
             const response = await notificationsAPI.testEmail();
             if (response.data.success) {
                 Alert.alert('Success', `Test ${type} notification sent successfully!`);
@@ -183,9 +231,70 @@ const NotificationSettingsScreen = () => {
                     </View>
                 </View>
 
+                {/* Push Notification Setup */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Push Notification Setup</Text>
+                    <Text style={styles.sectionDescription}>
+                        Register for push notifications to receive reminders and updates directly on your device
+                    </Text>
+
+                    <View style={styles.statusContainer}>
+                        <Text style={styles.statusLabel}>Status:</Text>
+                        <Text style={[styles.statusValue, pushToken ? styles.statusSuccess : styles.statusWarning]}>
+                            {!isSupported
+                                ? 'Not supported on this device'
+                                : pushToken
+                                    ? 'Registered'
+                                    : 'Not registered'
+                            }
+                        </Text>
+                    </View>
+
+                    {pushError && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{pushError}</Text>
+                        </View>
+                    )}
+
+                    {pushToken && (
+                        <View style={styles.tokenContainer}>
+                            <Text style={styles.tokenLabel}>Push Token:</Text>
+                            <Text style={styles.tokenText} numberOfLines={2}>
+                                {pushToken}
+                            </Text>
+                        </View>
+                    )}
+
+                    <View style={styles.setupButtons}>
+                        {!pushToken && isSupported && (
+                            <TouchableOpacity
+                                style={[styles.setupButton, styles.primaryButton]}
+                                onPress={handleRegisterPushNotifications}
+                                disabled={isRegistering}
+                            >
+                                <Text style={styles.setupButtonText}>
+                                    {isRegistering ? 'Registering...' : 'Register for Push Notifications'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {pushToken && (
+                            <TouchableOpacity
+                                style={[styles.setupButton, styles.secondaryButton]}
+                                onPress={handleSendTokenToServer}
+                                disabled={isSendingToken}
+                            >
+                                <Text style={styles.setupButtonText}>
+                                    {isSendingToken ? 'Sending...' : 'Send Token to Server'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
                 {/* Push Notifications */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Push Notifications</Text>
+                    <Text style={styles.sectionTitle}>Push Notification Preferences</Text>
 
                     <View style={styles.settingItem}>
                         <View style={styles.settingInfo}>
@@ -412,6 +521,80 @@ const styles = StyleSheet.create({
         color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    statusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderRadius: borderRadius.sm,
+    },
+    statusLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginRight: spacing.sm,
+    },
+    statusValue: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    statusSuccess: {
+        color: Colors.light.success,
+    },
+    statusWarning: {
+        color: Colors.light.warning,
+    },
+    errorContainer: {
+        backgroundColor: '#ffe6e6',
+        padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        marginBottom: spacing.md,
+    },
+    errorText: {
+        color: Colors.light.error,
+        fontSize: 14,
+    },
+    tokenContainer: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        marginBottom: spacing.md,
+    },
+    tokenLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    tokenText: {
+        fontSize: 12,
+        fontFamily: 'monospace',
+        color: Colors.light.textSecondary,
+        lineHeight: 16,
+    },
+    setupButtons: {
+        marginTop: spacing.sm,
+    },
+    setupButton: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    primaryButton: {
+        backgroundColor: Colors.light.primary,
+    },
+    secondaryButton: {
+        backgroundColor: Colors.light.success,
+    },
+    setupButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

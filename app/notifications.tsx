@@ -119,9 +119,10 @@ const NotificationSettingsScreen = () => {
 
         try {
             setIsSendingToken(true);
-            await sendTokenToServer(user?.id?.toString());
+            await sendTokenToServer();
             Alert.alert('Success', 'Push token sent to server successfully!');
-        } catch (err) {
+        } catch (error: any) {
+            console.error('Error sending token to server:', error);
             Alert.alert('Error', 'Failed to send push token to server');
         } finally {
             setIsSendingToken(false);
@@ -242,13 +243,22 @@ const NotificationSettingsScreen = () => {
                         <Text style={styles.statusLabel}>Status:</Text>
                         <Text style={[styles.statusValue, pushToken ? styles.statusSuccess : styles.statusWarning]}>
                             {!isSupported
-                                ? 'Not supported on this device'
+                                ? 'Push notifications not available'
                                 : pushToken
-                                    ? 'Registered'
-                                    : 'Not registered'
-                            }
+                                    ? 'Push notifications registered'
+                                    : 'Push notifications not registered'}
                         </Text>
                     </View>
+
+                    {!isSupported && (
+                        <View style={styles.infoContainer}>
+                            <Text style={styles.infoText}>
+                                Your device supports local notifications (as shown by the test below),
+                                but push notification registration failed. This is common and doesn't
+                                affect the app's functionality.
+                            </Text>
+                        </View>
+                    )}
 
                     {pushError && (
                         <View style={styles.errorContainer}>
@@ -265,26 +275,24 @@ const NotificationSettingsScreen = () => {
                         </View>
                     )}
 
-                    <View style={styles.setupButtons}>
-                        {!pushToken && isSupported && (
-                            <TouchableOpacity
-                                style={[styles.setupButton, styles.primaryButton]}
-                                onPress={handleRegisterPushNotifications}
-                                disabled={isRegistering}
-                            >
-                                <Text style={styles.setupButtonText}>
-                                    {isRegistering ? 'Registering...' : 'Register for Push Notifications'}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            style={[styles.button, styles.primaryButton]}
+                            onPress={register}
+                            disabled={isRegistering || !isSupported}
+                        >
+                            <Text style={styles.buttonText}>
+                                {isRegistering ? 'Registering...' : 'Register for Push Notifications'}
+                            </Text>
+                        </TouchableOpacity>
 
                         {pushToken && (
                             <TouchableOpacity
-                                style={[styles.setupButton, styles.secondaryButton]}
+                                style={[styles.button, styles.secondaryButton]}
                                 onPress={handleSendTokenToServer}
                                 disabled={isSendingToken}
                             >
-                                <Text style={styles.setupButtonText}>
+                                <Text style={styles.buttonText}>
                                     {isSendingToken ? 'Sending...' : 'Send Token to Server'}
                                 </Text>
                             </TouchableOpacity>
@@ -575,10 +583,10 @@ const styles = StyleSheet.create({
         color: Colors.light.textSecondary,
         lineHeight: 16,
     },
-    setupButtons: {
+    buttonContainer: {
         marginTop: spacing.sm,
     },
-    setupButton: {
+    button: {
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         borderRadius: borderRadius.md,
@@ -591,10 +599,22 @@ const styles = StyleSheet.create({
     secondaryButton: {
         backgroundColor: Colors.light.success,
     },
-    setupButtonText: {
+    buttonText: {
         color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: '600',
+    },
+    infoContainer: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        padding: spacing.md,
+        borderRadius: borderRadius.sm,
+        marginTop: spacing.md,
+        marginBottom: spacing.md,
+    },
+    infoText: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        lineHeight: 20,
     },
 });
 

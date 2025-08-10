@@ -75,3 +75,8 @@ GoogleService-Info.plist
 app-example
 
 credentials.json
+
+/android
+/ios
+build-*
+/scripts

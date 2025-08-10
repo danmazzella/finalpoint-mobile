@@ -9,18 +9,57 @@
       "distribution": "internal",
       "env": {
         "NODE_ENV": "development"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug",
+        "env": {
+          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
+        }
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "NODE_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "env": {
+          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
+        }
       }
     },
     "production": {
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "env": {
+          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
+        }
+      }
+    },
+    "local-production": {
+      "distribution": "store",
       "autoIncrement": true,
       "env": {
         "NODE_ENV": "production"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "image": "latest",
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
+        }
       }
     }
   },

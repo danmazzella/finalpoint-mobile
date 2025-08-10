@@ -8,7 +8,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider, useToast } from '../src/context/ToastContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '../hooks/useColorScheme';
 import { NotificationProvider } from '../components/NotificationProvider';
 import Toast from '../components/Toast';
 

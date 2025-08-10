@@ -4,20 +4,27 @@
     "slug": "finalpoint-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "finalpointmobile",
+    "scheme": "finalmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
+      "buildNumber": "1",
+      "deploymentTarget": "17.0",
+      "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
-        "CFBundleDisplayName": "FinalPoint"
+        "CFBundleDisplayName": "FinalPoint",
+        "NSCameraUsageDescription": "This app uses the camera to allow users to take profile photos.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to allow you to select profile photos.",
+        "NSPhotoLibraryAddUsageDescription": "This app saves photos to your photo library for profile pictures.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "icon": "./assets/images/1024.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/1024.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

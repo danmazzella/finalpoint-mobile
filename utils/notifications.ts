@@ -25,75 +25,45 @@ export interface PushNotificationToken {
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
     let token = null;
 
-    console.log('🔔 Starting push notification registration...');
-    console.log('📱 Platform:', Platform.OS);
-    console.log('📱 Is Device:', Device.isDevice);
-
     if (Platform.OS === 'android') {
-        console.log('🤖 Setting up Android notification channel...');
         await Notifications.setNotificationChannelAsync('default', {
             name: 'default',
             importance: Notifications.AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#FF231F7C',
         });
-        console.log('✅ Android notification channel created');
     }
 
     if (Device.isDevice) {
-        console.log('📱 Physical device detected, checking permissions...');
-
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        console.log('📱 Current permission status:', existingStatus);
-
         let finalStatus = existingStatus;
 
         if (existingStatus !== 'granted') {
-            console.log('📱 Requesting notification permissions...');
             const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
-            console.log('📱 Permission request result:', finalStatus);
         }
 
         if (finalStatus !== 'granted') {
-            console.log('❌ Notification permission denied');
             alert('Failed to get push token for push notification!');
             return null;
         }
 
         try {
-            console.log('🔑 Getting project ID...');
             const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-            console.log('🔑 Project ID:', projectId);
 
             if (!projectId) {
                 throw new Error('Project ID not found in Expo configuration');
             }
 
-            console.log('🎫 Requesting Expo push token...');
             token = (await Notifications.getExpoPushTokenAsync({
                 projectId,
             })).data;
 
-            console.log('✅ Expo Push Token received:', token);
         } catch (e) {
-            console.error('❌ Error getting push token:', e);
-
-            // Provide more specific error messages
-            if (e instanceof Error) {
-                if (e.message.includes('Project ID not found')) {
-                    console.error('❌ Make sure your app.json has the correct EAS project ID');
-                } else if (e.message.includes('network')) {
-                    console.error('❌ Network error - check your internet connection');
-                } else if (e.message.includes('permission')) {
-                    console.error('❌ Permission error - user may have denied notifications');
-                }
-            }
-
+            console.error('Error getting push token:', e);
             token = null;
         }
     } else {
-        console.log('❌ Not a physical device - push notifications require physical device');
         alert('Must use physical device for Push Notifications');
     }
 

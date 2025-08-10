@@ -11,17 +11,21 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useToast } from '../../src/context/ToastContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { picksAPI, driversAPI, leaguesAPI, f1racesAPI } from '../../src/services/apiService';
 import { Driver, League, UserPickV2, PickV2, F1Race } from '../../src/types';
 import Colors from '../../constants/Colors';
 import { spacing } from '../../utils/styles';
 
 const PicksScreen = () => {
+    const { user, isLoading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState<number | null>(null);
     const [currentWeek, setCurrentWeek] = useState(1);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [currentRace, setCurrentRace] = useState<F1Race | null>(null);
@@ -31,8 +35,11 @@ const PicksScreen = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        // Only load data when auth is complete and user is authenticated
+        if (!authLoading && user) {
+            loadData();
+        }
+    }, [authLoading, user]);
 
     useEffect(() => {
         if (selectedLeague) {
@@ -202,7 +209,7 @@ const PicksScreen = () => {
         return currentRace?.isLocked || false;
     };
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
                 <ActivityIndicator size="large" color="#007bff" />

@@ -5,12 +5,10 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Alert,
     ActivityIndicator,
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +16,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
-import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import { spacing, borderRadius, shadows } from '../utils/styles';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -48,16 +46,6 @@ const LoginScreen = () => {
         }
     };
 
-    const scrollToInput = (inputRef: React.RefObject<TextInput | null>) => {
-        if (scrollViewRef.current && inputRef.current) {
-            setTimeout(() => {
-                scrollViewRef.current?.scrollTo({
-                    y: 200, // Fixed offset that should work for most cases
-                    animated: true,
-                });
-            }, 100);
-        }
-    };
 
     if (isLoading) {
         return (
@@ -107,6 +95,7 @@ const LoginScreen = () => {
                                     emailFocused && styles.inputFocused,
                                 ]}
                                 placeholder="Enter your email address"
+                                placeholderTextColor={Colors.light.textSecondary}
                                 value={email}
                                 onChangeText={setEmail}
                                 onFocus={() => {
@@ -134,6 +123,7 @@ const LoginScreen = () => {
                                         passwordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Enter your password"
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     value={password}
                                     onChangeText={setPassword}
                                     onFocus={() => {
@@ -277,7 +267,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     input: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
@@ -294,7 +284,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,

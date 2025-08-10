@@ -155,7 +155,7 @@ const ChangePasswordScreen = () => {
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
                                     placeholder="Enter your current password"
-                                    placeholderTextColor={Colors.light.textTertiary}
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     secureTextEntry={!showCurrentPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -186,7 +186,7 @@ const ChangePasswordScreen = () => {
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     placeholder="Enter your new password"
-                                    placeholderTextColor={Colors.light.textTertiary}
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     secureTextEntry={!showNewPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -296,7 +296,7 @@ const ChangePasswordScreen = () => {
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     placeholder="Confirm your new password"
-                                    placeholderTextColor={Colors.light.textTertiary}
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     secureTextEntry={!showConfirmPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -352,7 +352,7 @@ const ChangePasswordScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     keyboardAvoidingView: {
         flex: 1,

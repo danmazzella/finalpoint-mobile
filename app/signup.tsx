@@ -166,6 +166,7 @@ const SignupScreen = () => {
                                     nameFocused && styles.inputFocused,
                                 ]}
                                 placeholder="Enter your username"
+                                placeholderTextColor={Colors.light.textSecondary}
                                 value={name}
                                 onChangeText={setName}
                                 onFocus={() => {
@@ -190,6 +191,7 @@ const SignupScreen = () => {
                                     emailFocused && styles.inputFocused,
                                 ]}
                                 placeholder="Enter your email address"
+                                placeholderTextColor={Colors.light.textSecondary}
                                 value={email}
                                 onChangeText={setEmail}
                                 onFocus={() => {
@@ -217,6 +219,7 @@ const SignupScreen = () => {
                                         passwordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Create a password"
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     value={password}
                                     onChangeText={setPassword}
                                     onFocus={() => {
@@ -334,6 +337,7 @@ const SignupScreen = () => {
                                         confirmPasswordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Confirm your password"
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     onFocus={() => {
@@ -410,13 +414,13 @@ const SignupScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -484,7 +488,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     input: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
@@ -501,7 +505,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,

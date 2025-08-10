@@ -14,21 +14,28 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { leaguesAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
+import { useAuth } from '../../src/context/AuthContext';
+import { useToast } from '../../src/context/ToastContext';
 import { router } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius } from '../../utils/styles';
 
 const LeaguesScreen = () => {
+    const { user, isLoading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [leagues, setLeagues] = useState<League[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [newLeagueName, setNewLeagueName] = useState('');
     const [selectedPositions, setSelectedPositions] = useState<number[]>([10]);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        loadLeagues();
-    }, []);
+        // Only load data when auth is complete and user is authenticated
+        if (!authLoading && user) {
+            loadLeagues();
+        }
+    }, [authLoading, user]);
 
     const loadLeagues = async () => {
         try {
@@ -126,7 +133,7 @@ const LeaguesScreen = () => {
         }
     };
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
                 <ActivityIndicator size="large" color="#007bff" />

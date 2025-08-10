@@ -160,6 +160,7 @@ const ForgotPasswordScreen = () => {
                                     emailFocused && styles.inputFocused,
                                 ]}
                                 placeholder="Enter your email address"
+                                placeholderTextColor={Colors.light.textSecondary}
                                 value={email}
                                 onChangeText={setEmail}
                                 onFocus={() => setEmailFocused(true)}
@@ -212,7 +213,7 @@ const ForgotPasswordScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     input: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,

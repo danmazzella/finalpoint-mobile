@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     try {
                         const userData = JSON.parse(storedUser);
                         setUser(userData);
+                        console.log('✅ Auth initialized with stored user data');
                     } catch (parseError) {
                         console.error('Error parsing stored user data:', parseError);
                         await clearStoredAuth();
@@ -88,12 +89,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 } else {
                     setUser(null);
+                    console.log('ℹ️ No stored auth data found - user needs to login');
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
                 setUser(null);
             } finally {
                 setIsLoading(false);
+                console.log('✅ Auth initialization complete');
             }
         };
 

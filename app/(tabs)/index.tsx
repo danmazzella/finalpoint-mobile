@@ -20,7 +20,7 @@ import Colors from '../../constants/Colors';
 import { spacing, borderRadius, shadows, cardStyles, textStyles } from '../../utils/styles';
 
 const HomeScreen = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
 
   // Determine base URL for web app based on environment
@@ -50,13 +50,16 @@ const HomeScreen = () => {
     weekAccuracy: 0,
     weekAvgDistance: 0
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadLeagues();
-  }, []);
+    // Only load data when auth is complete and user is authenticated
+    if (!authLoading && user) {
+      loadLeagues();
+    }
+  }, [authLoading, user]);
 
   const loadLeagues = async (retryCount = 0) => {
     try {
@@ -131,7 +134,7 @@ const HomeScreen = () => {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
         <ActivityIndicator size="large" color={Colors.light.primary} />

@@ -227,6 +227,7 @@ const ResetPasswordScreen = () => {
                                         newPasswordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Enter your new password"
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     onFocus={() => setNewPasswordFocused(true)}
@@ -263,6 +264,7 @@ const ResetPasswordScreen = () => {
                                         confirmPasswordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Confirm your new password"
+                                    placeholderTextColor={Colors.light.textSecondary}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     onFocus={() => setConfirmPasswordFocused(true)}
@@ -347,7 +349,7 @@ const ResetPasswordScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -419,7 +421,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,

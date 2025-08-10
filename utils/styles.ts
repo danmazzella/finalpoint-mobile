@@ -146,31 +146,34 @@ export const cardStyles = {
 // Common input styles
 export const inputStyles = {
   base: {
-    backgroundColor: Colors.light.backgroundPrimary,
+    backgroundColor: Colors.light.backgroundSecondary, // White background instead of gray
     borderWidth: 1,
     borderColor: Colors.light.borderMedium,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     fontSize: textStyles.base.fontSize,
+    color: Colors.light.textPrimary, // Ensure text color is dark
   },
   focused: {
-    backgroundColor: Colors.light.backgroundPrimary,
+    backgroundColor: Colors.light.backgroundSecondary, // White background instead of gray
     borderWidth: 2,
     borderColor: Colors.light.primary,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     fontSize: textStyles.base.fontSize,
+    color: Colors.light.textPrimary, // Ensure text color is dark
   },
   error: {
-    backgroundColor: Colors.light.backgroundPrimary,
+    backgroundColor: Colors.light.backgroundSecondary, // White background instead of gray
     borderWidth: 2,
     borderColor: Colors.light.error,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     fontSize: textStyles.base.fontSize,
+    color: Colors.light.textPrimary, // Ensure text color is dark
   },
 };
 

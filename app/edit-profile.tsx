@@ -90,7 +90,7 @@ const EditProfileScreen = () => {
                             value={name}
                             onChangeText={setName}
                             placeholder="Enter your name"
-                            placeholderTextColor={Colors.light.textTertiary}
+                            placeholderTextColor={Colors.light.textSecondary}
                             autoCapitalize="words"
                             autoCorrect={false}
                             maxLength={50}
@@ -122,7 +122,7 @@ const EditProfileScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     scrollView: {
         flex: 1,

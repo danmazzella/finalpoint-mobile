@@ -230,14 +230,7 @@ const PositionResultsScreen = () => {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.push({
-                            pathname: '/race-results',
-                            params: {
-                                leagueId: leagueId.toString(),
-                                weekNumber: weekNumber.toString(),
-                                leagueName: leagueName,
-                            },
-                        })}
+                        onPress={() => router.back()}
                     >
                         <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
                     </TouchableOpacity>
@@ -711,7 +704,7 @@ const styles = StyleSheet.create({
         padding: spacing.sm,
         borderRadius: borderRadius.full,
         borderWidth: 1,
-        borderColor: Colors.light.border,
+        borderColor: Colors.light.borderLight,
         width: 40,
         height: 40,
         alignItems: 'center',

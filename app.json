@@ -2,7 +2,7 @@
   "expo": {
     "name": "FinalPoint",
     "slug": "finalpoint-mobile",
-    "version": "1.0.1",
+    "version": "1.0.5",
     "orientation": "portrait",
     "scheme": "finalmobile",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "2",
+      "buildNumber": "40",
       "deploymentTarget": "17.0",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
@@ -19,7 +19,8 @@
         "NSPhotoLibraryUsageDescription": "This app accesses your photo library to allow you to select profile photos.",
         "NSPhotoLibraryAddUsageDescription": "This app saves photos to your photo library for profile pictures.",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"
     },
     "android": {
       "icon": "./assets/android-icons/playstore-icon.png",
@@ -29,7 +30,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.finalpoint.mobile",
-      "versionCode": 2,
+      "versionCode": 12,
       "label": "FinalPoint",
       "permissions": [
         "INTERNET",
@@ -38,7 +39,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "POST_NOTIFICATIONS"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -61,7 +63,24 @@
         {
           "icon": "./assets/images/splash-icon.png",
           "color": "#000321",
-          "defaultChannel": "default"
+          "defaultChannel": "default",
+          "mode": "production",
+          "androidMode": "default",
+          "androidCollapsedTitle": "FinalPoint",
+          "iosDisplayInForeground": true
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "googleServicesFile": "./google-services.json",
+            "enableProguardInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false
+          },
+          "ios": {
+            "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"
+          }
         }
       ]
     ],
@@ -73,6 +92,11 @@
       "eas": {
         "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
       }
+    },
+    "notification": {
+      "icon": "./assets/images/splash-icon.png",
+      "color": "#000321",
+      "iosDisplayInForeground": true
     }
   }
 }

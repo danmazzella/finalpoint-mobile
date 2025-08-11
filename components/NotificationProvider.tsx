@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useNotifications, UseNotificationsOptions, UseNotificationsReturn } from '../hooks/useNotifications';
+import { shouldEnableNotifications } from '../utils/environment';
 
 interface NotificationContextValue extends UseNotificationsReturn {
     /** Show a local notification immediately */
@@ -12,6 +13,8 @@ interface NotificationContextValue extends UseNotificationsReturn {
         trigger: Notifications.NotificationTriggerInput,
         data?: any
     ) => Promise<string>;
+    /** Manually register for push notifications */
+    registerForNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -24,6 +27,11 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
     const notifications = useNotifications(options);
 
     const showLocalNotification = async (title: string, body: string, data?: any) => {
+        if (!shouldEnableNotifications()) {
+            console.log('🚫 Local notification disabled in Expo Go:', { title, body, data });
+            return;
+        }
+
         await Notifications.scheduleNotificationAsync({
             content: {
                 title,
@@ -40,6 +48,11 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
         trigger: Notifications.NotificationTriggerInput,
         data?: any
     ): Promise<string> => {
+        if (!shouldEnableNotifications()) {
+            console.log('🚫 Scheduled notification disabled in Expo Go:', { title, body, trigger, data });
+            return 'disabled';
+        }
+
         return await Notifications.scheduleNotificationAsync({
             content: {
                 title,
@@ -50,10 +63,21 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
         });
     };
 
+    const registerForNotifications = async () => {
+        if (!shouldEnableNotifications()) {
+            console.log('🚫 Push notifications disabled in Expo Go');
+            return;
+        }
+
+        console.log('🔔 Manually registering for push notifications...');
+        await notifications.register();
+    };
+
     const value: NotificationContextValue = {
         ...notifications,
         showLocalNotification,
         scheduleNotification,
+        registerForNotifications,
     };
 
     return (

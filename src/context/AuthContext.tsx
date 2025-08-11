@@ -3,13 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { apiService, authAPI } from '../services/apiService';
 import { User } from '../types';
-import { registerForPushNotificationsAsync } from '../../utils/notifications';
+
 
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<boolean>;
-    signup: (email: string, password: string, name: string) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+    signup: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     logout: () => Promise<void>;
     validateToken: () => Promise<boolean>;
     updateAvatar: (avatar: FormData) => Promise<boolean>;
@@ -18,6 +18,7 @@ interface AuthContextType {
     updateProfile: (name: string) => Promise<boolean>;
     forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+    registerPushToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,8 +31,8 @@ export const useAuth = () => {
             return {
                 user: null,
                 isLoading: true,
-                login: async () => false,
-                signup: async () => false,
+                login: async () => ({ success: false, error: 'Context not available' }),
+                signup: async () => ({ success: false, error: 'Context not available' }),
                 logout: async () => { },
                 validateToken: async () => false,
                 updateAvatar: async () => false,
@@ -44,13 +45,13 @@ export const useAuth = () => {
         }
         return context;
     } catch (error) {
-        console.log('Error in useAuth:', error);
+        console.error('Error in useAuth:', error);
         // Return default values if there's any error
         return {
             user: null,
             isLoading: true,
-            login: async () => false,
-            signup: async () => false,
+            login: async () => ({ success: false, error: 'Context not available' }),
+            signup: async () => ({ success: false, error: 'Context not available' }),
             logout: async () => { },
             validateToken: async () => false,
             updateAvatar: async () => false,
@@ -82,6 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const userData = JSON.parse(storedUser);
                         setUser(userData);
                         console.log('✅ Auth initialized with stored user data');
+
+                        // Auto-register push token for existing authenticated users
+                        try {
+                            const { registerForPushNotificationsAsync, sendPushTokenToServer } = await import('../../utils/notifications');
+                            const pushToken = await registerForPushNotificationsAsync();
+                            if (pushToken) {
+                                await sendPushTokenToServer(pushToken, Platform.OS);
+                                console.log('✅ Push token auto-registered for existing user');
+                            }
+                        } catch (pushError) {
+                            console.error('Could not auto-register push token for existing user:', pushError);
+                            // Don't fail auth initialization if push token registration fails
+                        }
                     } catch (parseError) {
                         console.error('Error parsing stored user data:', parseError);
                         await clearStoredAuth();
@@ -125,15 +139,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const login = async (email: string, password: string): Promise<boolean> => {
+    const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             setIsLoading(true);
 
             // Prepare login data with optional push token
             const loginData: any = { email, password };
 
-            // Try to get push token for mobile devices
+            // Try to get push token for mobile devices (only when notifications are enabled)
             try {
+                const { registerForPushNotificationsAsync } = await import('../../utils/notifications');
                 const pushToken = await registerForPushNotificationsAsync();
                 if (pushToken) {
                     loginData.pushToken = pushToken;
@@ -141,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.log(`📱 Including ${Platform.OS} push token in login request`);
                 }
             } catch (pushError) {
-                console.log('Could not get push token during login (will register later):', pushError);
+                console.error('Could not get push token during login (will register later):', pushError);
                 // Continue with login even if push token registration fails
             }
 
@@ -152,26 +167,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
                 await AsyncStorage.setItem('token', response.data.token);
-                return true;
+
+                // Register push token with server after successful login
+                if (loginData.pushToken) {
+                    try {
+                        const { sendPushTokenToServer } = await import('../../utils/notifications');
+                        await sendPushTokenToServer(loginData.pushToken, loginData.platform);
+                        console.log('✅ Push token registered with server after login');
+                    } catch (pushError) {
+                        console.error('❌ Failed to register push token with server:', pushError);
+                        // Don't fail login if push token registration fails
+                    }
+                }
+
+                return { success: true, message: 'Login successful!' };
             }
-            return false;
-        } catch (error) {
+            return { success: false, error: response.data.error || 'Login failed. Invalid credentials or server error.' };
+        } catch (error: any) {
             console.error('Login error:', error);
-            return false;
+            return { success: false, error: error.response?.data?.error || 'Login failed. An unexpected error occurred.' };
         } finally {
             setIsLoading(false);
         }
     };
 
-    const signup = async (email: string, password: string, name: string): Promise<boolean> => {
+    const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             setIsLoading(true);
 
             // Prepare signup data with optional push token
             const signupData: any = { email, password, name };
 
-            // Try to get push token for mobile devices
+            // Try to get push token for mobile devices (only when notifications are enabled)
             try {
+                const { registerForPushNotificationsAsync } = await import('../../utils/notifications');
                 const pushToken = await registerForPushNotificationsAsync();
                 if (pushToken) {
                     signupData.pushToken = pushToken;
@@ -179,7 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.log(`📱 Including ${Platform.OS} push token in signup request`);
                 }
             } catch (pushError) {
-                console.log('Could not get push token during signup (will register later):', pushError);
+                console.error('Could not get push token during signup (will register later):', pushError);
                 // Continue with signup even if push token registration fails
             }
 
@@ -190,12 +219,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
                 await AsyncStorage.setItem('token', response.data.token);
-                return true;
+
+                // Register push token with server after successful signup
+                if (signupData.pushToken) {
+                    try {
+                        const { sendPushTokenToServer } = await import('../../utils/notifications');
+                        await sendPushTokenToServer(signupData.pushToken, signupData.platform);
+                        console.log('✅ Push token registered with server after signup');
+                    } catch (pushError) {
+                        console.error('❌ Failed to register push token with server:', pushError);
+                        // Don't fail signup if push token registration fails
+                    }
+                }
+
+                return { success: true, message: 'Signup successful!' };
             }
-            return false;
-        } catch (error) {
+            return { success: false, error: response.data.error || 'Signup failed. Invalid credentials or server error.' };
+        } catch (error: any) {
             console.error('Signup error:', error);
-            return false;
+            return { success: false, error: error.response?.data?.error || 'Signup failed. An unexpected error occurred.' };
         } finally {
             setIsLoading(false);
         }
@@ -348,6 +390,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const registerPushToken = async (): Promise<boolean> => {
+        try {
+            const { registerForPushNotificationsAsync, sendPushTokenToServer } = await import('../../utils/notifications');
+            const pushToken = await registerForPushNotificationsAsync();
+            if (pushToken) {
+                await sendPushTokenToServer(pushToken, Platform.OS as 'ios' | 'android');
+                console.log('✅ Push token registered with server');
+                return true;
+            }
+            console.log('ℹ️ No push token available to register.');
+            return false;
+        } catch (error) {
+            console.error('Error registering push token:', error);
+            return false;
+        }
+    };
+
     const value = {
         user,
         isLoading,
@@ -361,6 +420,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateProfile,
         forgotPassword,
         resetPassword,
+        registerPushToken,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

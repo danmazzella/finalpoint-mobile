@@ -47,7 +47,7 @@ const ChangePasswordScreen = () => {
         }
 
         if (newPassword.length < 6) {
-            showToast('New password must be at least 6 characters long', 'error');
+            showToast('New password must be at least 8 characters long', 'error');
             return;
         }
 

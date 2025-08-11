@@ -54,10 +54,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     // Check if device supports notifications at all
     const checkDeviceSupport = async () => {
         try {
-            console.log('🔍 Checking device notification support...');
             const supportInfo = await getNotificationSupportInfo();
-
-            console.log('📱 Device support info:', supportInfo);
 
             // Device supports notifications if it can schedule them
             return supportInfo.canScheduleNotifications;
@@ -81,7 +78,6 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
                 return;
             }
 
-            console.log('✅ Device supports notifications, proceeding with push registration...');
             const token = await registerForPushNotificationsAsync();
 
             if (token) {

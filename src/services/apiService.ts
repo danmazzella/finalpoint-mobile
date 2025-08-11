@@ -4,12 +4,19 @@ import { PickV2, NotificationPreferences } from '../types';
 
 // API URL configuration
 const getApiBaseUrl = () => {
-    // For development, use the local server
-    // For production, use api.finalpoint.app
-    return __DEV__ ? 'http://192.168.0.15:6075/api' : 'https://api.finalpoint.app/api';
+    // Use environment variable if available, otherwise fall back to hardcoded values
+    if (process.env.EXPO_PUBLIC_API_URL) {
+        return process.env.EXPO_PUBLIC_API_URL;
+    }
+
+    // Fallback for development vs production
+    return __DEV__ ? 'http://192.168.0.15:6075' : 'https://api.finalpoint.app';
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+console.log(process.env);
+console.log('API_BASE_URL', API_BASE_URL);
 
 export const apiService = axios.create({
     baseURL: API_BASE_URL,

@@ -37,12 +37,14 @@ const LoginScreen = () => {
             return;
         }
 
-        const success = await login(email, password);
-        if (success) {
-            showToast('Login successful!', 'success');
+        const result = await login(email, password);
+        if (result.success && 'message' in result) {
+            showToast(result.message, 'success');
             router.replace('/(tabs)');
+        } else if (!result.success && 'error' in result) {
+            showToast(result.error, 'error');
         } else {
-            showToast('Invalid email or password', 'error');
+            showToast('Login failed. Please try again.', 'error');
         }
     };
 

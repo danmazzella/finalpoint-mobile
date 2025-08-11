@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.17.4",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -43,16 +43,9 @@
         }
       }
     },
-    "local-production": {
-      "distribution": "store",
-      "autoIncrement": true,
+    "production-apk": {
       "env": {
         "NODE_ENV": "production"
-      },
-      "ios": {
-        "buildConfiguration": "Release",
-        "image": "latest",
-        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "apk",
@@ -62,8 +55,5 @@
         }
       }
     }
-  },
-  "submit": {
-    "production": {}
   }
 }

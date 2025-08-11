@@ -98,10 +98,12 @@ const SignupScreen = () => {
             return;
         }
 
-        const success = await signup(name, email, password);
-        if (success) {
-            showToast('Account created successfully!', 'success');
+        const result = await signup(name, email, password);
+        if (result.success && 'message' in result) {
+            showToast(result.message || 'Account created successfully!', 'success');
             router.replace('/(tabs)');
+        } else if (!result.success && 'error' in result) {
+            showToast(result.error || 'Failed to create account. Please try again.', 'error');
         } else {
             showToast('Failed to create account. Please try again.', 'error');
         }

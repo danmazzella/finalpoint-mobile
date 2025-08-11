@@ -31,10 +31,6 @@ yarn-error.*
 *.pem
 
 # local env files
-.env
-.env*.local
-.env.development
-.env.production
 
 # typescript
 *.tsbuildinfo
@@ -80,3 +76,8 @@ credentials.json
 /ios
 build-*
 /scripts
+
+.env
+.env.local
+.env.production
+.env.backup

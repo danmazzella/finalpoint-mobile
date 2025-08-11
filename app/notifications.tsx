@@ -18,18 +18,27 @@ import { useNotificationContext } from '../components/NotificationProvider';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
+import { shouldEnableNotifications } from '../utils/environment';
+import { getEasProjectId } from '../config/firebase.config';
 
 const NotificationSettingsScreen = () => {
   const { user } = useAuth();
+
+  // Always call the hook (React requirement)
+  const notificationContext = useNotificationContext();
+
+  // Check if notifications are enabled
+  const notificationsEnabled = shouldEnableNotifications();
+
   const {
     pushToken,
     isSupported,
-    isRegistering,
     error: pushError,
+    isRegistering,
     register,
     sendTokenToServer,
     showLocalNotification,
-  } = useNotificationContext();
+  } = notificationContext;
 
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     emailReminders: true,
@@ -41,6 +50,7 @@ const NotificationSettingsScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSendingToken, setIsSendingToken] = useState(false);
+
 
   useEffect(() => {
     loadPreferences();
@@ -157,6 +167,79 @@ const NotificationSettingsScreen = () => {
     }
   };
 
+  const testPushRegistration = async () => {
+    try {
+      // Only proceed if notifications are enabled
+      if (!shouldEnableNotifications()) {
+        Alert.alert('Info', 'Push notifications are disabled in Expo Go. Use a development build to test.');
+        return;
+      }
+
+      // Dynamically import required modules
+      const [Device, Notifications] = await Promise.all([
+        import('expo-device'),
+        import('expo-notifications')
+      ]);
+
+      // Test 1: Check if device supports notifications
+      console.log('📱 Device supports notifications');
+
+      // Test 2: Check current notification permissions
+      const { status: existingStatus } = await Notifications.default.getPermissionsAsync();
+      console.log(`🔐 Current notification status: ${existingStatus}`);
+
+      // Test 3: Check EAS project ID
+      const projectId = getEasProjectId();
+      console.log('🔑 EAS Project ID verified');
+
+      // Test 4: Try to get push token
+      console.log('🎯 Attempting to get push token...');
+      const token = await Notifications.default.getExpoPushTokenAsync({
+        projectId: projectId!,
+      });
+      console.log('✅ Push token obtained successfully');
+
+      Alert.alert('Success', 'Push registration test passed!');
+    } catch (error: any) {
+      console.error(`❌ Push registration failed: ${error.message}`);
+      Alert.alert('Error', `Push registration failed: ${error.message}`);
+    }
+  };
+
+  // Show disabled message if notifications are not available
+  if (!notificationsEnabled) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScrollView style={styles.scrollView}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Notification Settings</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          {/* Disabled Message */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notifications Disabled</Text>
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>Expo Go Limitation</Text>
+                <Text style={styles.settingDescription}>
+                  Push notifications are not available in Expo Go. To test notification features, please use a development build.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -254,8 +337,8 @@ const NotificationSettingsScreen = () => {
             <View style={styles.infoContainer}>
               <Text style={styles.infoText}>
                 Your device supports local notifications (as shown by the test below),
-                but push notification registration failed. This is common and doesn't
-                affect the app's functionality.
+                but push notification registration failed. This is common and doesn&apos;t
+                affect the app&apos;s functionality.
               </Text>
             </View>
           )}
@@ -278,7 +361,17 @@ const NotificationSettingsScreen = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.primaryButton]}
-              onPress={register}
+              onPress={() => {
+                console.log('🔘 Button pressed!');
+                console.log('📱 isSupported:', isSupported);
+                console.log('⏳ isRegistering:', isRegistering);
+                console.log('🔑 register function:', typeof register);
+                try {
+                  register();
+                } catch (error) {
+                  console.error('❌ Error calling register:', error);
+                }
+              }}
               disabled={isRegistering || !isSupported}
             >
               <Text style={styles.buttonText}>
@@ -297,6 +390,27 @@ const NotificationSettingsScreen = () => {
                 </Text>
               </TouchableOpacity>
             )}
+
+            {/* Test button to verify TouchableOpacity is working */}
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: Colors.light.warning }]}
+              onPress={() => {
+                console.log('🧪 Test button pressed!');
+                Alert.alert('Test', 'TouchableOpacity is working!');
+              }}
+            >
+              <Text style={styles.buttonText}>Test Button (Debug)</Text>
+            </TouchableOpacity>
+
+            {/* Push Registration Test Button */}
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: Colors.light.info }]}
+              onPress={testPushRegistration}
+            >
+              <Text style={styles.buttonText}>Test Push Registration</Text>
+            </TouchableOpacity>
+
+
           </View>
         </View>
 
@@ -616,6 +730,7 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     lineHeight: 20,
   },
+
 });
 
 export default NotificationSettingsScreen;

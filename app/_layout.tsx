@@ -10,20 +10,37 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider, useToast } from '../src/context/ToastContext';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { NotificationProvider } from '../components/NotificationProvider';
+
 import Toast from '../components/Toast';
+import { shouldEnableNotifications, logEnvironmentInfo } from '../utils/environment';
+
+// Conditionally initialize Firebase configuration
+if (shouldEnableNotifications()) {
+  console.log('🔑 Initializing Firebase...');
+  import('../config/firebase');
+} else {
+  console.log('🚫 Firebase disabled in Expo Go');
+}
+
+// Log environment information
+logEnvironmentInfo();
 
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { toast, hideToast } = useToast();
   const colorScheme = useColorScheme();
 
-  // Notification handlers
+  // Notification handlers (only active when notifications are enabled)
   const handleNotificationReceived = (notification: any) => {
+    if (!shouldEnableNotifications()) return;
+
     console.log('Notification received while app is running:', notification);
     // You can show a toast or update UI here
   };
 
   const handleNotificationResponse = (response: any) => {
+    if (!shouldEnableNotifications()) return;
+
     console.log('User tapped notification:', response);
     // Handle navigation or actions when user taps notification
     const { notification } = response;
@@ -39,6 +56,35 @@ function AppContent() {
       }
     }
   };
+
+  // Only set up notification listeners when notifications are enabled
+  useEffect(() => {
+    if (!shouldEnableNotifications()) {
+      console.log('🚫 Notifications disabled - skipping listener setup');
+      return;
+    }
+
+    console.log('🔔 Setting up notification listeners...');
+
+    // Import notification functions only when needed
+    const setupNotifications = async () => {
+      try {
+        const { addNotificationReceivedListener, addNotificationResponseReceivedListener } = await import('../utils/notifications');
+
+        const receivedSubscription = addNotificationReceivedListener(handleNotificationReceived);
+        const responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
+
+        return () => {
+          receivedSubscription.remove();
+          responseSubscription.remove();
+        };
+      } catch (error) {
+        console.error('🚫 Could not set up notification listeners:', error);
+      }
+    };
+
+    setupNotifications();
+  }, []);
 
   useEffect(() => {
     // If not loading and no user, redirect to login
@@ -142,17 +188,21 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <ToastProvider>
-          <NotificationProvider
-            autoRegister={true}
-            onNotificationReceived={(notification) => {
-              console.log('Notification received globally:', notification);
-            }}
-            onNotificationResponse={(response) => {
-              console.log('Notification response globally:', response);
-            }}
-          >
+          {shouldEnableNotifications() ? (
+            <NotificationProvider
+              autoRegister={false}
+              onNotificationReceived={(notification) => {
+                console.log('Notification received globally:', notification);
+              }}
+              onNotificationResponse={(response) => {
+                console.log('Notification response globally:', response);
+              }}
+            >
+              <RootLayoutNav />
+            </NotificationProvider>
+          ) : (
             <RootLayoutNav />
-          </NotificationProvider>
+          )}
         </ToastProvider>
       </AuthProvider>
     </SafeAreaProvider>

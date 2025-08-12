@@ -20,8 +20,21 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Initialize Firebase Messaging for push notifications
-export const messaging = getMessaging(app);
+// Initialize Firebase Messaging for push notifications (only in development builds)
+let messaging: any = null;
+try {
+    if (typeof window === 'undefined') {
+        // We're in React Native, check if we're in Expo Go
+        const Constants = require('expo-constants');
+        if (Constants.appOwnership !== 'expo') {
+            messaging = getMessaging(app);
+        }
+    }
+} catch (error: any) {
+    console.log('Firebase messaging not available:', error.message);
+}
+
+export { messaging };
 
 // Initialize Analytics only if supported (web only)
 let analytics: any = null;

@@ -423,24 +423,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 avatar: googleData.userInfo.picture
             };
 
+            // Always set platform for Google Sign-In
+            loginData.platform = Platform.OS;
+            console.log(`📱 Platform set to: ${Platform.OS}`);
+
             // Try to get push token for mobile devices
             try {
                 const { registerForPushNotificationsAsync } = await import('../../utils/notifications');
                 const pushToken = await registerForPushNotificationsAsync();
                 if (pushToken) {
                     loginData.pushToken = pushToken;
-                    loginData.platform = Platform.OS;
                     console.log(`📱 Including ${Platform.OS} push token in Google login request`);
+                } else {
+                    console.log('⚠️ No push token received from registerForPushNotificationsAsync');
                 }
             } catch (pushError) {
                 console.error('Could not get push token during Google login (will register later):', pushError);
             }
 
-            const response = await apiService.post('/users/google-auth', {
+            console.log('🔍 Final loginData before request:', {
+                pushToken: loginData.pushToken,
+                platform: loginData.platform,
+                platformType: typeof loginData.platform,
+                PlatformOS: Platform.OS
+            });
+
+            // Prepare the request payload
+            const requestPayload = {
                 idToken: googleData.accessToken,
                 pushToken: loginData.pushToken,
                 platform: loginData.platform
+            };
+
+            console.log('📤 Sending Google auth request:', {
+                endpoint: '/users/google-auth',
+                payload: requestPayload,
+                hasIdToken: !!googleData.accessToken,
+                hasPushToken: !!loginData.pushToken,
+                platform: loginData.platform
             });
+
+            const response = await apiService.post('/users/google-auth', requestPayload);
 
             if (response.data.success) {
                 const userData = response.data.user;
@@ -466,6 +489,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { success: false, error: response.data.error || 'Google login failed. Please try again.' };
         } catch (error: any) {
             console.error('Google login error:', error);
+
+            // Log detailed error information
+            if (error.response) {
+                console.error('📥 Backend response error:', {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
+            } else if (error.request) {
+                console.error('📥 No response received:', error.request);
+            } else {
+                console.error('📥 Request setup error:', error.message);
+            }
+
             return { success: false, error: error.response?.data?.error || 'Google login failed. An unexpected error occurred.' };
         } finally {
             setIsLoading(false);

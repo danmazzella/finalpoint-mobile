@@ -42,9 +42,10 @@ export const useGoogleSignIn = (config: GoogleSignInConfig) => {
             if (signInResult.type === 'success' && signInResult.data.idToken) {
                 const userData = signInResult.data;
                 console.log('🔐 Google Sign-In successful:', userData.user.email);
+                console.log('🔍 Full Google Sign-In data:', JSON.stringify(userData, null, 2));
 
                 // Call the login function with Google user data
-                const loginResult = await loginWithGoogle({
+                const loginData = {
                     accessToken: userData.idToken!,
                     userInfo: {
                         id: userData.user.id,
@@ -52,7 +53,11 @@ export const useGoogleSignIn = (config: GoogleSignInConfig) => {
                         name: userData.user.name,
                         picture: userData.user.photo,
                     },
-                });
+                };
+
+                console.log('🔍 Sending to loginWithGoogle:', JSON.stringify(loginData, null, 2));
+
+                const loginResult = await loginWithGoogle(loginData);
 
                 if (loginResult.success) {
                     showToast('Successfully signed in with Google!', 'success');

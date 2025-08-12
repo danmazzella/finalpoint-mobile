@@ -17,9 +17,7 @@ import { useToast } from '../src/context/ToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
-import GoogleSignInButton from '../components/GoogleSignInButton';
-import { useGoogleSignIn } from '../src/hooks/useGoogleSignIn';
-import { googleConfig } from '../config/google.config';
+import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -29,9 +27,6 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, isLoading } = useAuth();
     const { showToast } = useToast();
-
-    // Google Sign-In configuration
-    const { signIn: googleSignIn, isLoading: isGoogleSigningIn } = useGoogleSignIn(googleConfig);
 
     const scrollViewRef = useRef<ScrollView>(null);
     const emailInputRef = useRef<TextInput>(null);
@@ -174,12 +169,8 @@ const LoginScreen = () => {
                             <View style={styles.dividerLine} />
                         </View>
 
-                        {/* Google Sign-In Button */}
-                        <GoogleSignInButton
-                            onPress={googleSignIn}
-                            isLoading={isGoogleSigningIn}
-                            disabled={isLoading}
-                        />
+                        {/* Conditional Google Sign-In Button */}
+                        <GoogleSignInWrapper disabled={isLoading} />
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity
@@ -387,6 +378,7 @@ const styles = StyleSheet.create({
         color: Colors.light.textSecondary,
         fontWeight: '500',
     },
+
 });
 
 export default LoginScreen;

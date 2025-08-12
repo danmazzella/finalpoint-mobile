@@ -238,6 +238,15 @@ export interface F1Race {
     isLocked: boolean;
     isScored: boolean;
     status?: string;
+    // New pick locking fields
+    picksLocked?: boolean;
+    timeUntilLock?: string;
+    timeUntilQualifying?: string;
+    lockMessage?: string;
+    qualifyingDate?: string;
+    circuitName?: string;
+    country?: string;
+    showCountdown?: boolean;
 }
 
 // League member types

@@ -134,6 +134,12 @@ const PicksScreen = () => {
             return;
         }
 
+        // Check if picks are locked
+        if (currentRace?.picksLocked) {
+            Alert.alert('Picks Locked', 'Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.');
+            return;
+        }
+
         try {
             setSubmitting(true);
 
@@ -164,6 +170,12 @@ const PicksScreen = () => {
     const removePick = async (position: number) => {
         if (!selectedLeague) {
             Alert.alert('Error', 'Please select a league first');
+            return;
+        }
+
+        // Check if picks are locked
+        if (currentRace?.picksLocked) {
+            Alert.alert('Picks Locked', 'Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.');
             return;
         }
 
@@ -279,11 +291,33 @@ const PicksScreen = () => {
                 {currentRace && (
                     <View style={styles.raceInfoSection}>
                         <Text style={styles.sectionTitle}>Current Race</Text>
+
+                        {/* Pick Locking Status Banner */}
+                        {currentRace.picksLocked && (
+                            <View style={styles.lockedBanner}>
+                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
+                            </View>
+                        )}
+
+                        {/* Pick Locking Countdown */}
+                        {!currentRace.picksLocked && currentRace.showCountdown && (
+                            <View style={styles.countdownBanner}>
+                                <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
+                                <Text style={styles.countdownBannerMessage}>{currentRace.lockMessage}</Text>
+                            </View>
+                        )}
+
                         <View style={styles.raceCard}>
                             <Text style={styles.raceName}>{currentRace.raceName}</Text>
                             <Text style={styles.raceDate}>
                                 {new Date(currentRace.raceDate).toLocaleDateString()}
                             </Text>
+                            {currentRace.qualifyingDate && (
+                                <Text style={styles.qualifyingDate}>
+                                    Qualifying: {new Date(currentRace.qualifyingDate).toLocaleDateString()}
+                                </Text>
+                            )}
                             <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
                                 Status: {isRaceLocked() ? 'Locked' : currentRace.status}
                             </Text>
@@ -348,7 +382,7 @@ const PicksScreen = () => {
                                                             selectedDriverId === driver.id && styles.selectedDriverOption
                                                         ]}
                                                         onPress={() => makePick(position, driver.id)}
-                                                        disabled={submitting}
+                                                        disabled={submitting || isRaceLocked()}
                                                     >
                                                         <Text style={styles.driverOptionNumber}>#{driver.driverNumber}</Text>
                                                         <Text style={styles.driverOptionName} numberOfLines={1}>{driver.name}</Text>
@@ -373,6 +407,15 @@ const PicksScreen = () => {
                         <Text style={styles.legacySubtitle}>
                             This league uses the legacy single-pick system
                         </Text>
+
+                        {/* Show pick locking message for legacy picks */}
+                        {currentRace?.picksLocked && (
+                            <View style={styles.lockedBanner}>
+                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
+                            </View>
+                        )}
+
                         <ScrollView style={styles.driversList}>
                             {drivers.map((driver) => (
                                 <TouchableOpacity
@@ -382,7 +425,7 @@ const PicksScreen = () => {
                                         getSelectedDriverForPosition(10) === driver.id && styles.selectedDriverCard
                                     ]}
                                     onPress={() => makePick(10, driver.id)}
-                                    disabled={submitting || isRaceLocked()}
+                                    disabled={submitting || isRaceLocked() || currentRace?.picksLocked}
                                 >
                                     <View style={styles.driverInfo}>
                                         <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
@@ -779,6 +822,47 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 14,
         fontWeight: 'bold',
+    },
+    lockedBanner: {
+        backgroundColor: '#ff4444',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 10,
+        alignItems: 'center',
+    },
+    lockedBannerTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 4,
+    },
+    lockedBannerMessage: {
+        fontSize: 12,
+        color: 'white',
+        textAlign: 'center',
+    },
+    countdownBanner: {
+        backgroundColor: '#ff9800',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 10,
+        alignItems: 'center',
+    },
+    countdownBannerTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 4,
+    },
+    countdownBannerMessage: {
+        fontSize: 12,
+        color: 'white',
+        textAlign: 'center',
+    },
+    qualifyingDate: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 4,
     },
 });
 

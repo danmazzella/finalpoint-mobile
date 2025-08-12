@@ -45,6 +45,14 @@ const NotificationSettingsScreen = () => {
     emailScoreUpdates: true,
     pushReminders: true,
     pushScoreUpdates: true,
+    emailReminder5Days: true,
+    emailReminder3Days: true,
+    emailReminder1Day: true,
+    pushReminder5Days: true,
+    pushReminder3Days: true,
+    pushReminder1Day: true,
+    emailOther: true,
+    pushOther: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -64,11 +72,36 @@ const NotificationSettingsScreen = () => {
       if (response.data.success) {
         // Convert database values (1/0) to proper booleans
         const rawData = response.data.data;
+        console.log('Raw notification preferences from backend:', rawData);
+
         setPreferences({
           emailReminders: Boolean(rawData.emailReminders),
           emailScoreUpdates: Boolean(rawData.emailScoreUpdates),
           pushReminders: Boolean(rawData.pushReminders),
-          pushScoreUpdates: Boolean(rawData.pushScoreUpdates)
+          pushScoreUpdates: Boolean(rawData.pushScoreUpdates),
+          emailReminder5Days: Boolean(rawData.emailReminder5Days ?? true),
+          emailReminder3Days: Boolean(rawData.emailReminder3Days ?? true),
+          emailReminder1Day: Boolean(rawData.emailReminder1Day ?? true),
+          pushReminder5Days: Boolean(rawData.pushReminder5Days ?? true),
+          pushReminder3Days: Boolean(rawData.pushReminder3Days ?? true),
+          pushReminder1Day: Boolean(rawData.pushReminder1Day ?? true),
+          emailOther: Boolean(rawData.emailOther ?? true),
+          pushOther: Boolean(rawData.pushOther ?? true)
+        });
+
+        console.log('Processed notification preferences:', {
+          emailReminders: Boolean(rawData.emailReminders),
+          emailScoreUpdates: Boolean(rawData.emailScoreUpdates),
+          pushReminders: Boolean(rawData.pushReminders),
+          pushScoreUpdates: Boolean(rawData.pushScoreUpdates),
+          emailReminder5Days: Boolean(rawData.emailReminder5Days ?? true),
+          emailReminder3Days: Boolean(rawData.emailReminder3Days ?? true),
+          emailReminder1Day: Boolean(rawData.emailReminder1Day ?? true),
+          pushReminder5Days: Boolean(rawData.pushReminder5Days ?? true),
+          pushReminder3Days: Boolean(rawData.pushReminder3Days ?? true),
+          pushReminder1Day: Boolean(rawData.pushReminder1Day ?? true),
+          emailOther: Boolean(rawData.emailOther ?? true),
+          pushOther: Boolean(rawData.pushOther ?? true)
         });
       }
     } catch (error: any) {
@@ -299,6 +332,57 @@ const NotificationSettingsScreen = () => {
             />
           </View>
 
+          {/* 5-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>5-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 5 days before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.emailReminder5Days}
+              onValueChange={(value) => handlePreferenceChange('emailReminder5Days', value)}
+              disabled={!preferences.emailReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.emailReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.emailReminder5Days && preferences.emailReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* 3-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>3-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 3 days before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.emailReminder3Days}
+              onValueChange={(value) => handlePreferenceChange('emailReminder3Days', value)}
+              disabled={!preferences.emailReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.emailReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.emailReminder3Days && preferences.emailReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* 1-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>1-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 1 day before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.emailReminder1Day}
+              onValueChange={(value) => handlePreferenceChange('emailReminder1Day', value)}
+              disabled={!preferences.emailReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.emailReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.emailReminder1Day && preferences.emailReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingTitle}>Score Updates</Text>
@@ -311,6 +395,22 @@ const NotificationSettingsScreen = () => {
               onValueChange={(value) => handlePreferenceChange('emailScoreUpdates', value)}
               trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
               thumbColor={preferences.emailScoreUpdates ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* Other Notifications */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Other Notifications</Text>
+              <Text style={styles.settingDescription}>
+                Welcome messages, league invitations, and custom messages
+              </Text>
+            </View>
+            <Switch
+              value={preferences.emailOther}
+              onValueChange={(value) => handlePreferenceChange('emailOther', value)}
+              trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
+              thumbColor={preferences.emailOther ? Colors.light.textInverse : Colors.light.gray100}
             />
           </View>
         </View>
@@ -433,6 +533,57 @@ const NotificationSettingsScreen = () => {
             />
           </View>
 
+          {/* 5-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>5-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 5 days before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.pushReminder5Days}
+              onValueChange={(value) => handlePreferenceChange('pushReminder5Days', value)}
+              disabled={!preferences.pushReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.pushReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.pushReminder5Days && preferences.pushReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* 3-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>3-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 3 days before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.pushReminder3Days}
+              onValueChange={(value) => handlePreferenceChange('pushReminder3Days', value)}
+              disabled={!preferences.pushReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.pushReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.pushReminder3Days && preferences.pushReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* 1-Day Reminder */}
+          <View style={[styles.settingItem, { marginLeft: 20 }]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>1-Day Reminder</Text>
+              <Text style={styles.settingDescription}>
+                Get reminded 1 day before races
+              </Text>
+            </View>
+            <Switch
+              value={preferences.pushReminder1Day}
+              onValueChange={(value) => handlePreferenceChange('pushReminder1Day', value)}
+              disabled={!preferences.pushReminders}
+              trackColor={{ false: Colors.light.gray300, true: preferences.pushReminders ? Colors.light.primary : Colors.light.gray400 }}
+              thumbColor={preferences.pushReminder1Day && preferences.pushReminders ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingTitle}>Score Updates</Text>
@@ -445,6 +596,22 @@ const NotificationSettingsScreen = () => {
               onValueChange={(value) => handlePreferenceChange('pushScoreUpdates', value)}
               trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
               thumbColor={preferences.pushScoreUpdates ? Colors.light.textInverse : Colors.light.gray100}
+            />
+          </View>
+
+          {/* Other Notifications */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Other Notifications</Text>
+              <Text style={styles.settingDescription}>
+                Welcome messages, league invitations, and custom messages
+              </Text>
+            </View>
+            <Switch
+              value={preferences.pushOther}
+              onValueChange={(value) => handlePreferenceChange('pushOther', value)}
+              trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
+              thumbColor={preferences.pushOther ? Colors.light.textInverse : Colors.light.gray100}
             />
           </View>
         </View>

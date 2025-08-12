@@ -149,6 +149,14 @@ export interface NotificationPreferences {
     emailScoreUpdates: boolean;
     pushReminders: boolean;
     pushScoreUpdates: boolean;
+    emailReminder5Days: boolean;
+    emailReminder3Days: boolean;
+    emailReminder1Day: boolean;
+    pushReminder5Days: boolean;
+    pushReminder3Days: boolean;
+    pushReminder1Day: boolean;
+    emailOther: boolean;
+    pushOther: boolean;
 }
 
 // Activity types

@@ -9,6 +9,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+    loginWithGoogle: (googleData: { accessToken: string; userInfo: any }) => Promise<{ success: boolean; message?: string; error?: string }>;
     signup: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     logout: () => Promise<void>;
     validateToken: () => Promise<boolean>;
@@ -32,6 +33,7 @@ export const useAuth = () => {
                 user: null,
                 isLoading: true,
                 login: async () => ({ success: false, error: 'Context not available' }),
+                loginWithGoogle: async () => ({ success: false, error: 'Context not available' }),
                 signup: async () => ({ success: false, error: 'Context not available' }),
                 logout: async () => { },
                 validateToken: async () => false,
@@ -51,6 +53,7 @@ export const useAuth = () => {
             user: null,
             isLoading: true,
             login: async () => ({ success: false, error: 'Context not available' }),
+            loginWithGoogle: async () => ({ success: false, error: 'Context not available' }),
             signup: async () => ({ success: false, error: 'Context not available' }),
             logout: async () => { },
             validateToken: async () => false,
@@ -407,10 +410,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const loginWithGoogle = async (googleData: { accessToken: string; userInfo: any }): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            setIsLoading(true);
+
+            // Prepare Google login data with optional push token
+            const loginData: any = {
+                googleAccessToken: googleData.accessToken,
+                email: googleData.userInfo.email,
+                name: googleData.userInfo.name,
+                googleId: googleData.userInfo.id,
+                avatar: googleData.userInfo.picture
+            };
+
+            // Try to get push token for mobile devices
+            try {
+                const { registerForPushNotificationsAsync } = await import('../../utils/notifications');
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    loginData.pushToken = pushToken;
+                    loginData.platform = Platform.OS;
+                    console.log(`📱 Including ${Platform.OS} push token in Google login request`);
+                }
+            } catch (pushError) {
+                console.error('Could not get push token during Google login (will register later):', pushError);
+            }
+
+            const response = await apiService.post('/users/google-auth', {
+                idToken: googleData.accessToken,
+                pushToken: loginData.pushToken,
+                platform: loginData.platform
+            });
+
+            if (response.data.success) {
+                const userData = response.data.user;
+                setUser(userData);
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+                await AsyncStorage.setItem('token', response.data.token);
+
+                console.log('✅ Google authentication successful:', response.data.message);
+
+                // Register push token with server after successful Google login
+                if (loginData.pushToken) {
+                    try {
+                        const { sendPushTokenToServer } = await import('../../utils/notifications');
+                        await sendPushTokenToServer(loginData.pushToken, loginData.platform);
+                        console.log('✅ Push token registered with server after Google login');
+                    } catch (pushError) {
+                        console.error('❌ Failed to register push token with server:', pushError);
+                    }
+                }
+
+                return { success: true, message: 'Google login successful!' };
+            }
+            return { success: false, error: response.data.error || 'Google login failed. Please try again.' };
+        } catch (error: any) {
+            console.error('Google login error:', error);
+            return { success: false, error: error.response?.data?.error || 'Google login failed. An unexpected error occurred.' };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const value = {
         user,
         isLoading,
         login,
+        loginWithGoogle,
         signup,
         logout,
         validateToken,

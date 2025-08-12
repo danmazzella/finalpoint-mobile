@@ -17,6 +17,9 @@ import { useToast } from '../src/context/ToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
+import GoogleSignInButton from '../components/GoogleSignInButton';
+import { useGoogleSignIn } from '../src/hooks/useGoogleSignIn';
+import { googleConfig } from '../config/google.config';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -26,6 +29,9 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, isLoading } = useAuth();
     const { showToast } = useToast();
+
+    // Google Sign-In configuration
+    const { signIn: googleSignIn, isLoading: isGoogleSigningIn } = useGoogleSignIn(googleConfig);
 
     const scrollViewRef = useRef<ScrollView>(null);
     const emailInputRef = useRef<TextInput>(null);
@@ -160,6 +166,20 @@ const LoginScreen = () => {
                         >
                             <Text style={styles.signInButtonText}>Sign in</Text>
                         </TouchableOpacity>
+
+                        {/* Divider */}
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        {/* Google Sign-In Button */}
+                        <GoogleSignInButton
+                            onPress={googleSignIn}
+                            isLoading={isGoogleSigningIn}
+                            disabled={isLoading}
+                        />
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity
@@ -350,6 +370,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.light.textSecondary,
         textDecorationLine: 'underline',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.lg,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: Colors.light.borderMedium,
+    },
+    dividerText: {
+        marginHorizontal: spacing.md,
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        fontWeight: '500',
     },
 });
 

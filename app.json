@@ -4,9 +4,20 @@
     "slug": "finalpoint-mobile",
     "version": "1.0.5",
     "orientation": "portrait",
-    "scheme": "finalmobile",
+    "scheme": "finalpoint",
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
@@ -59,6 +70,9 @@
         }
       ],
       [
+        "@react-native-google-signin/google-signin"
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/images/splash-icon.png",
@@ -86,12 +100,6 @@
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
-      }
     },
     "notification": {
       "icon": "./assets/images/splash-icon.png",

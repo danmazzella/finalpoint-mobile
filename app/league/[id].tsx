@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     Alert,
     ActivityIndicator,
+    TextInput,
+    Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,10 +17,12 @@ import { League, LeagueMember, LeagueStanding, LeagueStats, F1Race, Activity } f
 import { router, useLocalSearchParams } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
+import { useSimpleToast } from '../../src/context/SimpleToastContext';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
     const leagueId = Number(id);
+    const { showToast } = useSimpleToast();
 
 
 
@@ -31,6 +35,13 @@ const LeagueDetailScreen = () => {
     const [loadingCurrentRace, setLoadingCurrentRace] = useState(false);
     const [currentRace, setCurrentRace] = useState<F1Race | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
+    const [showSettings, setShowSettings] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [editingName, setEditingName] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [leaving, setLeaving] = useState(false);
 
     useEffect(() => {
         loadLeagueData();
@@ -108,6 +119,96 @@ const LeagueDetailScreen = () => {
         loadLeagueData();
     };
 
+    const updateLeagueName = async () => {
+        if (!editingName.trim() || !league) return;
+
+        try {
+            setUpdating(true);
+            const response = await leaguesAPI.updateLeague(league.id, editingName.trim());
+
+            if (response.data.success) {
+                setLeague({ ...league, name: editingName.trim() });
+                setEditingName('');
+                setShowSettings(false);
+                Alert.alert('Success', 'League name updated successfully');
+            } else {
+                Alert.alert('Error', response.data.message || 'Failed to update league name');
+            }
+        } catch (error: any) {
+            console.error('Error updating league name:', error);
+            Alert.alert('Error', 'Failed to update league name. Please try again.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const updateLeagueVisibility = async (isPublic: boolean) => {
+        if (!league) return;
+
+        try {
+            setUpdating(true);
+            const response = await leaguesAPI.updateLeague(league.id, league.name, isPublic);
+
+            if (response.data.success) {
+                setLeague({ ...league, isPublic });
+                Alert.alert('Success', `League is now ${isPublic ? 'public' : 'private'}`);
+            } else {
+                Alert.alert('Error', response.data.message || 'Failed to update league visibility');
+            }
+        } catch (error: any) {
+            console.error('Error updating league visibility:', error);
+            Alert.alert('Error', 'Failed to update league visibility. Please try again.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const deleteLeague = async () => {
+        if (!league) return;
+
+        try {
+            setDeleting(true);
+            const response = await leaguesAPI.deleteLeague(league.id);
+
+            if (response.data.success) {
+                Alert.alert('Success', 'League deleted successfully', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
+            } else {
+                Alert.alert('Error', response.data.message || 'Failed to delete league');
+            }
+        } catch (error: any) {
+            console.error('Error deleting league:', error);
+            Alert.alert('Error', 'Failed to delete league. Please try again.');
+        } finally {
+            setDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
+    const leaveLeague = async () => {
+        if (!league) return;
+
+        try {
+            setLeaving(true);
+            const response = await leaguesAPI.leaveLeague(league.id);
+
+            if (response.data.success) {
+                Alert.alert('Success', 'You have left the league', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
+            } else {
+                Alert.alert('Error', response.data.message || 'Failed to leave league');
+            }
+        } catch (error: any) {
+            console.error('Error leaving league:', error);
+            Alert.alert('Error', 'Failed to leave league. Please try again.');
+        } finally {
+            setLeaving(false);
+            setShowLeaveConfirm(false);
+        }
+    };
+
     const loadLeagueMembers = async () => {
         try {
             const response = await leaguesAPI.getLeagueMembers(leagueId);
@@ -122,22 +223,16 @@ const LeagueDetailScreen = () => {
         }
     };
 
-    const shareLeague = () => {
+    const shareLeague = async () => {
         if (league?.joinCode) {
-            const shareUrl = `https://yourapp.com/joinleague/${league.joinCode}`;
-            Alert.alert(
-                'Share League',
-                `Share this link with friends to invite them to join ${league.name}:`,
-                [
-                    {
-                        text: 'Copy Link', onPress: () => {
-                            // In a real app, you'd use Clipboard API
-                            Alert.alert('Link copied to clipboard!');
-                        }
-                    },
-                    { text: 'Cancel', style: 'cancel' }
-                ]
-            );
+            const shareUrl = `https://finalpoint.app/joinleague/${league.joinCode}`;
+            try {
+                await Clipboard.setString(shareUrl);
+                showToast('League link copied to clipboard!', 'success');
+            } catch (error) {
+                console.error('Failed to copy to clipboard:', error);
+                showToast('Failed to copy link to clipboard', 'error');
+            }
         }
     };
 
@@ -255,6 +350,15 @@ const LeagueDetailScreen = () => {
                     <View style={styles.headerContent}>
                         <Text style={styles.leagueName}>{league.name}</Text>
                     </View>
+                    <TouchableOpacity
+                        style={styles.settingsButton}
+                        onPress={() => {
+                            console.log('Settings button pressed, setting showSettings to true');
+                            setShowSettings(true);
+                        }}
+                    >
+                        <Ionicons name="settings-outline" size={24} color={Colors.light.textPrimary} />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Quick Actions */}
@@ -424,9 +528,227 @@ const LeagueDetailScreen = () => {
                 {/* League Standings */}
                 {/* Removed League Standings section */}
 
-                {/* Bottom spacing for mobile to account for fixed bottom navigation */}
+                {/* Bottom spacing for navigation */}
                 <View style={styles.bottomSpacing} />
             </ScrollView>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.settingsModal}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>League Settings</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => {
+                                    setShowSettings(false);
+                                    setEditingName('');
+                                }}
+                            >
+                                <Ionicons name="close" size={24} color={Colors.light.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView
+                            style={styles.modalContent}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.modalContentContainer}
+                        >
+                            {league?.userRole === 'Owner' ? (
+                                <>
+                                    {/* Update League Name - Owner Only */}
+                                    <View style={styles.settingSection}>
+                                        <Text style={styles.settingLabel}>League Name</Text>
+                                        <TextInput
+                                            style={styles.textInput}
+                                            value={editingName || league.name}
+                                            onChangeText={setEditingName}
+                                            placeholder="Enter league name"
+                                            placeholderTextColor={Colors.light.textTertiary}
+                                        />
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.primaryButton,
+                                                (!editingName.trim() || updating) && styles.disabledButton
+                                            ]}
+                                            onPress={updateLeagueName}
+                                            disabled={updating || !editingName.trim()}
+                                        >
+                                            <Text style={styles.primaryButtonText}>
+                                                {updating ? 'Updating...' : 'Update Name'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* League Visibility Toggle - Owner Only */}
+                                    <View style={styles.settingSection}>
+                                        <Text style={styles.settingLabel}>League Visibility</Text>
+                                        <View style={styles.visibilityOptions}>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.visibilityOption,
+                                                    !league.isPublic && styles.visibilityOptionSelected
+                                                ]}
+                                                onPress={() => updateLeagueVisibility(false)}
+                                                disabled={updating}
+                                            >
+                                                <Ionicons
+                                                    name="lock-closed"
+                                                    size={20}
+                                                    color={!league.isPublic ? Colors.light.textInverse : Colors.light.textSecondary}
+                                                />
+                                                <Text style={[
+                                                    styles.visibilityOptionText,
+                                                    !league.isPublic && styles.visibilityOptionTextSelected
+                                                ]}>
+                                                    Private
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.visibilityOption,
+                                                    league.isPublic && styles.visibilityOptionSelected
+                                                ]}
+                                                onPress={() => updateLeagueVisibility(true)}
+                                                disabled={updating}
+                                            >
+                                                <Ionicons
+                                                    name="globe"
+                                                    size={20}
+                                                    color={league.isPublic ? Colors.light.textInverse : Colors.light.textSecondary}
+                                                />
+                                                <Text style={[
+                                                    styles.visibilityOptionText,
+                                                    league.isPublic && styles.visibilityOptionTextSelected
+                                                ]}>
+                                                    Public
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.visibilityDescriptionContainer}>
+                                            <Text style={styles.settingDescription}>
+                                                {league.isPublic
+                                                    ? 'Public leagues can be discovered and joined by any user on the platform.'
+                                                    : 'Private leagues can only be joined using the join code.'
+                                                }
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Delete League - Owner Only */}
+                                    <View style={styles.settingSection}>
+                                        <Text style={styles.dangerLabel}>Danger Zone</Text>
+                                        <Text style={styles.settingDescription}>
+                                            Once you delete a league, there is no going back. Please be certain.
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={styles.dangerButton}
+                                            onPress={() => setShowDeleteConfirm(true)}
+                                        >
+                                            <Text style={styles.dangerButtonText}>Delete League</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Leave League - Member Only */}
+                                    <View style={styles.settingSection}>
+                                        <Text style={styles.settingLabel}>Leave League</Text>
+                                        <Text style={styles.settingDescription}>
+                                            You can leave this league at any time. You can rejoin later if you have the join code.
+                                        </Text>
+                                        <View style={styles.leaveButtonContainer}>
+                                            <TouchableOpacity
+                                                style={styles.primaryButton}
+                                                onPress={() => setShowLeaveConfirm(true)}
+                                            >
+                                                <Text style={styles.primaryButtonText}>Leave League</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </>
+                            )}
+
+                            {/* Close Button */}
+                            <View style={styles.settingSection}>
+                                <TouchableOpacity
+                                    style={styles.secondaryButton}
+                                    onPress={() => {
+                                        setShowSettings(false);
+                                        setEditingName('');
+                                    }}
+                                >
+                                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
+                    </View>
+                </View>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.confirmationModal}>
+                        <View style={styles.confirmationIcon}>
+                            <Ionicons name="warning" size={48} color={Colors.light.warning} />
+                        </View>
+                        <Text style={styles.confirmationTitle}>Delete League</Text>
+                        <Text style={styles.confirmationMessage}>
+                            Are you sure you want to delete this league? This action cannot be undone.
+                        </Text>
+                        <View style={styles.confirmationButtons}>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => setShowDeleteConfirm(false)}
+                            >
+                                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.dangerButton}
+                                onPress={deleteLeague}
+                                disabled={deleting}
+                            >
+                                <Text style={styles.dangerButtonText}>
+                                    {deleting ? 'Deleting...' : 'Delete'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {/* Leave Confirmation Modal */}
+            {showLeaveConfirm && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.confirmationModal}>
+                        <View style={styles.confirmationIcon}>
+                            <Ionicons name="log-out" size={48} color={Colors.light.warning} />
+                        </View>
+                        <Text style={styles.confirmationTitle}>Leave League</Text>
+                        <Text style={styles.confirmationMessage}>
+                            Are you sure you want to leave this league? You can rejoin later if you have the join code.
+                        </Text>
+                        <View style={styles.confirmationButtons}>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => setShowLeaveConfirm(false)}
+                            >
+                                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={leaveLeague}
+                                disabled={leaving}
+                            >
+                                <Text style={styles.primaryButtonText}>
+                                    {leaving ? 'Leaving...' : 'Leave League'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -831,6 +1153,197 @@ const styles = StyleSheet.create({
         color: Colors.light.textSecondary,
         fontSize: 14,
         marginTop: spacing.sm,
+    },
+    settingsButton: {
+        paddingLeft: spacing.sm,
+    },
+    modalOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    settingsModal: {
+        backgroundColor: Colors.light.cardBackground,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        width: '90%',
+        maxWidth: 400,
+        ...shadows.lg,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+    },
+    closeButton: {
+        padding: spacing.xs,
+    },
+    modalContent: {
+        flex: 1,
+    },
+    modalContentContainer: {
+        paddingBottom: spacing.lg, // Add some padding at the bottom for the close button
+    },
+    settingSection: {
+        marginBottom: spacing.md,
+    },
+    settingLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    visibilityOptions: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: Colors.light.backgroundTertiary,
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        marginBottom: spacing.sm,
+        marginTop: spacing.xs,
+    },
+    visibilityOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        minWidth: 100,
+        justifyContent: 'center',
+    },
+    visibilityOptionSelected: {
+        backgroundColor: Colors.light.buttonPrimary,
+    },
+    visibilityOptionText: {
+        marginLeft: spacing.sm,
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
+    },
+    visibilityOptionTextSelected: {
+        color: Colors.light.textInverse,
+    },
+    settingDescription: {
+        fontSize: 13,
+        color: Colors.light.textSecondary,
+        marginTop: spacing.xs,
+    },
+    updatingIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: spacing.md,
+    },
+    updatingText: {
+        marginLeft: spacing.sm,
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+    },
+    textInput: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        marginBottom: spacing.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        fontSize: 16,
+        color: Colors.light.textPrimary,
+    },
+    disabledButton: {
+        opacity: 0.7,
+    },
+    dangerLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.error,
+        marginBottom: spacing.xs,
+    },
+    dangerButton: {
+        backgroundColor: Colors.light.errorLight,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+    },
+    dangerButtonText: {
+        color: Colors.light.error,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    confirmationModal: {
+        backgroundColor: Colors.light.cardBackground,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        width: '90%',
+        maxWidth: 400,
+        alignItems: 'center',
+        ...shadows.lg,
+    },
+    confirmationIcon: {
+        marginBottom: spacing.md,
+    },
+    confirmationTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.sm,
+    },
+    confirmationMessage: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    confirmationButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%',
+    },
+    primaryButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+    },
+    primaryButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButton: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    secondaryButtonText: {
+        color: Colors.light.textSecondary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    leaveButtonContainer: {
+        marginTop: spacing.md,
+    },
+    visibilityDescriptionContainer: {
+        marginTop: spacing.xs,
     },
 });
 

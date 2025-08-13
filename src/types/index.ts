@@ -29,6 +29,14 @@ export interface League {
     isMember?: boolean;
     userRole?: 'Owner' | 'Member';
     requiredPositions?: number[];
+    isPublic?: boolean;
+    seasonActivity?: number;
+    lastTwoRaceWeeksActivity?: number;
+    seasonPicks?: number;
+    lastTwoRaceWeeksPicks?: number;
+    totalPicks?: number;
+    totalActivity?: number;
+    activityScore?: number;
 }
 
 // Driver types

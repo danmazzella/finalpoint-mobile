@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,14 +10,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { leaguesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 
 const JoinLeagueScreen = () => {
     const { showToast } = useSimpleToast();
+    const { joinCode: initialJoinCode } = useLocalSearchParams<{ joinCode?: string }>();
     const [joinCode, setJoinCode] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Pre-fill join code if provided in URL
+    useEffect(() => {
+        if (initialJoinCode) {
+            setJoinCode(initialJoinCode);
+        }
+    }, [initialJoinCode]);
 
     const joinLeague = async () => {
         if (!joinCode.trim()) {
@@ -72,6 +80,7 @@ const JoinLeagueScreen = () => {
                             autoFocus
                             textAlign="left"
                             selection={{ start: 0, end: 0 }}
+                            placeholderTextColor="#999"
                         />
                     </View>
 
@@ -137,9 +146,10 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 16,
-        color: '#666',
+        color: '#333',
         marginBottom: 20,
         textAlign: 'center',
+        fontWeight: '500',
     },
     formContainer: {
         backgroundColor: 'white',
@@ -155,21 +165,23 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     inputLabel: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
         color: '#333',
-        marginBottom: 8,
+        marginBottom: 12,
+        textAlign: 'center',
     },
     input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
+        borderWidth: 2,
+        borderColor: '#007bff',
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: 'white',
         textAlign: 'center',
         letterSpacing: 2,
         fontWeight: 'bold',
+        color: '#333',
     },
     joinButton: {
         backgroundColor: '#007bff',

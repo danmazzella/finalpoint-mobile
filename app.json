@@ -2,7 +2,7 @@
   "expo": {
     "name": "FinalPoint",
     "slug": "finalpoint-mobile",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "orientation": "portrait",
     "scheme": "finalpoint",
     "web": {
@@ -21,7 +21,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "41",
+      "buildNumber": "43",
       "deploymentTarget": "17.0",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
@@ -41,7 +41,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.finalpoint.mobile",
-      "versionCode": 13,
+      "versionCode": 15,
       "label": "FinalPoint",
       "permissions": [
         "INTERNET",

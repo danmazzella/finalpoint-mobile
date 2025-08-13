@@ -18,8 +18,7 @@ import { useNotificationContext } from '../components/NotificationProvider';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
-import { shouldEnableNotifications } from '../utils/environment';
-import { getEasProjectId } from '../config/firebase.config';
+
 
 const NotificationSettingsScreen = () => {
   const { user } = useAuth();
@@ -27,16 +26,9 @@ const NotificationSettingsScreen = () => {
   // Always call the hook (React requirement)
   const notificationContext = useNotificationContext();
 
-  // Check if notifications are enabled
-  const notificationsEnabled = shouldEnableNotifications();
+
 
   const {
-    pushToken,
-    isSupported,
-    error: pushError,
-    isRegistering,
-    register,
-    sendTokenToServer,
     showLocalNotification,
   } = notificationContext;
 
@@ -57,7 +49,7 @@ const NotificationSettingsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSendingToken, setIsSendingToken] = useState(false);
+
 
 
   useEffect(() => {
@@ -145,32 +137,7 @@ const NotificationSettingsScreen = () => {
     }
   };
 
-  const handleRegisterPushNotifications = async () => {
-    try {
-      await register();
-      Alert.alert('Success', 'Successfully registered for push notifications!');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to register for push notifications');
-    }
-  };
 
-  const handleSendTokenToServer = async () => {
-    if (!pushToken) {
-      Alert.alert('Error', 'No push token available');
-      return;
-    }
-
-    try {
-      setIsSendingToken(true);
-      await sendTokenToServer();
-      Alert.alert('Success', 'Push token sent to server successfully!');
-    } catch (error: any) {
-      console.error('Error sending token to server:', error);
-      Alert.alert('Error', 'Failed to send push token to server');
-    } finally {
-      setIsSendingToken(false);
-    }
-  };
 
   const testNotification = async (type: 'email' | 'push') => {
     try {
@@ -200,78 +167,9 @@ const NotificationSettingsScreen = () => {
     }
   };
 
-  const testPushRegistration = async () => {
-    try {
-      // Only proceed if notifications are enabled
-      if (!shouldEnableNotifications()) {
-        Alert.alert('Info', 'Push notifications are disabled in Expo Go. Use a development build to test.');
-        return;
-      }
 
-      // Dynamically import required modules
-      const [Device, Notifications] = await Promise.all([
-        import('expo-device'),
-        import('expo-notifications')
-      ]);
 
-      // Test 1: Check if device supports notifications
-      console.log('📱 Device supports notifications');
 
-      // Test 2: Check current notification permissions
-      const { status: existingStatus } = await Notifications.default.getPermissionsAsync();
-      console.log(`🔐 Current notification status: ${existingStatus}`);
-
-      // Test 3: Check EAS project ID
-      const projectId = getEasProjectId();
-      console.log('🔑 EAS Project ID verified');
-
-      // Test 4: Try to get push token
-      console.log('🎯 Attempting to get push token...');
-      const token = await Notifications.default.getExpoPushTokenAsync({
-        projectId: projectId!,
-      });
-      console.log('✅ Push token obtained successfully');
-
-      Alert.alert('Success', 'Push registration test passed!');
-    } catch (error: any) {
-      console.error(`❌ Push registration failed: ${error.message}`);
-      Alert.alert('Error', `Push registration failed: ${error.message}`);
-    }
-  };
-
-  // Show disabled message if notifications are not available
-  if (!notificationsEnabled) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <ScrollView style={styles.scrollView}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Notification Settings</Text>
-            <View style={styles.placeholder} />
-          </View>
-
-          {/* Disabled Message */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notifications Disabled</Text>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Expo Go Limitation</Text>
-                <Text style={styles.settingDescription}>
-                  Push notifications are not available in Expo Go. To test notification features, please use a development build.
-                </Text>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -415,104 +313,7 @@ const NotificationSettingsScreen = () => {
           </View>
         </View>
 
-        {/* Push Notification Setup */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Push Notification Setup</Text>
-          <Text style={styles.sectionDescription}>
-            Register for push notifications to receive reminders and updates directly on your device
-          </Text>
 
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusLabel}>Status:</Text>
-            <Text style={[styles.statusValue, pushToken ? styles.statusSuccess : styles.statusWarning]}>
-              {!isSupported
-                ? 'Push notifications not available'
-                : pushToken
-                  ? 'Push notifications registered'
-                  : 'Push notifications not registered'}
-            </Text>
-          </View>
-
-          {!isSupported && (
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoText}>
-                Your device supports local notifications (as shown by the test below),
-                but push notification registration failed. This is common and doesn&apos;t
-                affect the app&apos;s functionality.
-              </Text>
-            </View>
-          )}
-
-          {pushError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{pushError}</Text>
-            </View>
-          )}
-
-          {pushToken && (
-            <View style={styles.tokenContainer}>
-              <Text style={styles.tokenLabel}>Push Token:</Text>
-              <Text style={styles.tokenText} numberOfLines={2}>
-                {pushToken}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={() => {
-                console.log('🔘 Button pressed!');
-                console.log('📱 isSupported:', isSupported);
-                console.log('⏳ isRegistering:', isRegistering);
-                console.log('🔑 register function:', typeof register);
-                try {
-                  register();
-                } catch (error) {
-                  console.error('❌ Error calling register:', error);
-                }
-              }}
-              disabled={isRegistering || !isSupported}
-            >
-              <Text style={styles.buttonText}>
-                {isRegistering ? 'Registering...' : 'Register for Push Notifications'}
-              </Text>
-            </TouchableOpacity>
-
-            {pushToken && (
-              <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={handleSendTokenToServer}
-                disabled={isSendingToken}
-              >
-                <Text style={styles.buttonText}>
-                  {isSendingToken ? 'Sending...' : 'Send Token to Server'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Test button to verify TouchableOpacity is working */}
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: Colors.light.warning }]}
-              onPress={() => {
-                console.log('🧪 Test button pressed!');
-                Alert.alert('Test', 'TouchableOpacity is working!');
-              }}
-            >
-              <Text style={styles.buttonText}>Test Button (Debug)</Text>
-            </TouchableOpacity>
-
-            {/* Push Registration Test Button */}
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: Colors.light.info }]}
-              onPress={testPushRegistration}
-            >
-              <Text style={styles.buttonText}>Test Push Registration</Text>
-            </TouchableOpacity>
-
-
-          </View>
-        </View>
 
         {/* Push Notifications */}
         <View style={styles.section}>
@@ -811,92 +612,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: borderRadius.sm,
-  },
-  statusLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.textPrimary,
-    marginRight: spacing.sm,
-  },
-  statusValue: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statusSuccess: {
-    color: Colors.light.success,
-  },
-  statusWarning: {
-    color: Colors.light.warning,
-  },
-  errorContainer: {
-    backgroundColor: '#ffe6e6',
-    padding: spacing.md,
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.md,
-  },
-  errorText: {
-    color: Colors.light.error,
-    fontSize: 14,
-  },
-  tokenContainer: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    padding: spacing.md,
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.md,
-  },
-  tokenLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  tokenText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: Colors.light.textSecondary,
-    lineHeight: 16,
-  },
-  buttonContainer: {
-    marginTop: spacing.sm,
-  },
-  button: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  primaryButton: {
-    backgroundColor: Colors.light.primary,
-  },
-  secondaryButton: {
-    backgroundColor: Colors.light.success,
-  },
-  buttonText: {
-    color: Colors.light.textInverse,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  infoContainer: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    padding: spacing.md,
-    borderRadius: borderRadius.sm,
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
-  },
-  infoText: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    lineHeight: 20,
-  },
+
 
 });
 

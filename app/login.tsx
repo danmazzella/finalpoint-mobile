@@ -18,6 +18,8 @@ import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
+import { shouldShowGoogleSignIn } from '../config/environment';
+
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -167,15 +169,20 @@ const LoginScreen = () => {
                             )}
                         </TouchableOpacity>
 
-                        {/* Divider */}
-                        <View style={styles.dividerContainer}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>or</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
+                        {/* Google Sign-In Section */}
+                        {shouldShowGoogleSignIn() && (
+                            <>
+                                {/* Divider */}
+                                <View style={styles.dividerContainer}>
+                                    <View style={styles.dividerLine} />
+                                    <Text style={styles.dividerText}>or</Text>
+                                    <View style={styles.dividerLine} />
+                                </View>
 
-                        {/* Conditional Google Sign-In Button */}
-                        <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                                {/* Conditional Google Sign-In Button */}
+                                <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                            </>
+                        )}
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity

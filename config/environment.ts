@@ -16,6 +16,7 @@ interface EnvironmentConfig {
     };
     app: {
         env: string;
+        showGoogleSignIn: boolean;
     };
 }
 
@@ -35,7 +36,8 @@ const PROD_CONFIG: EnvironmentConfig = {
         url: process.env.EXPO_PUBLIC_API_URL || ''
     },
     app: {
-        env: process.env.EXPO_PUBLIC_APP_ENV || 'production'
+        env: process.env.EXPO_PUBLIC_APP_ENV || 'production',
+        showGoogleSignIn: process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'true' || false
     }
 };
 
@@ -54,7 +56,8 @@ const DEV_CONFIG: EnvironmentConfig = {
         url: process.env.EXPO_PUBLIC_API_URL || ''
     },
     app: {
-        env: process.env.EXPO_PUBLIC_APP_ENV || 'development'
+        env: process.env.EXPO_PUBLIC_APP_ENV || 'development',
+        showGoogleSignIn: process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'true' || true
     }
 };
 
@@ -64,6 +67,11 @@ const isProduction = process.env.NODE_ENV === 'production' || process.env.EXPO_P
 // Helper function to check if running in development
 export const isDevelopment = (): boolean => {
     return !isProduction;
+};
+
+// Helper function to check if Google Sign In should be shown
+export const shouldShowGoogleSignIn = (): boolean => {
+    return environment.app.showGoogleSignIn;
 };
 
 export const environment: EnvironmentConfig = isProduction ? PROD_CONFIG : DEV_CONFIG;

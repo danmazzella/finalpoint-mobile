@@ -27,6 +27,10 @@ const ProfileScreen = () => {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0); // Force re-render when avatar updates
 
+    // Profile avatar state - fetched directly from API
+    const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+    const [isLoadingAvatar, setIsLoadingAvatar] = useState(true);
+
     // Determine base URL based on environment
     const getBaseUrl = () => {
         // For development, use the local server
@@ -35,11 +39,40 @@ const ProfileScreen = () => {
         return __DEV__ ? 'http://192.168.0.15:6075' : 'https://finalpoint.app';
     };
 
+    // Fetch profile data directly from API when component mounts
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                setIsLoadingAvatar(true);
+                const response = await apiService.get('/users/profile');
+                if (response.data.success && response.data.data) {
+                    setProfileAvatar(response.data.data.avatar);
+                }
+            } catch (error) {
+                console.error('Error fetching profile data:', error);
+            } finally {
+                setIsLoadingAvatar(false);
+            }
+        };
+
+        fetchProfileData();
+    }, []);
+
     // Refresh user data from server
     const refreshUserData = async () => {
         try {
             await refreshUser();
             setRefreshKey(prev => prev + 1); // Force re-render
+
+            // Also refresh profile data from API using the existing service
+            try {
+                const response = await apiService.get('/users/profile');
+                if (response.data.success && response.data.data) {
+                    setProfileAvatar(response.data.data.avatar);
+                }
+            } catch (profileError) {
+                console.error('Error refreshing profile data:', profileError);
+            }
         } catch (error) {
             console.error('Error refreshing user data:', error);
         }
@@ -167,6 +200,16 @@ const ProfileScreen = () => {
 
                     // Refresh user data from API to get the updated avatar
                     await refreshUserData();
+
+                    // Also update the local profile avatar state using the API service
+                    try {
+                        const profileResponse = await apiService.get('/users/profile');
+                        if (profileResponse.data.success && profileResponse.data.data) {
+                            setProfileAvatar(profileResponse.data.data.avatar);
+                        }
+                    } catch (profileError) {
+                        console.error('Error refreshing profile data:', profileError);
+                    }
                 } else {
                     showToast('Failed to update avatar', 'error');
                 }
@@ -193,7 +236,7 @@ const ProfileScreen = () => {
                         ) : (
                             <Avatar
                                 key={refreshKey} // Force re-render when avatar updates
-                                src={user?.avatar}
+                                src={profileAvatar || user?.avatar}
                                 size="xl"
                                 fallback={user?.name?.charAt(0).toUpperCase() || 'U'}
                             />

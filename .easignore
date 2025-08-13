@@ -121,3 +121,97 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# Copy everything from your .gitignore file here
+
+# Ignore files and directories that EAS Build doesn't need to build your app
+/docs
+
+# Ignore native directories (if you are using EAS Build)
+/android
+/ios
+
+# Ignore test coverage reports
+/coverage
+
+
+
+
+
+
+
+
+
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# local env files
+
+# typescript
+*.tsbuildinfo
+
+# iOS
+ios/build/
+*.xcworkspace
+*.xcuserdata/
+
+# Android
+android/build/
+android/app/build/
+*.apk
+*.aab
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode/settings.json
+.idea/
+
+# Temporary files
+tmp/
+temp/
+
+# Coverage reports
+coverage/
+
+# EAS
+.eas/
+
+app-example
+
+credentials.json
+
+/android
+/ios
+build-*
+/scripts

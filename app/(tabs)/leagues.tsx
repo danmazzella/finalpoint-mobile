@@ -22,11 +22,13 @@ import { spacing, borderRadius } from '../../utils/styles';
 const LeaguesScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useSimpleToast();
-    const [leagues, setLeagues] = useState<League[]>([]);
+    const [myLeagues, setMyLeagues] = useState<League[]>([]);
+    const [publicLeagues, setPublicLeagues] = useState<League[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [newLeagueName, setNewLeagueName] = useState('');
     const [selectedPositions, setSelectedPositions] = useState<number[]>([10]);
+    const [isPublic, setIsPublic] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -40,9 +42,17 @@ const LeaguesScreen = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await leaguesAPI.getLeagues();
-            if (response.data.success) {
-                setLeagues(response.data.data);
+            const [myLeaguesResponse, publicLeaguesResponse] = await Promise.all([
+                leaguesAPI.getLeagues(),
+                leaguesAPI.getPublicLeagues()
+            ]);
+
+            if (myLeaguesResponse.data.success) {
+                setMyLeagues(myLeaguesResponse.data.data);
+            }
+
+            if (publicLeaguesResponse.data.success) {
+                setPublicLeagues(publicLeaguesResponse.data.data);
             }
         } catch (error: any) {
             console.error('Error loading leagues:', error);
@@ -68,19 +78,19 @@ const LeaguesScreen = () => {
         }
 
         try {
-            const response = await leaguesAPI.createLeague(newLeagueName.trim(), selectedPositions);
+            const response = await leaguesAPI.createLeague(newLeagueName.trim(), selectedPositions, isPublic);
             if (response.data.success) {
                 showToast('League created successfully!', 'success', 2000);
                 setModalVisible(false);
                 setNewLeagueName('');
                 setSelectedPositions([10]);
+                setIsPublic(false);
                 loadLeagues();
             }
         } catch (error) {
             showToast('Failed to create league. Please try again.', 'error');
         }
     };
-
 
     const navigateToLeagueDetail = (league: League) => {
         // Navigate to league detail screen
@@ -98,208 +108,330 @@ const LeaguesScreen = () => {
         }
     };
 
-    const getPositionLabel = (position: number) => {
-        switch (position) {
-            case 1: return 'P1';
-            case 2: return 'P2';
-            case 3: return 'P3';
-            case 4: return 'P4';
-            case 5: return 'P5';
-            case 6: return 'P6';
-            case 7: return 'P7';
-            case 8: return 'P8';
-            case 9: return 'P9';
-            case 10: return 'P10';
-            default: return `P${position}`;
+    const resetModal = () => {
+        setModalVisible(false);
+        setNewLeagueName('');
+        setSelectedPositions([10]);
+        setIsPublic(false);
+    };
+
+    const renderLeagueCard = (league: League, isPublicLeague: boolean = false) => {
+        if (isPublicLeague) {
+            // Public League Card - Non-clickable, limited info, join button
+            return (
+                <View key={league.id} style={styles.leagueCard}>
+                    <View style={styles.leagueCardHeader}>
+                        <Text style={styles.leagueName} numberOfLines={1}>
+                            {league.name}
+                        </Text>
+                        <View style={[
+                            styles.visibilityBadge,
+                            { backgroundColor: Colors.light.success }
+                        ]}>
+                            <Text style={styles.visibilityText}>
+                                Public
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Limited League Info for Public Leagues */}
+                    <View style={styles.leagueStats}>
+                        <View style={styles.statRow}>
+                            <Text style={styles.statLabel}>Members:</Text>
+                            <Text style={styles.statValue}>{league.memberCount || 1}</Text>
+                        </View>
+
+                        {/* Required Positions */}
+                        {league.requiredPositions && league.requiredPositions.length > 0 && (
+                            <View style={styles.statRow}>
+                                <Text style={styles.statLabel}>Positions:</Text>
+                                <View style={styles.positionsContainer}>
+                                    {league.requiredPositions.map((position, index) => (
+                                        <View key={position} style={styles.positionBadge}>
+                                            <Text style={styles.positionText}>P{position}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Activity Level Indicator (vague) */}
+                        <View style={styles.statRow}>
+                            <Text style={styles.statLabel}>Activity Level:</Text>
+                            <Text style={[
+                                styles.statValue,
+                                {
+                                    color: (league.lastTwoRaceWeeksActivity || 0) > 15 ? Colors.light.success :
+                                        (league.lastTwoRaceWeeksActivity || 0) > 8 ? Colors.light.warning : Colors.light.textSecondary
+                                }
+                            ]}>
+                                {(league.lastTwoRaceWeeksActivity || 0) > 15 ? 'Very Active' :
+                                    (league.lastTwoRaceWeeksActivity || 0) > 8 ? 'Active' : 'Quiet'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Join Button */}
+                    <TouchableOpacity
+                        style={styles.joinButton}
+                        onPress={() => {
+                            router.push(`/joinleague/${league.joinCode}` as any);
+                        }}
+                    >
+                        <Text style={styles.joinButtonText}>Join League</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        } else {
+            // My League Card - Clickable, minimal info
+            return (
+                <TouchableOpacity
+                    key={league.id}
+                    style={styles.leagueCard}
+                    onPress={() => navigateToLeagueDetail(league)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.leagueCardHeader}>
+                        <Text style={styles.leagueName} numberOfLines={1}>
+                            {league.name}
+                        </Text>
+                        <View style={[
+                            styles.visibilityBadge,
+                            { backgroundColor: league.isPublic ? Colors.light.success : Colors.light.gray500 }
+                        ]}>
+                            <Text style={styles.visibilityText}>
+                                {league.isPublic ? 'Public' : 'Private'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Minimal League Info for My Leagues */}
+                    <View style={styles.leagueStats}>
+                        <View style={styles.statRow}>
+                            <Text style={styles.statLabel}>Members:</Text>
+                            <Text style={styles.statValue}>{league.memberCount || 1}</Text>
+                        </View>
+
+                        {/* Required Positions */}
+                        {league.requiredPositions && league.requiredPositions.length > 0 && (
+                            <View style={styles.statRow}>
+                                <Text style={styles.statLabel}>Positions:</Text>
+                                <View style={styles.positionsContainer}>
+                                    {league.requiredPositions.map((position, index) => (
+                                        <View key={position} style={styles.positionBadge}>
+                                            <Text style={styles.positionText}>P{position}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            );
         }
     };
 
-    if (authLoading || loading) {
+    if (authLoading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color="#007bff" />
-            </SafeAreaView>
-        );
-    }
-
-    if (error) {
-        return (
-            <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
-                <Text style={styles.errorTitle}>Connection Error</Text>
-                <Text style={styles.errorMessage}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={loadLeagues}>
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
+                    <Text style={styles.loadingText}>Loading...</Text>
+                </View>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <View style={styles.header}>
-                <Text style={styles.title}>My Leagues</Text>
-            </View>
-
-            <View style={[styles.quickActions, { marginTop: spacing.lg, marginBottom: spacing.md }]}>
-                <TouchableOpacity
-                    style={styles.joinButton}
-                    onPress={() => router.push('/join-league')}
-                >
-                    <Text style={styles.joinButtonText}>Join League</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <Text style={styles.createButtonText}>Create League</Text>
-                </TouchableOpacity>
-            </View>
-
+        <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {leagues.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyStateText}>
-                            You haven&apos;t joined any leagues yet.
-                        </Text>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.title}>Leagues</Text>
+                    <Text style={styles.subtitle}>Manage your F1 prediction game</Text>
+                    <View style={styles.headerButtons}>
                         <TouchableOpacity
-                            style={styles.createFirstButton}
+                            style={styles.secondaryButton}
+                            onPress={() => router.push('/join-league' as any)}
+                        >
+                            <Text style={styles.secondaryButtonText}>Join League</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.primaryButton}
                             onPress={() => setModalVisible(true)}
                         >
-                            <Text style={styles.createFirstButtonText}>Create Your First League</Text>
+                            <Text style={styles.primaryButtonText}>Create League</Text>
                         </TouchableOpacity>
                     </View>
-                ) : (
-                    <View style={styles.leaguesList}>
-                        {leagues.map((league) => (
-                            <View key={league.id} style={styles.leagueCard}>
-                                <View style={styles.leagueHeader}>
-                                    <View style={styles.leagueAvatar}>
-                                        <Text style={styles.avatarText}>
-                                            {league.name.charAt(0).toUpperCase()}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.leagueInfo}>
-                                        <Text style={styles.leagueName}>{league.name}</Text>
-                                        <Text style={styles.leagueDetails}>
-                                            Season 2025 • {league.memberCount || 0} members
-                                        </Text>
-                                    </View>
-                                    <View style={styles.statusTag}>
-                                        <Text style={styles.statusTagText}>
-                                            {league.ownerId === 1 ? 'Owner' : 'Member'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View style={styles.leagueActions}>
-                                    <TouchableOpacity
-                                        style={styles.viewLeagueButton}
-                                        onPress={() => navigateToLeagueDetail(league)}
-                                    >
-                                        <Text style={styles.viewLeagueButtonText}>View League</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={styles.makePicksButton}
-                                        onPress={() => router.push('/(tabs)/picks' as any)}
-                                    >
-                                        <Text style={styles.makePicksButtonText}>Make Picks</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))}
+                </View>
+
+                {/* My Leagues Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>My Leagues</Text>
+                    {myLeagues.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyStateText}>
+                                You haven&apos;t joined any leagues yet.
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.createFirstButton}
+                                onPress={() => setModalVisible(true)}
+                            >
+                                <Text style={styles.createFirstButtonText}>
+                                    Create Your First League
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.leaguesGrid}>
+                            {myLeagues.map(league => renderLeagueCard(league, false))}
+                        </View>
+                    )}
+                </View>
+
+                {/* Public Leagues Section */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Public Leagues</Text>
+                        <Text style={styles.sectionSubtitle}>
+                            Browse and join public leagues • Limited preview only
+                        </Text>
+                    </View>
+                    {publicLeagues.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyStateText}>
+                                No public leagues available to join.
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.leaguesGrid}>
+                            {publicLeagues.map(league => renderLeagueCard(league, true))}
+                        </View>
+                    )}
+                </View>
+
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={loadLeagues}>
+                            <Text style={styles.retryButtonText}>Retry</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
             </ScrollView>
 
+            {/* Create League Modal */}
             <Modal
+                visible={modalVisible}
                 animationType="slide"
                 transparent={true}
-                visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Create New League</Text>
-                            <TouchableOpacity
-                                style={styles.modalCloseButton}
-                                onPress={() => {
-                                    setModalVisible(false);
-                                    setNewLeagueName('');
-                                    setSelectedPositions([10]);
-                                }}
-                            >
-                                <Text style={styles.modalCloseButtonText}>✕</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.modalSubtitle}>
-                            Create a new F1 prediction league and invite friends to join
-                        </Text>
+                        <Text style={styles.modalTitle}>Create New League</Text>
+
+                        {/* League Name Input */}
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>League Name</Text>
                             <TextInput
-                                style={styles.modalInput}
-                                placeholder="Enter league name"
+                                style={styles.textInput}
                                 value={newLeagueName}
                                 onChangeText={setNewLeagueName}
-                                autoFocus
+                                placeholder="Enter league name"
+                                placeholderTextColor={Colors.light.textSecondary}
                             />
                         </View>
 
+                        {/* League Visibility */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Select Positions</Text>
-                            <Text style={styles.inputSubtitle}>
-                                Choose up to 2 positions players will pick for this league
-                            </Text>
-                            <View style={styles.positionsGrid}>
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((position) => {
-                                    const isSelected = selectedPositions.includes(position);
-                                    const isDisabled = !isSelected && selectedPositions.length >= 2;
-
-                                    return (
-                                        <TouchableOpacity
-                                            key={position}
-                                            style={[
-                                                styles.positionOption,
-                                                isSelected && styles.positionOptionSelected,
-                                                isDisabled && styles.positionOptionDisabled
-                                            ]}
-                                            onPress={() => togglePosition(position)}
-                                            disabled={isDisabled}
-                                        >
-                                            <Text style={[
-                                                styles.positionOptionText,
-                                                isSelected && styles.positionOptionTextSelected,
-                                                isDisabled && styles.positionOptionTextDisabled
-                                            ]}>
-                                                {getPositionLabel(position)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
+                            <Text style={styles.inputLabel}>League Visibility</Text>
+                            <View style={styles.visibilityOptions}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.visibilityOption,
+                                        !isPublic && styles.visibilityOptionSelected
+                                    ]}
+                                    onPress={() => setIsPublic(false)}
+                                >
+                                    <Text style={[
+                                        styles.visibilityOptionText,
+                                        !isPublic && styles.visibilityOptionTextSelected
+                                    ]}>
+                                        Private
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.visibilityOption,
+                                        isPublic && styles.visibilityOptionSelected
+                                    ]}
+                                    onPress={() => setIsPublic(true)}
+                                >
+                                    <Text style={[
+                                        styles.visibilityOptionText,
+                                        isPublic && styles.visibilityOptionTextSelected
+                                    ]}>
+                                        Public
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
-                            <Text style={styles.selectedCount}>
-                                {selectedPositions.length} position{selectedPositions.length !== 1 ? 's' : ''} selected
+                            <Text style={styles.visibilityHelpText}>
+                                {isPublic
+                                    ? 'Anyone can discover and join your league'
+                                    : 'Only people with the join code can join your league'
+                                }
                             </Text>
                         </View>
-                        <View style={styles.modalButtons}>
+
+                        {/* Position Selection */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Required Positions</Text>
+                            <View style={styles.positionsGrid}>
+                                {Array.from({ length: 20 }, (_, i) => i + 1).map((position) => (
+                                    <TouchableOpacity
+                                        key={position}
+                                        style={[
+                                            styles.positionButton,
+                                            selectedPositions.includes(position) && styles.positionButtonSelected
+                                        ]}
+                                        onPress={() => togglePosition(position)}
+                                    >
+                                        <Text style={[
+                                            styles.positionButtonText,
+                                            selectedPositions.includes(position) && styles.positionButtonTextSelected
+                                        ]}>
+                                            P{position}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            <Text style={styles.positionsHelpText}>
+                                Select 1-2 positions that league members must predict
+                            </Text>
+                        </View>
+
+                        {/* Modal Actions */}
+                        <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={styles.modalCancelButton}
-                                onPress={() => {
-                                    setModalVisible(false);
-                                    setNewLeagueName('');
-                                    setSelectedPositions([10]);
-                                }}
+                                style={styles.cancelButton}
+                                onPress={resetModal}
                             >
-                                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.modalCreateButton}
+                                style={[
+                                    styles.createButton,
+                                    (!newLeagueName.trim() || selectedPositions.length === 0) && styles.createButtonDisabled
+                                ]}
                                 onPress={createLeague}
+                                disabled={!newLeagueName.trim() || selectedPositions.length === 0}
                             >
-                                <Text style={styles.modalCreateButtonText}>Create League</Text>
+                                <Text style={styles.createButtonText}>Create League</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -312,257 +444,181 @@ const LeaguesScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: Platform.OS === 'android' ? 0 : 0,
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 100, // Add padding to the bottom to prevent content from being covered by the tab bar
+        paddingBottom: 120, // Account for tab bar height (iOS: 88+20, Android: 70+8+insets)
+    },
+    header: {
+        padding: spacing.lg,
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.light.borderLight,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        marginBottom: spacing.lg,
+    },
+    headerButtons: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    primaryButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        flex: 1,
+        alignItems: 'center',
+    },
+    primaryButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButton: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        flex: 1,
+        alignItems: 'center',
+    },
+    secondaryButtonText: {
+        color: Colors.light.textSecondary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    section: {
+        padding: spacing.lg,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.md,
+    },
+    sectionSubtitle: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        marginTop: spacing.xs,
+    },
+    sectionHeader: {
+        marginBottom: spacing.md,
+    },
+    leaguesGrid: {
+        gap: spacing.md,
+    },
+    leagueCard: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    leagueCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    leagueName: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        flex: 1,
+        marginRight: spacing.sm,
+    },
+    visibilityBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+    },
+    visibilityText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.light.textInverse,
+    },
+    memberCount: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        marginBottom: spacing.sm,
+    },
+    joinButton: {
+        backgroundColor: Colors.light.buttonSuccess,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        alignSelf: 'flex-start',
+    },
+    joinButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: spacing.xl,
+    },
+    emptyStateText: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    createFirstButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+    },
+    createFirstButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    errorContainer: {
+        alignItems: 'center',
+        padding: spacing.lg,
+    },
+    errorText: {
+        fontSize: 16,
+        color: Colors.light.error,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    retryButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#f5f5f5',
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#dc3545',
-        marginBottom: 10,
-    },
-    errorMessage: {
+    loadingText: {
+        marginTop: spacing.md,
         fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    retryButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 12,
-        paddingHorizontal: 20,
-    },
-    retryButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    header: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-    },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
-    createButton: {
-        backgroundColor: '#007bff',
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        flex: 1,
-    },
-    createButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    joinButton: {
-        backgroundColor: 'transparent',
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderWidth: 1,
-        borderColor: '#007bff',
-        flex: 1,
-    },
-    joinButtonText: {
-        color: '#007bff',
-        fontSize: 14,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    createFirstButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 12,
-        paddingHorizontal: 20,
-    },
-    createFirstButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    leaguesList: {
-        padding: 20,
-    },
-    leagueCard: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    leagueHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    leagueAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#007bff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    avatarText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    leagueInfo: {
-        flex: 1,
-    },
-    leagueName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
-    },
-    leagueDetails: {
-        fontSize: 14,
-        color: '#666',
-    },
-    statusTag: {
-        backgroundColor: '#e3f2fd',
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    statusTagText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#007bff',
-    },
-
-    memberBadge: {
-        backgroundColor: '#4CAF50',
-        borderRadius: 5,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        alignSelf: 'flex-start',
-        marginTop: 8,
-    },
-    memberBadgeText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    joinBadge: {
-        backgroundColor: '#FF9800',
-        borderRadius: 5,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        alignSelf: 'flex-start',
-        marginTop: 8,
-    },
-    joinBadgeText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    leagueActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    shareButton: {
-        backgroundColor: '#e0e0e0',
-        borderRadius: 6,
-        padding: 8,
-        paddingHorizontal: 12,
-    },
-    shareButtonText: {
-        color: '#333',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    emptyState: {
-        alignItems: 'center',
-        padding: 40,
-        backgroundColor: 'white',
-        borderRadius: 10,
-        marginTop: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    emptyStateText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    viewLeagueButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 10,
-        paddingHorizontal: 15,
-        flex: 1,
-        marginRight: 8,
-    },
-    viewLeagueButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    makePicksButton: {
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
-        padding: 10,
-        paddingHorizontal: 15,
-        flex: 1,
-        marginLeft: 8,
-    },
-    makePicksButtonText: {
-        color: '#666',
-        fontSize: 14,
-        fontWeight: 'bold',
-        textAlign: 'center',
+        color: Colors.light.textSecondary,
     },
     modalOverlay: {
         flex: 1,
@@ -571,155 +627,170 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 24,
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
         width: '90%',
-        maxWidth: 400,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
+        maxHeight: '80%',
     },
     modalTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    modalCloseButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#f0f0f0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalCloseButtonText: {
-        fontSize: 18,
-        color: '#666',
-        fontWeight: 'bold',
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.lg,
         textAlign: 'center',
-        lineHeight: 18,
-    },
-    modalSubtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 24,
-        lineHeight: 20,
     },
     inputContainer: {
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     inputLabel: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.sm,
     },
-    inputSubtitle: {
-        fontSize: 12,
-        color: '#666',
-        marginBottom: 16,
-        lineHeight: 16,
+    textInput: {
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        fontSize: 16,
+        color: Colors.light.textPrimary,
+    },
+    visibilityOptions: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    visibilityOption: {
+        flex: 1,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        alignItems: 'center',
+    },
+    visibilityOptionSelected: {
+        backgroundColor: Colors.light.buttonPrimary,
+        borderColor: Colors.light.buttonPrimary,
+    },
+    visibilityOptionText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textSecondary,
+    },
+    visibilityOptionTextSelected: {
+        color: Colors.light.textInverse,
+    },
+    visibilityHelpText: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        fontStyle: 'italic',
     },
     positionsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 12,
+        gap: spacing.xs,
+        marginBottom: spacing.sm,
     },
-    positionOption: {
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+    positionButton: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
         borderWidth: 1,
-        borderColor: '#ddd',
-        minWidth: 45,
+        borderColor: Colors.light.borderLight,
+        backgroundColor: Colors.light.backgroundSecondary,
+        minWidth: 50,
         alignItems: 'center',
     },
-    positionOptionSelected: {
-        backgroundColor: '#007bff',
-        borderColor: '#007bff',
+    positionButtonSelected: {
+        backgroundColor: Colors.light.buttonPrimary,
+        borderColor: Colors.light.buttonPrimary,
     },
-    positionOptionDisabled: {
-        backgroundColor: '#f8f8f8',
-        borderColor: '#e0e0e0',
-        opacity: 0.5,
+    positionButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.light.textSecondary,
     },
-    positionOptionText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#666',
+    positionButtonTextSelected: {
+        color: Colors.light.textInverse,
     },
-    positionOptionTextSelected: {
-        color: 'white',
+    positionsHelpText: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        fontStyle: 'italic',
     },
-    positionOptionTextDisabled: {
-        color: '#ccc',
-    },
-    selectedCount: {
-        fontSize: 12,
-        color: '#007bff',
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    modalInput: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: '#f9f9f9',
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    modalCancelButton: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 8,
-        padding: 12,
-        marginRight: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    modalCancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    modalCreateButton: {
-        flex: 1,
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 12,
-        marginLeft: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    modalCreateButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    description: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: spacing.lg,
-        marginBottom: spacing.lg,
-        paddingHorizontal: spacing.lg,
-    },
-    quickActions: {
+    modalActions: {
         flexDirection: 'row',
         gap: spacing.md,
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.lg,
+        marginTop: spacing.lg,
+    },
+    cancelButton: {
+        flex: 1,
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textSecondary,
+    },
+    createButton: {
+        flex: 1,
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        alignItems: 'center',
+    },
+    createButtonDisabled: {
+        backgroundColor: Colors.light.gray500,
+    },
+    createButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textInverse,
+    },
+    leagueStats: {
+        marginTop: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+    statRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+    },
+    statLabel: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+    },
+    statValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+    },
+    positionsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+    },
+    positionBadge: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    positionText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.light.textSecondary,
     },
 });
 

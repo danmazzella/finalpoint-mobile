@@ -343,11 +343,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
 
             if (response.data.success && user) {
-                // Extract filename from the backend response URL
+                // Don't strip the avatar path - the backend returns the correct format
                 const avatarUrl = response.data.avatar;
-                const filename = avatarUrl ? avatarUrl.split('/').pop() : null;
-
-                const updatedUser = { ...user, avatar: filename };
+                const updatedUser = { ...user, avatar: avatarUrl };
                 setUser(updatedUser);
                 await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
                 return true;

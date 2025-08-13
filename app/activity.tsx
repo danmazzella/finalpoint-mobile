@@ -82,6 +82,8 @@ const ActivityScreen = () => {
                 return '🏆';
             case 'league_name_changed':
                 return '✏️';
+            case 'league_visibility_changed':
+                return '🌐';
             case 'race_result_processed':
                 return '🏁';
             default:
@@ -106,6 +108,8 @@ const ActivityScreen = () => {
                 return 'League created';
             case 'league_name_changed':
                 return `${activity.userName} changed the league name`;
+            case 'league_visibility_changed':
+                return `${activity.userName} changed the league visibility`;
             case 'race_result_processed':
                 return `Race results processed for Week ${activity.weekNumber || 'Unknown'}`;
             default:
@@ -140,6 +144,8 @@ const ActivityScreen = () => {
                 return 'League created successfully';
             case 'league_name_changed':
                 return 'League settings updated';
+            case 'league_visibility_changed':
+                return 'League visibility updated';
             case 'race_result_processed':
                 return `${activity.raceName || 'Unknown Race'} - ${activity.driverName || 'Unknown'} (${activity.driverTeam || 'Unknown'}) finished P${activity.position || '?'}`;
             default:

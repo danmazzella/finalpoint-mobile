@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ImageErrorEventData, NativeSyntheticEvent } from 'react-native';
-import Colors from '../../constants/Colors';
+import { getBaseUrl } from '../services/apiService';
 
 interface AvatarProps {
     src?: string | null;
@@ -20,14 +20,15 @@ const getAvatarUrl = (avatarPath: string | null | undefined): string | null => {
         return avatarPath;
     }
 
+    // Get base URL from API service
+    const baseUrl = getBaseUrl();
+
     // If it starts with /uploads/avatars/, it's already a full path, just add the base URL
     if (avatarPath.startsWith('/uploads/avatars/')) {
-        const baseUrl = 'http://192.168.0.15:6075';
         return `${baseUrl}${avatarPath}`;
     }
 
     // For relative paths (just filename), construct the full URL
-    const baseUrl = 'http://192.168.0.15:6075';
     const url = `${baseUrl}/uploads/avatars/${avatarPath}`;
     return url;
 };
@@ -77,7 +78,7 @@ const Avatar: React.FC<AvatarProps> = ({
 const styles = StyleSheet.create({
     image: {
         borderRadius: 999, // Makes it circular
-        backgroundColor: Colors.light.backgroundSecondary,
+        backgroundColor: '#ffffff',
     },
     fallback: {
         borderRadius: 999,
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     fallbackText: {
-        color: Colors.light.textInverse, // White text on blue background
+        color: '#ffffff', // White text on blue background
         fontWeight: 'bold',
     },
 });

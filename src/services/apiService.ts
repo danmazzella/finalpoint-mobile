@@ -6,11 +6,26 @@ import { PickV2, NotificationPreferences } from '../types';
 const getApiBaseUrl = () => {
     // Use environment variable if available, otherwise fall back to hardcoded values
     if (process.env.EXPO_PUBLIC_API_URL) {
-        return process.env.EXPO_PUBLIC_API_URL;
+        // Ensure the URL ends with /api if it doesn't already
+        const url = process.env.EXPO_PUBLIC_API_URL;
+        if (!url.endsWith('/api')) {
+            return url.endsWith('/') ? url + 'api' : url + '/api';
+        }
+        return url;
     }
 
     // Fallback for development vs production
-    return __DEV__ ? 'http://192.168.0.15:6075' : 'https://api.finalpoint.app';
+    if (__DEV__) {
+        return 'http://192.168.0.15:6075/api';
+    } else {
+        return 'https://api.finalpoint.app/api';
+    }
+};
+
+// Helper function to get base URL without /api suffix (for avatar URLs)
+export const getBaseUrl = () => {
+    const apiUrl = getApiBaseUrl();
+    return apiUrl.replace('/api', '');
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -130,8 +145,9 @@ export const adminAPI = {
 
 export const leaguesAPI = {
     getLeagues: () => apiService.get('/leagues/get'),
-    createLeague: (name: string, positions: number[] = []) =>
-        apiService.post('/leagues/create', { name, positions }),
+    getPublicLeagues: () => apiService.get('/leagues/public'),
+    createLeague: (name: string, positions: number[] = [], isPublic: boolean = false) =>
+        apiService.post('/leagues/create', { name, positions, isPublic }),
     getLeague: (leagueId: number) => apiService.get(`/leagues/get/${leagueId}`),
     joinLeague: (leagueId: number) => apiService.post(`/leagues/${leagueId}/join`),
     joinByCode: (joinCode: string) => apiService.post('/leagues/join-by-code', { joinCode }),
@@ -141,8 +157,8 @@ export const leaguesAPI = {
     getDetailedLeagueStandings: (leagueId: number) =>
         apiService.get(`/leagues/${leagueId}/standings/detailed`),
     getLeagueStats: (leagueId: number) => apiService.get(`/leagues/${leagueId}/stats`),
-    updateLeague: (leagueId: number, name: string) =>
-        apiService.put(`/leagues/${leagueId}`, { name }),
+    updateLeague: (leagueId: number, name: string, isPublic?: boolean) =>
+        apiService.put(`/leagues/${leagueId}`, { name, isPublic }),
     deleteLeague: (leagueId: number) => apiService.delete(`/leagues/${leagueId}`),
     leaveLeague: (leagueId: number) => apiService.post(`/leagues/${leagueId}/leave`),
 };

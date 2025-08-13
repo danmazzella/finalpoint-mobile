@@ -1,9 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, router, usePathname } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Platform, View, Text } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
@@ -12,6 +10,7 @@ import { useColorScheme } from '../hooks/useColorScheme';
 import { NotificationProvider } from '../components/NotificationProvider';
 
 import SimpleToast from '../components/SimpleToast';
+import StatusBarWrapper from '../components/StatusBarWrapper';
 import { shouldEnableNotifications, logEnvironmentInfo } from '../utils/environment';
 
 // Conditionally initialize Firebase configuration
@@ -117,62 +116,61 @@ function AppContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBar style="light" backgroundColor={Platform.OS === 'android' ? '#007bff' : undefined} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          header: () => null,
-        }}
-      >
-        {user ? (
-          // Authenticated user - show main app
-          <>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-            <Stack.Screen name="activity" options={{ headerShown: false }} />
-            <Stack.Screen name="admin" options={{ headerShown: false }} />
-            <Stack.Screen name="notifications" options={{ headerShown: false }} />
-            <Stack.Screen name="race-results" options={{ headerShown: false }} />
-            <Stack.Screen name="position-results" options={{ headerShown: false }} />
-            <Stack.Screen name="member-picks" options={{ headerShown: false }} />
-            <Stack.Screen name="league" options={{ headerShown: false }} />
-            <Stack.Screen name="join-league" options={{ headerShown: false }} />
-            <Stack.Screen name="change-password" options={{ headerShown: false }} />
-            <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-          </>
-        ) : (
-          // Not authenticated - show auth screens
-          <>
-            <Stack.Screen
-              name="login"
-              options={{
-                headerShown: false,
-                header: () => null,
-                presentation: 'modal'
-              }}
-            />
-            <Stack.Screen
-              name="signup"
-              options={{
-                headerShown: false,
-                header: () => null,
-                presentation: 'modal'
-              }}
-            />
-          </>
-        )}
-      </Stack>
+      <StatusBarWrapper style="light">
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            header: () => null,
+          }}
+        >
+          {user ? (
+            // Authenticated user - show main app
+            <>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+              <Stack.Screen name="activity" options={{ headerShown: false }} />
+              <Stack.Screen name="admin" options={{ headerShown: false }} />
+              <Stack.Screen name="notifications" options={{ headerShown: false }} />
+              <Stack.Screen name="race-results" options={{ headerShown: false }} />
+              <Stack.Screen name="position-results" options={{ headerShown: false }} />
+              <Stack.Screen name="member-picks" options={{ headerShown: false }} />
+              <Stack.Screen name="league" options={{ headerShown: false }} />
+              <Stack.Screen name="join-league" options={{ headerShown: false }} />
+              <Stack.Screen name="change-password" options={{ headerShown: false }} />
+              <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+            </>
+          ) : (
+            // Not authenticated - show auth screens
+            <>
+              <Stack.Screen
+                name="login"
+                options={{
+                  headerShown: false,
+                  header: () => null,
+                  presentation: 'modal'
+                }}
+              />
+              <Stack.Screen
+                name="signup"
+                options={{
+                  headerShown: false,
+                  header: () => null,
+                  presentation: 'modal'
+                }}
+              />
+            </>
+          )}
+        </Stack>
 
-      {/* Toast Component - rendered outside Stack but inside ThemeProvider */}
-      <SimpleToast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onHide={hideToast}
-        duration={toast.duration}
-      />
-
-
+        {/* Toast Component - rendered outside Stack but inside ThemeProvider */}
+        <SimpleToast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onHide={hideToast}
+          duration={toast.duration}
+        />
+      </StatusBarWrapper>
     </ThemeProvider>
   );
 }

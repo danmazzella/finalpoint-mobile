@@ -18,19 +18,21 @@ import { useNotificationContext } from '../components/NotificationProvider';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
-
+import { shouldEnableNotifications } from '../utils/environment';
 
 const NotificationSettingsScreen = () => {
   const { user } = useAuth();
 
-  // Always call the hook (React requirement)
+  // Always call the hook (React requirement), but handle the case where it's not available
   const notificationContext = useNotificationContext();
 
+  // Check if notifications are supported in this environment
+  const notificationsSupported = shouldEnableNotifications();
 
 
-  const {
-    showLocalNotification,
-  } = notificationContext;
+
+  // Safely extract values from context
+  const showLocalNotification = notificationsSupported ? notificationContext?.showLocalNotification : undefined;
 
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     emailReminders: true,
@@ -142,6 +144,11 @@ const NotificationSettingsScreen = () => {
   const testNotification = async (type: 'email' | 'push') => {
     try {
       if (type === 'push') {
+        if (!notificationsSupported || !showLocalNotification) {
+          Alert.alert('Not Available', 'Push notifications are not available in Expo Go. Please use a development build to test this feature.');
+          return;
+        }
+
         await showLocalNotification(
           'Test Push Notification',
           'This is a test push notification from FinalPoint!',
@@ -319,6 +326,14 @@ const NotificationSettingsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Push Notification Preferences</Text>
 
+          {!notificationsSupported && (
+            <View style={styles.expoGoWarning}>
+              <Text style={styles.expoGoWarningText}>
+                ⚠️ Push notifications are not available in Expo Go. Please use a development build to configure push notifications.
+              </Text>
+            </View>
+          )}
+
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
               <Text style={styles.settingTitle}>Race Reminders</Text>
@@ -329,6 +344,7 @@ const NotificationSettingsScreen = () => {
             <Switch
               value={preferences.pushReminders}
               onValueChange={(value) => handlePreferenceChange('pushReminders', value)}
+              disabled={!notificationsSupported}
               trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
               thumbColor={preferences.pushReminders ? Colors.light.textInverse : Colors.light.gray100}
             />
@@ -395,6 +411,7 @@ const NotificationSettingsScreen = () => {
             <Switch
               value={preferences.pushScoreUpdates}
               onValueChange={(value) => handlePreferenceChange('pushScoreUpdates', value)}
+              disabled={!notificationsSupported}
               trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
               thumbColor={preferences.pushScoreUpdates ? Colors.light.textInverse : Colors.light.gray100}
             />
@@ -411,6 +428,7 @@ const NotificationSettingsScreen = () => {
             <Switch
               value={preferences.pushOther}
               onValueChange={(value) => handlePreferenceChange('pushOther', value)}
+              disabled={!notificationsSupported}
               trackColor={{ false: Colors.light.gray300, true: Colors.light.primary }}
               thumbColor={preferences.pushOther ? Colors.light.textInverse : Colors.light.gray100}
             />
@@ -433,8 +451,9 @@ const NotificationSettingsScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.testButton}
+              style={[styles.testButton, !notificationsSupported && styles.saveButtonDisabled]}
               onPress={() => testNotification('push')}
+              disabled={!notificationsSupported}
             >
               <Text style={styles.testButtonText}>Test Push</Text>
             </TouchableOpacity>
@@ -612,8 +631,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-
-
+  expoGoWarning: {
+    backgroundColor: Colors.light.warningLight,
+    borderWidth: 1,
+    borderColor: Colors.light.warning,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  expoGoWarningText: {
+    color: Colors.light.warningDark,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
 
 export default NotificationSettingsScreen;

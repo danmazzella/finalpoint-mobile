@@ -3,7 +3,7 @@
     "name": "FinalPoint",
     "slug": "finalpoint-mobile",
     "version": "1.0.8",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "finalpoint",
     "web": {
       "bundler": "metro",
@@ -39,10 +39,11 @@
         "foregroundImage": "./assets/android-icons/playstore-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
       "package": "com.finalpoint.mobile",
       "versionCode": 15,
       "label": "FinalPoint",
+      "resizeableActivity": true,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -90,7 +91,8 @@
           "android": {
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
-            "enableShrinkResourcesInReleaseBuilds": false
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enableEdgeToEdge": true
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"

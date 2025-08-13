@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
-import { useToast } from '../../src/context/ToastContext';
+import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { leaguesAPI, authAPI } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router } from 'expo-router';
@@ -21,7 +21,7 @@ import { spacing, borderRadius, shadows, cardStyles, textStyles } from '../../ut
 
 const HomeScreen = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { showToast } = useToast();
+  const { showToast } = useSimpleToast();
 
   // Determine base URL for web app based on environment
   const getBaseUrl = () => {

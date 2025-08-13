@@ -1,17 +1,17 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
-import { ToastProvider, useToast } from '../src/context/ToastContext';
+import { SimpleToastProvider, useSimpleToast } from '../src/context/SimpleToastContext';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { NotificationProvider } from '../components/NotificationProvider';
 
-import Toast from '../components/Toast';
+import SimpleToast from '../components/SimpleToast';
 import { shouldEnableNotifications, logEnvironmentInfo } from '../utils/environment';
 
 // Conditionally initialize Firebase configuration
@@ -26,9 +26,10 @@ if (shouldEnableNotifications()) {
 logEnvironmentInfo();
 
 function AppContent() {
-  const { user, isLoading } = useAuth();
-  const { toast, hideToast } = useToast();
+  const { user, isLoading, isAuthenticating } = useAuth();
+  const { toast, hideToast } = useSimpleToast();
   const colorScheme = useColorScheme();
+  const pathname = usePathname();
 
   // Notification handlers (only active when notifications are enabled)
   const handleNotificationReceived = (notification: any) => {
@@ -87,11 +88,28 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    // If not loading and no user, redirect to login
-    if (!isLoading && !user) {
+    // Prevent redirects when on auth pages or when authentication is in progress
+    if (pathname === '/login' || pathname === '/signup') {
+      return;
+    }
+
+    if (isAuthenticating) {
+      return;
+    }
+
+    if (isLoading) {
+      return;
+    }
+
+    if (user) {
+      return;
+    }
+
+    // If we get here, we need to redirect to login
+    if (!user) {
       router.replace('/login');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, isAuthenticating, pathname]);
 
   if (isLoading) {
     return null; // Show loading screen
@@ -145,14 +163,16 @@ function AppContent() {
         )}
       </Stack>
 
-      {/* Toast Component */}
-      <Toast
+      {/* Toast Component - rendered outside Stack but inside ThemeProvider */}
+      <SimpleToast
         message={toast.message}
         type={toast.type}
         isVisible={toast.isVisible}
-        onClose={hideToast}
+        onHide={hideToast}
         duration={toast.duration}
       />
+
+
     </ThemeProvider>
   );
 }
@@ -187,7 +207,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ToastProvider>
+        <SimpleToastProvider>
           {shouldEnableNotifications() ? (
             <NotificationProvider
               autoRegister={false}
@@ -203,7 +223,7 @@ export default function RootLayout() {
           ) : (
             <RootLayoutNav />
           )}
-        </ToastProvider>
+        </SimpleToastProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useToast } from '../../../src/context/ToastContext';
+import { useSimpleToast } from '../../../src/context/SimpleToastContext';
 import Colors from '../../../constants/Colors';
 import { spacing, borderRadius, shadows } from '../../../utils/styles';
 import { leaguesAPI } from '../../../src/services/apiService';
@@ -46,7 +46,7 @@ interface League {
 export default function StandingsPage() {
     const params = useLocalSearchParams();
     const router = useRouter();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const leagueId = params.id as string;
 
     const [league, setLeague] = useState<League | null>(null);

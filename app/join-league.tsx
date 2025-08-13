@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    Alert,
     ActivityIndicator,
     Platform,
 } from 'react-native';
@@ -13,29 +12,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { leaguesAPI } from '../src/services/apiService';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 
 const JoinLeagueScreen = () => {
+    const { showToast } = useSimpleToast();
     const [joinCode, setJoinCode] = useState('');
     const [loading, setLoading] = useState(false);
 
     const joinLeague = async () => {
         if (!joinCode.trim()) {
-            Alert.alert('Error', 'Please enter a join code');
+            showToast('Please enter a join code', 'error');
             return;
         }
 
         try {
             setLoading(true);
-            const response = await leaguesAPI.joinLeague(joinCode.trim());
+            const response = await leaguesAPI.joinByCode(joinCode.trim());
             if (response.data.success) {
-                Alert.alert('Success', 'Successfully joined the league!');
+                showToast('Successfully joined the league!', 'success', 2000);
                 router.back();
             } else {
-                Alert.alert('Error', response.data.message || 'Failed to join league');
+                showToast(response.data.message || 'Failed to join league', 'error');
             }
         } catch (error: any) {
             console.error('Error joining league:', error);
-            Alert.alert('Error', 'Failed to join league. Please check the join code and try again.');
+            showToast('Failed to join league. Please check the join code and try again.', 'error');
         } finally {
             setLoading(false);
         }

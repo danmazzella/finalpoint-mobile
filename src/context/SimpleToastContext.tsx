@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
-interface ToastContextType {
+interface SimpleToastContextType {
     showToast: (message: string, type: 'success' | 'error' | 'info' | 'warning', duration?: number) => void;
     hideToast: () => void;
     toast: {
@@ -11,12 +11,11 @@ interface ToastContextType {
     };
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+const SimpleToastContext = createContext<SimpleToastContextType | undefined>(undefined);
 
-export const useToast = () => {
-    const context = useContext(ToastContext);
+export const useSimpleToast = () => {
+    const context = useContext(SimpleToastContext);
     if (!context) {
-        // Return default values instead of throwing an error
         return {
             showToast: () => { },
             hideToast: () => { },
@@ -24,29 +23,29 @@ export const useToast = () => {
                 message: '',
                 type: 'info' as 'success' | 'error' | 'info' | 'warning',
                 isVisible: false,
-                duration: 6000,
+                duration: 10000,
             },
         };
     }
     return context;
 };
 
-interface ToastProviderProps {
+interface SimpleToastProviderProps {
     children: React.ReactNode;
 }
 
-export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
+export const SimpleToastProvider: React.FC<SimpleToastProviderProps> = ({ children }) => {
     const [toast, setToast] = useState({
         message: '',
-        type: 'info' as const,
+        type: 'info' as 'success' | 'error' | 'info' | 'warning',
         isVisible: false,
-        duration: 6000,
+        duration: 10000,
     });
 
     const showToast = useCallback((
         message: string,
         type: 'success' | 'error' | 'info' | 'warning',
-        duration: number = 6000
+        duration: number = 10000
     ) => {
         setToast({
             message,
@@ -70,8 +69,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     };
 
     return (
-        <ToastContext.Provider value={value}>
+        <SimpleToastContext.Provider value={value}>
             {children}
-        </ToastContext.Provider>
+        </SimpleToastContext.Provider>
     );
 };

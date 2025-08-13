@@ -12,14 +12,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { useToast } from '../src/context/ToastContext';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
 
 const EditProfileScreen = () => {
     const { user, updateProfile } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const [name, setName] = useState(user?.name || '');
     const [isLoading, setIsLoading] = useState(false);
 

@@ -16,14 +16,14 @@ import { authAPI, apiService } from '../../src/services/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
-import { useToast } from '../../src/context/ToastContext';
+import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius } from '../../utils/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = () => {
     const { user, logout, refreshUser } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0); // Force re-render when avatar updates
 
@@ -236,6 +236,14 @@ const ProfileScreen = () => {
                         <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
                     </TouchableOpacity>
 
+                    <TouchableOpacity
+                        style={[styles.menuItem, styles.deleteAccountItem]}
+                        onPress={() => router.push('/delete-account')}
+                    >
+                        <Text style={styles.deleteAccountText}>Delete Account</Text>
+                        <Ionicons name="chevron-forward" size={16} color={Colors.light.error} />
+                    </TouchableOpacity>
+
                     {user?.role === 'admin' && (
                         <TouchableOpacity
                             style={styles.menuItem}
@@ -388,6 +396,13 @@ const styles = StyleSheet.create({
     footerSubtext: {
         fontSize: 12,
         color: Colors.light.textTertiary,
+    },
+    deleteAccountItem: {
+        borderBottomWidth: 0,
+    },
+    deleteAccountText: {
+        fontSize: 16,
+        color: Colors.light.error,
     },
 
 });

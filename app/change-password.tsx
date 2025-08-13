@@ -14,14 +14,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { useToast } from '../src/context/ToastContext';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
 
 const ChangePasswordScreen = () => {
     const { changePassword } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -211,56 +211,27 @@ const ChangePasswordScreen = () => {
                         {newPassword.length > 0 && (
                             <View style={styles.requirementsContainer}>
                                 <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={passwordValidation.score >= 1 ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={passwordValidation.score >= 1 ? Colors.light.success : Colors.light.error}
-                                    />
-                                    <Text style={[styles.requirementText, passwordValidation.score >= 1 && styles.requirementMet]}>
-                                        At least 8 characters
-                                    </Text>
-                                </View>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={passwordValidation.score >= 2 ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={passwordValidation.score >= 2 ? Colors.light.success : Colors.light.error}
-                                    />
-                                    <Text style={[styles.requirementText, passwordValidation.score >= 2 && styles.requirementMet]}>
-                                        Contains lowercase letter
-                                    </Text>
-                                </View>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={passwordValidation.score >= 3 ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={passwordValidation.score >= 3 ? Colors.light.success : Colors.light.error}
-                                    />
-                                    <Text style={[styles.requirementText, passwordValidation.score >= 3 && styles.requirementMet]}>
-                                        Contains uppercase letter
-                                    </Text>
-                                </View>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={passwordValidation.score >= 4 ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={passwordValidation.score >= 4 ? Colors.light.success : Colors.light.error}
-                                    />
-                                    <Text style={[styles.requirementText, passwordValidation.score >= 4 && styles.requirementMet]}>
-                                        Contains number
-                                    </Text>
-                                </View>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={passwordValidation.score >= 5 ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={passwordValidation.score >= 5 ? Colors.light.success : Colors.light.error}
-                                    />
-                                    <Text style={[styles.requirementText, passwordValidation.score >= 5 && styles.requirementMet]}>
-                                        Contains special character
-                                    </Text>
-                                </View>
+                                {[
+                                    { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
+                                    { test: (p: string) => /[a-z]/.test(p), label: 'Contains lowercase letter' },
+                                    { test: (p: string) => /[A-Z]/.test(p), label: 'Contains uppercase letter' },
+                                    { test: (p: string) => /\d/.test(p), label: 'Contains number' },
+                                    { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Contains special character' }
+                                ].map((req, index) => {
+                                    const isMet = req.test(newPassword);
+                                    return (
+                                        <View key={index} style={styles.requirementItem}>
+                                            <Ionicons
+                                                name={isMet ? 'checkmark-circle' : 'close-circle'}
+                                                size={16}
+                                                color={isMet ? Colors.light.success : Colors.light.error}
+                                            />
+                                            <Text style={[styles.requirementText, isMet && styles.requirementMet]}>
+                                                {req.label}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
                                 {passwordValidation.errors.some(error =>
                                     error.includes('repeated') ||
                                     error.includes('sequential') ||

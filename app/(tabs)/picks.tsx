@@ -5,13 +5,12 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
     ActivityIndicator,
     RefreshControl,
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useToast } from '../../src/context/ToastContext';
+import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { picksAPI, driversAPI, leaguesAPI, f1racesAPI } from '../../src/services/apiService';
 import { Driver, League, UserPickV2, PickV2, F1Race } from '../../src/types';
@@ -20,7 +19,7 @@ import { spacing } from '../../utils/styles';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState<number | null>(null);
@@ -130,13 +129,13 @@ const PicksScreen = () => {
 
     const makePick = async (position: number, driverId: number) => {
         if (!selectedLeague) {
-            Alert.alert('Error', 'Please select a league first');
+            showToast('Please select a league first', 'error');
             return;
         }
 
         // Check if picks are locked
         if (currentRace?.picksLocked) {
-            Alert.alert('Picks Locked', 'Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.');
+            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
             return;
         }
 
@@ -152,16 +151,16 @@ const PicksScreen = () => {
             // Submit to API
             const response = await picksAPI.makePickV2(selectedLeague, currentWeek, [newPick]);
             if (response.data.success) {
-                Alert.alert('Success', `P${position} pick submitted successfully!`);
+                showToast(`P${position} pick submitted successfully!`, 'success', 2000);
                 await loadUserPicks(); // Refresh picks
             } else {
                 // Revert local state if API call failed
                 setSelectedPicks(selectedPicks);
-                Alert.alert('Error', 'Failed to submit pick. Please try again.');
+                showToast('Failed to submit pick. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error making pick:', error);
-            Alert.alert('Error', 'Failed to submit pick. Please try again.');
+            showToast('Failed to submit pick. Please try again.', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -169,13 +168,13 @@ const PicksScreen = () => {
 
     const removePick = async (position: number) => {
         if (!selectedLeague) {
-            Alert.alert('Error', 'Please select a league first');
+            showToast('Please select a league first', 'error');
             return;
         }
 
         // Check if picks are locked
         if (currentRace?.picksLocked) {
-            Alert.alert('Picks Locked', 'Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.');
+            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
             return;
         }
 
@@ -189,16 +188,16 @@ const PicksScreen = () => {
             // Submit to API
             const response = await picksAPI.removePickV2(selectedLeague, currentWeek, position);
             if (response.data.success) {
-                Alert.alert('Success', `P${position} pick removed successfully!`);
+                showToast(`P${position} pick removed successfully!`, 'success', 2000);
                 await loadUserPicks(); // Refresh picks
             } else {
                 // Revert local state if API call failed
                 setSelectedPicks(selectedPicks);
-                Alert.alert('Error', 'Failed to remove pick. Please try again.');
+                showToast('Failed to remove pick. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error removing pick:', error);
-            Alert.alert('Error', 'Failed to remove pick. Please try again.');
+            showToast('Failed to remove pick. Please try again.', 'error');
         } finally {
             setSubmitting(false);
         }

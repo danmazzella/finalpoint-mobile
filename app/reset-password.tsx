@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { useToast } from '../src/context/ToastContext';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
@@ -30,7 +30,7 @@ const ResetPasswordScreen = () => {
     const [error, setError] = useState('');
 
     const { resetPassword, forgotPassword } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const { token } = useLocalSearchParams<{ token: string }>();
 
     const scrollViewRef = useRef<ScrollView>(null);

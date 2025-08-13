@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { picksAPI, leaguesAPI } from '../src/services/apiService';
-import { useToast } from '../src/context/ToastContext';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
@@ -50,7 +50,7 @@ interface Member {
 const MemberPicksScreen = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
     const userId = Number(params.userId);

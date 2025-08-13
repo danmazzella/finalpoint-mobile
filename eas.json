@@ -32,6 +32,7 @@
       }
     },
     "production": {
+      "distribution": "store",
       "env": {
         "NODE_ENV": "production"
       },

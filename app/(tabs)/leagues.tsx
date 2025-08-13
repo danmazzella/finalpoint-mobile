@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     TextInput,
-    Alert,
     ActivityIndicator,
     Modal,
     Platform,
@@ -15,14 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { leaguesAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
-import { useToast } from '../../src/context/ToastContext';
+import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { router } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius } from '../../utils/styles';
 
 const LeaguesScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
     const [leagues, setLeagues] = useState<League[]>([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -59,47 +58,29 @@ const LeaguesScreen = () => {
 
     const createLeague = async () => {
         if (!newLeagueName.trim()) {
-            Alert.alert('Error', 'Please enter a league name');
+            showToast('Please enter a league name', 'error');
             return;
         }
 
         if (selectedPositions.length === 0) {
-            Alert.alert('Error', 'Please select at least one position');
+            showToast('Please select at least one position', 'error');
             return;
         }
 
         try {
             const response = await leaguesAPI.createLeague(newLeagueName.trim(), selectedPositions);
             if (response.data.success) {
-                Alert.alert('Success', 'League created successfully!');
+                showToast('League created successfully!', 'success', 2000);
                 setModalVisible(false);
                 setNewLeagueName('');
                 setSelectedPositions([10]);
                 loadLeagues();
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to create league. Please try again.');
+            showToast('Failed to create league. Please try again.', 'error');
         }
     };
 
-    const shareLeague = (league: League) => {
-        if (league.joinCode) {
-            const shareUrl = `https://yourapp.com/joinleague/${league.joinCode}`;
-            Alert.alert(
-                'Share League',
-                `Share this link with friends to invite them to join ${league.name}:`,
-                [
-                    {
-                        text: 'Copy Link', onPress: () => {
-                            // In a real app, you'd use Clipboard API
-                            Alert.alert('Link copied to clipboard!');
-                        }
-                    },
-                    { text: 'Cancel', style: 'cancel' }
-                ]
-            );
-        }
-    };
 
     const navigateToLeagueDetail = (league: League) => {
         // Navigate to league detail screen

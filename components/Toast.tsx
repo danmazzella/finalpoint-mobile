@@ -28,9 +28,12 @@ const Toast: React.FC<ToastProps> = ({
 }) => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(-100)).current;
+  const [showStartTime, setShowStartTime] = React.useState<number | null>(null);
 
   useEffect(() => {
     if (isVisible) {
+      setShowStartTime(Date.now());
+
       // Slide in and fade in
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -45,16 +48,25 @@ const Toast: React.FC<ToastProps> = ({
         }),
       ]).start();
 
-      // Auto dismiss after duration
+      // Auto dismiss after duration (but only if it's still visible)
       const timer = setTimeout(() => {
-        handleClose();
+        if (isVisible) {
+          handleClose();
+        }
       }, duration);
 
       return () => clearTimeout(timer);
+    } else {
+      setShowStartTime(null);
     }
   }, [isVisible, duration]);
 
   const handleClose = () => {
+    // Ensure toast is visible for at least 2 seconds
+    if (showStartTime && (Date.now() - showStartTime) < 2000) {
+      return;
+    }
+
     // Slide out and fade out
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -127,7 +139,9 @@ const Toast: React.FC<ToastProps> = ({
     }
   };
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   const styles = getToastStyles();
 
@@ -187,15 +201,20 @@ const Toast: React.FC<ToastProps> = ({
 const toastStyles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60,
+    top: 120, // Increased from 60 to avoid status bar
     left: spacing.lg,
     right: spacing.lg,
-    zIndex: 1000,
+    zIndex: 9999, // Increased z-index to ensure visibility
   },
   toast: {
     borderRadius: borderRadius.lg,
-    borderWidth: 1,
+    borderWidth: 2, // Increased border width for visibility
     ...shadows.lg,
+    elevation: 10, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   content: {
     flexDirection: 'row',

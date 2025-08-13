@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { useToast } from '../src/context/ToastContext';
+import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
@@ -25,8 +25,8 @@ const LoginScreen = () => {
     const [emailFocused, setEmailFocused] = useState(false);
     const [passwordFocused, setPasswordFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const { login, isLoading } = useAuth();
-    const { showToast } = useToast();
+    const { login, isLoading, isAuthenticating } = useAuth();
+    const { showToast } = useSimpleToast();
 
     const scrollViewRef = useRef<ScrollView>(null);
     const emailInputRef = useRef<TextInput>(null);
@@ -39,10 +39,10 @@ const LoginScreen = () => {
         }
 
         const result = await login(email, password);
-        if (result.success && 'message' in result) {
+        if (result.success && 'message' in result && result.message) {
             showToast(result.message, 'success');
             router.replace('/(tabs)');
-        } else if (!result.success && 'error' in result) {
+        } else if (!result.success && 'error' in result && result.error) {
             showToast(result.error, 'error');
         } else {
             showToast('Login failed. Please try again.', 'error');
@@ -155,11 +155,16 @@ const LoginScreen = () => {
 
                         {/* Sign In Button */}
                         <TouchableOpacity
-                            style={styles.signInButton}
+                            style={[styles.signInButton, isAuthenticating && { opacity: 0.7 }]}
                             onPress={handleLogin}
                             activeOpacity={0.8}
+                            disabled={isAuthenticating}
                         >
-                            <Text style={styles.signInButtonText}>Sign in</Text>
+                            {isAuthenticating ? (
+                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                            ) : (
+                                <Text style={styles.signInButtonText}>Sign in</Text>
+                            )}
                         </TouchableOpacity>
 
                         {/* Divider */}
@@ -170,7 +175,7 @@ const LoginScreen = () => {
                         </View>
 
                         {/* Conditional Google Sign-In Button */}
-                        <GoogleSignInWrapper disabled={isLoading} />
+                        <GoogleSignInWrapper disabled={isAuthenticating || false} />
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity

@@ -28,7 +28,6 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
 
     const showLocalNotification = async (title: string, body: string, data?: any) => {
         if (!shouldEnableNotifications()) {
-            console.log('🚫 Local notification disabled in Expo Go:', { title, body, data });
             return;
         }
 
@@ -49,7 +48,6 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
         data?: any
     ): Promise<string> => {
         if (!shouldEnableNotifications()) {
-            console.log('🚫 Scheduled notification disabled in Expo Go:', { title, body, trigger, data });
             return 'disabled';
         }
 
@@ -65,11 +63,9 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
 
     const registerForNotifications = async () => {
         if (!shouldEnableNotifications()) {
-            console.log('🚫 Push notifications disabled in Expo Go');
             return;
         }
 
-        console.log('🔔 Manually registering for push notifications...');
         await notifications.register();
     };
 

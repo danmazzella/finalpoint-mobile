@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { useSimpleToast } from '../context/SimpleToastContext';
+import { router } from 'expo-router';
 
 interface GoogleSignInConfig {
     clientId: string;
@@ -12,7 +13,7 @@ interface GoogleSignInConfig {
 export const useGoogleSignIn = (config: GoogleSignInConfig) => {
     const [isLoading, setIsLoading] = useState(false);
     const { loginWithGoogle } = useAuth();
-    const { showToast } = useToast();
+    const { showToast } = useSimpleToast();
 
     // Configure Google Sign-In
     const configureGoogleSignIn = useCallback(() => {
@@ -41,8 +42,6 @@ export const useGoogleSignIn = (config: GoogleSignInConfig) => {
 
             if (signInResult.type === 'success' && signInResult.data.idToken) {
                 const userData = signInResult.data;
-                console.log('🔐 Google Sign-In successful:', userData.user.email);
-                console.log('🔍 Full Google Sign-In data:', JSON.stringify(userData, null, 2));
 
                 // Call the login function with Google user data
                 const loginData = {
@@ -55,12 +54,12 @@ export const useGoogleSignIn = (config: GoogleSignInConfig) => {
                     },
                 };
 
-                console.log('🔍 Sending to loginWithGoogle:', JSON.stringify(loginData, null, 2));
-
                 const loginResult = await loginWithGoogle(loginData);
 
                 if (loginResult.success) {
                     showToast('Successfully signed in with Google!', 'success');
+                    // Navigate to main app immediately after successful Google login
+                    router.replace('/(tabs)');
                 } else {
                     showToast(loginResult.error || 'Google sign-in failed', 'error');
                 }
@@ -71,14 +70,25 @@ export const useGoogleSignIn = (config: GoogleSignInConfig) => {
         } catch (error: any) {
             console.error('Google Sign-In error:', error);
 
+            // Handle specific Google Sign-In error codes
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
                 showToast('Sign-in cancelled', 'info');
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 showToast('Sign-in already in progress', 'info');
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                showToast('Google Play Services not available', 'error');
+                showToast('Google Play Services not available. Please update Google Play Services and try again.', 'error');
+            } else if (error.code === statusCodes.SIGN_IN_REQUIRED) {
+                showToast('Sign-in required. Please try again.', 'error');
+            } else if (error.message?.includes('account') || error.message?.includes('invalid')) {
+                showToast('Invalid account. Please check your Google account settings.', 'error');
+            } else if (error.message?.includes('failed') || error.message?.includes('error')) {
+                showToast('Google sign-in failed. Please try again.', 'error');
+            } else if (error.message?.includes('network')) {
+                showToast('Network error. Please check your internet connection and try again.', 'error');
+            } else if (error.message?.includes('timeout')) {
+                showToast('Request timed out. Please try again.', 'error');
             } else {
-                showToast('An error occurred during Google sign-in', 'error');
+                showToast('An unexpected error occurred during Google sign-in. Please try again.', 'error');
             }
         } finally {
             setIsLoading(false);

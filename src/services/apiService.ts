@@ -23,6 +23,8 @@ export const apiService = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 30000, // 30 second timeout
+    timeoutErrorMessage: 'Request timed out. Please try again.',
 });
 
 // Request interceptor to add auth token
@@ -47,11 +49,47 @@ apiService.interceptors.request.use(
 apiService.interceptors.response.use(
     (response) => response,
     async (error) => {
+        // Enhanced error logging
+        if (error.response) {
+            // Server responded with error status
+            console.error('API Error Response:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                url: error.config?.url,
+                data: error.response.data
+            });
+        } else if (error.request) {
+            // Request was made but no response received
+            console.error('API No Response:', {
+                url: error.config?.url,
+                message: 'No response received from server'
+            });
+            // Add network error code for better error handling
+            error.code = 'NETWORK_ERROR';
+        } else {
+            // Something else happened
+            console.error('API Request Error:', {
+                message: error.message,
+                url: error.config?.url
+            });
+        }
+
+        // Handle specific error types
         if (error.response?.status === 401) {
             // Token expired or invalid, clear storage
+            console.log('🔒 401 Unauthorized, clearing auth data');
             await AsyncStorage.removeItem('token');
             await AsyncStorage.removeItem('user');
+        } else if (error.response?.status === 403) {
+            console.log('🚫 403 Forbidden - Access denied');
+        } else if (error.response?.status === 404) {
+            console.log('🔍 404 Not Found - Endpoint or resource not found');
+        } else if (error.response?.status === 429) {
+            console.log('⏰ 429 Too Many Requests - Rate limited');
+        } else if (error.response?.status >= 500) {
+            console.log('💥 Server Error - Backend issue');
         }
+
         return Promise.reject(error);
     }
 );
@@ -66,6 +104,8 @@ export const authAPI = {
         apiService.post('/users/forgot-password', { email }),
     resetPassword: (token: string, newPassword: string) =>
         apiService.post('/users/reset-password', { token, newPassword }),
+    deleteAccount: (data: { password: string }) =>
+        apiService.delete('/users/account', { data }),
     getUserStats: () => apiService.get('/users/stats'),
     getGlobalStats: () => apiService.get('/users/global-stats'),
     getMonthlyStats: () => apiService.get('/users/monthly-stats'),

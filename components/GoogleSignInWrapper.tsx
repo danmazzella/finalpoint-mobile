@@ -23,47 +23,40 @@ const GoogleSignInWrapper: React.FC<GoogleSignInWrapperProps> = ({ disabled }) =
     }
 
     // In development builds, render the actual Google Sign-In component
-    const GoogleSignInWithHook = () => {
-        try {
-            const { useGoogleSignIn } = require('../src/hooks/useGoogleSignIn');
-            const { googleConfig } = require('../config/google.config');
-            const GoogleSignInButton = require('./GoogleSignInButton').default;
-            const { Platform } = require('react-native');
+    try {
+        const { useGoogleSignIn } = require('../src/hooks/useGoogleSignIn');
+        const { googleConfig } = require('../config/google.config');
+        const GoogleSignInButton = require('./GoogleSignInButton').default;
 
-            const { signIn, isLoading } = useGoogleSignIn(googleConfig);
+        const { signIn, isLoading } = useGoogleSignIn(googleConfig);
 
-            // Create a wrapper function that adds platform info
-            const handleSignIn = async () => {
-                try {
-                    const result = await signIn();
-                    console.log('🔍 Google Sign-In result:', result);
-                    return result;
-                } catch (error) {
-                    console.error('❌ Google Sign-In error:', error);
-                    throw error;
-                }
-            };
+        // Create a wrapper function that adds platform info
+        const handleSignIn = async () => {
+            try {
+                const result = await signIn();
+                return result;
+            } catch (error) {
+                console.error('❌ Google Sign-In error:', error);
+                throw error;
+            }
+        };
 
-            return (
-                <GoogleSignInButton
-                    onPress={handleSignIn}
-                    isLoading={isLoading}
-                    disabled={disabled}
-                />
-            );
-        } catch (error) {
-            console.log('⚠️ Google Sign-In not available:', error);
-            return (
-                <View style={styles.infoContainer}>
-                    <Text style={styles.infoText}>
-                        Google Sign-In is not available in this build
-                    </Text>
-                </View>
-            );
-        }
-    };
-
-    return <GoogleSignInWithHook />;
+        return (
+            <GoogleSignInButton
+                onPress={handleSignIn}
+                isLoading={isLoading}
+                disabled={disabled}
+            />
+        );
+    } catch (error) {
+        return (
+            <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>
+                    Google Sign-In is not available in this build
+                </Text>
+            </View>
+        );
+    }
 };
 
 const styles = {

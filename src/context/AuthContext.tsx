@@ -8,6 +8,7 @@ import { User } from '../types';
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
+    isAuthenticating: boolean;
     login: (email: string, password: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     loginWithGoogle: (googleData: { accessToken: string; userInfo: any }) => Promise<{ success: boolean; message?: string; error?: string }>;
     signup: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -20,6 +21,7 @@ interface AuthContextType {
     forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     registerPushToken: () => Promise<boolean>;
+    deleteAccount: (password: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,6 +54,7 @@ export const useAuth = () => {
         return {
             user: null,
             isLoading: true,
+            isAuthenticating: false,
             login: async () => ({ success: false, error: 'Context not available' }),
             loginWithGoogle: async () => ({ success: false, error: 'Context not available' }),
             signup: async () => ({ success: false, error: 'Context not available' }),
@@ -70,6 +73,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
 
     useEffect(() => {
         // Simple initialization without immediate API calls
@@ -85,7 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     try {
                         const userData = JSON.parse(storedUser);
                         setUser(userData);
-                        console.log('✅ Auth initialized with stored user data');
 
                         // Auto-register push token for existing authenticated users
                         try {
@@ -93,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             const pushToken = await registerForPushNotificationsAsync();
                             if (pushToken) {
                                 await sendPushTokenToServer(pushToken, Platform.OS);
-                                console.log('✅ Push token auto-registered for existing user');
                             }
                         } catch (pushError) {
                             console.error('Could not auto-register push token for existing user:', pushError);
@@ -106,14 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 } else {
                     setUser(null);
-                    console.log('ℹ️ No stored auth data found - user needs to login');
                 }
             } catch (error) {
                 console.error('Error initializing auth:', error);
                 setUser(null);
             } finally {
                 setIsLoading(false);
-                console.log('✅ Auth initialization complete');
             }
         };
 
@@ -144,7 +144,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = async (email: string, password: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
-            setIsLoading(true);
+            setIsAuthenticating(true);
+            // Don't set isLoading to true here as it can trigger redirects in the layout
+            // setIsLoading(true);
 
             // Prepare login data with optional push token
             const loginData: any = { email, password };
@@ -156,7 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (pushToken) {
                     loginData.pushToken = pushToken;
                     loginData.platform = Platform.OS;
-                    console.log(`📱 Including ${Platform.OS} push token in login request`);
                 }
             } catch (pushError) {
                 console.error('Could not get push token during login (will register later):', pushError);
@@ -176,7 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     try {
                         const { sendPushTokenToServer } = await import('../../utils/notifications');
                         await sendPushTokenToServer(loginData.pushToken, loginData.platform);
-                        console.log('✅ Push token registered with server after login');
                     } catch (pushError) {
                         console.error('❌ Failed to register push token with server:', pushError);
                         // Don't fail login if push token registration fails
@@ -185,18 +185,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Login successful!' };
             }
-            return { success: false, error: response.data.error || 'Login failed. Invalid credentials or server error.' };
+            // Handle API error response structure
+            if (response.data.errors && response.data.errors.length > 0) {
+                // ErrorClass format: { errors: [{ reason, message }] }
+                const errorMessage = response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (response.data.error) {
+                // Fallback for other error formats
+                return { success: false, error: response.data.error };
+            } else {
+                return { success: false, error: 'Login failed. Invalid credentials or server error.' };
+            }
         } catch (error: any) {
             console.error('Login error:', error);
-            return { success: false, error: error.response?.data?.error || 'Login failed. An unexpected error occurred.' };
+
+            // Handle specific error types
+            if (error.response?.status === 400) {
+                return { success: false, error: error.response.data.error || 'Invalid request. Please check your input.' };
+            } else if (error.response?.status === 401) {
+                return { success: false, error: 'Invalid credentials. Please check your email and password.' };
+            } else if (error.response?.status === 403) {
+                return { success: false, error: 'Account locked or suspended. Please contact support.' };
+            } else if (error.response?.status === 429) {
+                return { success: false, error: 'Too many login attempts. Please try again later.' };
+            } else if (error.response?.status === 500) {
+                return { success: false, error: 'Server error. Please try again later.' };
+            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+                return { success: false, error: 'Network error. Please check your internet connection.' };
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                return { success: false, error: 'Request timed out. Please try again.' };
+            } else if (error.message?.includes('Failed to fetch')) {
+                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+            } else {
+                return { success: false, error: error.response?.data?.error || 'Login failed. An unexpected error occurred.' };
+            }
         } finally {
-            setIsLoading(false);
+            // Set isAuthenticating to false immediately after login attempt completes
+            setIsAuthenticating(false);
+            // Don't set isLoading to false here since we never set it to true
         }
     };
 
     const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
-            setIsLoading(true);
+            setIsAuthenticating(true);
+            // Don't set isLoading to true here as it can trigger redirects in the layout
+            // setIsLoading(true);
 
             // Prepare signup data with optional push token
             const signupData: any = { email, password, name };
@@ -208,7 +242,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (pushToken) {
                     signupData.pushToken = pushToken;
                     signupData.platform = Platform.OS;
-                    console.log(`📱 Including ${Platform.OS} push token in signup request`);
                 }
             } catch (pushError) {
                 console.error('Could not get push token during signup (will register later):', pushError);
@@ -228,7 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     try {
                         const { sendPushTokenToServer } = await import('../../utils/notifications');
                         await sendPushTokenToServer(signupData.pushToken, signupData.platform);
-                        console.log('✅ Push token registered with server after signup');
+
                     } catch (pushError) {
                         console.error('❌ Failed to register push token with server:', pushError);
                         // Don't fail signup if push token registration fails
@@ -237,24 +270,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Signup successful!' };
             }
-            return { success: false, error: response.data.error || 'Signup failed. Invalid credentials or server error.' };
+            // Handle API error response structure
+            if (response.data.errors && response.data.errors.length > 0) {
+                // ErrorClass format: { errors: [{ reason, message }] }
+                const errorMessage = response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (response.data.error) {
+                // Fallback for other error formats
+                return { success: false, error: response.data.error };
+            } else {
+                return { success: false, error: 'Signup failed. Invalid credentials or server error.' };
+            }
         } catch (error: any) {
             console.error('Signup error:', error);
-            return { success: false, error: error.response?.data?.error || 'Signup failed. An unexpected error occurred.' };
+
+            // Handle specific error types
+            if (error.response?.status === 400) {
+                const errorMessage = error.response.data.error || 'Invalid request';
+                if (errorMessage.includes('email') && errorMessage.includes('already')) {
+                    return { success: false, error: 'An account with this email already exists. Please try logging in instead.' };
+                } else if (errorMessage.includes('username') && errorMessage.includes('already')) {
+                    return { success: false, error: 'This username is already taken. Please choose a different one.' };
+                } else if (errorMessage.includes('password')) {
+                    return { success: false, error: 'Password does not meet requirements. Please check the requirements below.' };
+                } else if (errorMessage.includes('validation')) {
+                    return { success: false, error: 'Please check your input and try again.' };
+                } else {
+                    return { success: false, error: errorMessage };
+                }
+            } else if (error.response?.status === 409) {
+                return { success: false, error: 'Account already exists. Please try logging in instead.' };
+            } else if (error.response?.status === 422) {
+                return { success: false, error: 'Invalid data provided. Please check your input.' };
+            } else if (error.response?.status === 500) {
+                return { success: false, error: 'Server error. Please try again later.' };
+            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+                return { success: false, error: 'Network error. Please check your internet connection.' };
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                return { success: false, error: 'Request timed out. Please try again.' };
+            } else if (error.message?.includes('Failed to fetch')) {
+                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+            } else {
+                return { success: false, error: error.response?.data?.error || 'Signup failed. An unexpected error occurred.' };
+            }
         } finally {
-            setIsLoading(false);
+            // Set isAuthenticating to false immediately after signup attempt completes
+            setIsAuthenticating(false);
+            // Don't set isLoading to false here since we never set it to true
         }
     };
 
     const logout = async () => {
         try {
-            setIsLoading(true);
+            // Set user to null immediately for instant UI update
             setUser(null);
-            await clearStoredAuth();
+            // Clear stored auth data in background (don't block UI)
+            clearStoredAuth().catch(error => {
+                console.error('Logout error:', error);
+            });
         } catch (error) {
             console.error('Logout error:', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -358,16 +433,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     message: response.data.message || 'If there is an account associated with that email, you will receive a password reset link shortly.'
                 };
             }
-            return {
-                success: false,
-                error: response.data.error || 'Failed to send password reset email. Please try again.'
-            };
+            // Handle API error response structure
+            if (response.data.errors && response.data.errors.length > 0) {
+                // ErrorClass format: { errors: [{ reason, message }] }
+                const errorMessage = response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (response.data.error) {
+                // Fallback for other error formats
+                return { success: false, error: response.data.error };
+            } else {
+                return { success: false, error: 'Failed to send password reset email. Please try again.' };
+            }
         } catch (error: any) {
             console.error('Forgot password error:', error);
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to send password reset email. Please try again.'
-            };
+
+            // Handle specific error types
+            if (error.response?.status === 400) {
+                const errorMessage = error.response.data.error || 'Invalid request';
+                if (errorMessage.includes('email') && errorMessage.includes('not found')) {
+                    return { success: false, error: 'No account found with this email address.' };
+                } else if (errorMessage.includes('email') && errorMessage.includes('invalid')) {
+                    return { success: false, error: 'Please enter a valid email address.' };
+                } else {
+                    return { success: false, error: errorMessage };
+                }
+            } else if (error.response?.status === 429) {
+                return { success: false, error: 'Too many reset attempts. Please try again later.' };
+            } else if (error.response?.status === 500) {
+                return { success: false, error: 'Server error. Please try again later.' };
+            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+                return { success: false, error: 'Network error. Please check your internet connection.' };
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                return { success: false, error: 'Request timed out. Please try again.' };
+            } else if (error.message?.includes('Failed to fetch')) {
+                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+            } else {
+                return { success: false, error: error.response?.data?.error || 'Failed to send password reset email. Please try again.' };
+            }
         }
     };
 
@@ -380,16 +482,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     message: response.data.message || 'Password reset successful! You can now log in with your new password.'
                 };
             }
-            return {
-                success: false,
-                error: response.data.error || 'Failed to reset password. The link may have expired.'
-            };
+            // Handle API error response structure
+            if (response.data.errors && response.data.errors.length > 0) {
+                // ErrorClass format: { errors: [{ reason, message }] }
+                const errorMessage = response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (response.data.error) {
+                // Fallback for other error formats
+                return { success: false, error: response.data.error };
+            } else {
+                return { success: false, error: 'Failed to reset password. The link may have expired.' };
+            }
         } catch (error: any) {
             console.error('Reset password error:', error);
-            return {
-                success: false,
-                error: error.response?.data?.error || 'Failed to reset password. The link may have expired.'
-            };
+
+            // Handle specific error types
+            if (error.response?.status === 400) {
+                const errorMessage = error.response.data.error || 'Invalid request';
+                if (errorMessage.includes('token') && errorMessage.includes('invalid')) {
+                    return { success: false, error: 'Invalid or expired reset token. Please request a new password reset.' };
+                } else if (errorMessage.includes('password')) {
+                    return { success: false, error: 'Password does not meet requirements. Please check the requirements.' };
+                } else {
+                    return { success: false, error: errorMessage };
+                }
+            } else if (error.response?.status === 401) {
+                return { success: false, error: 'Reset token has expired. Please request a new password reset.' };
+            } else if (error.response?.status === 404) {
+                return { success: false, error: 'Reset token not found. Please request a new password reset.' };
+            } else if (error.response?.status === 500) {
+                return { success: false, error: 'Server error. Please try again later.' };
+            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+                return { success: false, error: 'Network error. Please check your internet connection.' };
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                return { success: false, error: 'Request timed out. Please try again.' };
+            } else if (error.message?.includes('Failed to fetch')) {
+                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+            } else {
+                return { success: false, error: error.response?.data?.error || 'Failed to reset password. The link may have expired.' };
+            }
         }
     };
 
@@ -399,10 +530,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const pushToken = await registerForPushNotificationsAsync();
             if (pushToken) {
                 await sendPushTokenToServer(pushToken, Platform.OS as 'ios' | 'android');
-                console.log('✅ Push token registered with server');
                 return true;
             }
-            console.log('ℹ️ No push token available to register.');
             return false;
         } catch (error) {
             console.error('Error registering push token:', error);
@@ -410,9 +539,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const loginWithGoogle = async (googleData: { accessToken: string; userInfo: any }): Promise<{ success: boolean; message?: string; error?: string }> => {
+    const deleteAccount = async (password: string): Promise<boolean> => {
         try {
             setIsLoading(true);
+            const response = await apiService.delete('/users/account', { data: { password } });
+            if (response.data.success) {
+                // Clear user data and storage
+                setUser(null);
+                await clearStoredAuth();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Delete account error:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loginWithGoogle = async (googleData: { accessToken: string; userInfo: any }): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            setIsAuthenticating(true);
+            // Don't set isLoading to true here as it can trigger redirects in the layout
+            // setIsLoading(true);
 
             // Prepare Google login data with optional push token
             const loginData: any = {
@@ -425,7 +575,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Always set platform for Google Sign-In
             loginData.platform = Platform.OS;
-            console.log(`📱 Platform set to: ${Platform.OS}`);
 
             // Try to get push token for mobile devices
             try {
@@ -433,20 +582,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const pushToken = await registerForPushNotificationsAsync();
                 if (pushToken) {
                     loginData.pushToken = pushToken;
-                    console.log(`📱 Including ${Platform.OS} push token in Google login request`);
-                } else {
-                    console.log('⚠️ No push token received from registerForPushNotificationsAsync');
                 }
             } catch (pushError) {
                 console.error('Could not get push token during Google login (will register later):', pushError);
             }
 
-            console.log('🔍 Final loginData before request:', {
-                pushToken: loginData.pushToken,
-                platform: loginData.platform,
-                platformType: typeof loginData.platform,
-                PlatformOS: Platform.OS
-            });
+
 
             // Prepare the request payload
             const requestPayload = {
@@ -455,13 +596,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 platform: loginData.platform
             };
 
-            console.log('📤 Sending Google auth request:', {
-                endpoint: '/users/google-auth',
-                payload: requestPayload,
-                hasIdToken: !!googleData.accessToken,
-                hasPushToken: !!loginData.pushToken,
-                platform: loginData.platform
-            });
+
 
             const response = await apiService.post('/users/google-auth', requestPayload);
 
@@ -471,14 +606,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
                 await AsyncStorage.setItem('token', response.data.token);
 
-                console.log('✅ Google authentication successful:', response.data.message);
-
                 // Register push token with server after successful Google login
                 if (loginData.pushToken) {
                     try {
                         const { sendPushTokenToServer } = await import('../../utils/notifications');
                         await sendPushTokenToServer(loginData.pushToken, loginData.platform);
-                        console.log('✅ Push token registered with server after Google login');
                     } catch (pushError) {
                         console.error('❌ Failed to register push token with server:', pushError);
                     }
@@ -486,7 +618,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Google login successful!' };
             }
-            return { success: false, error: response.data.error || 'Google login failed. Please try again.' };
+            // Handle API error response structure
+            if (response.data.errors && response.data.errors.length > 0) {
+                // ErrorClass format: { errors: [{ reason, message }] }
+                const errorMessage = response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (response.data.error) {
+                // Fallback for other error formats
+                return { success: false, error: response.data.error };
+            } else {
+                return { success: false, error: 'Google login failed. Please try again.' };
+            }
         } catch (error: any) {
             console.error('Google login error:', error);
 
@@ -504,15 +646,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('📥 Request setup error:', error.message);
             }
 
-            return { success: false, error: error.response?.data?.error || 'Google login failed. An unexpected error occurred.' };
+            // Handle specific error types
+            if (error.response?.status === 400) {
+                // Handle API error response structure
+                let errorMessage = 'Invalid request';
+                if (error.response.data.errors && error.response.data.errors.length > 0) {
+                    // ErrorClass format: { errors: [{ reason, message }] }
+                    errorMessage = error.response.data.errors[0].message;
+                } else if (error.response.data.error) {
+                    errorMessage = error.response.data.error;
+                }
+
+                if (errorMessage.includes('token') || errorMessage.includes('invalid')) {
+                    return { success: false, error: 'Invalid Google token. Please try signing in again.' };
+                } else if (errorMessage.includes('email')) {
+                    return { success: false, error: 'Email verification failed. Please try again.' };
+                } else {
+                    return { success: false, error: errorMessage };
+                }
+            } else if (error.response?.status === 401) {
+                return { success: false, error: 'Google authentication failed. Please try again.' };
+            } else if (error.response?.status === 403) {
+                return { success: false, error: 'Access denied. Please check your Google account permissions.' };
+            } else if (error.response?.status === 409) {
+                return { success: false, error: 'Account already exists with different login method. Please use email/password login.' };
+            } else if (error.response?.status === 500) {
+                return { success: false, error: 'Server error. Please try again later.' };
+            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+                return { success: false, error: 'Network error. Please check your internet connection.' };
+            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                return { success: false, error: 'Request timed out. Please try again.' };
+            } else if (error.message?.includes('Failed to fetch')) {
+                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+            } else {
+                // Handle API error response structure in catch block
+                if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+                    const errorMessage = error.response.data.errors[0].message;
+                    return { success: false, error: errorMessage };
+                } else if (error.response?.data?.error) {
+                    return { success: false, error: error.response.data.error };
+                } else {
+                    return { success: false, error: 'Google login failed. An unexpected error occurred.' };
+                }
+            }
         } finally {
-            setIsLoading(false);
+            // Set isAuthenticating to false immediately after Google login attempt completes
+            setIsAuthenticating(false);
+            // Don't set isLoading to false here since we never set it to true
         }
     };
 
     const value = {
         user,
         isLoading,
+        isAuthenticating,
         login,
         loginWithGoogle,
         signup,
@@ -525,6 +712,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         forgotPassword,
         resetPassword,
         registerPushToken,
+        deleteAccount,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

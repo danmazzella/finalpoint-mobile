@@ -66,6 +66,14 @@ const LeaguesScreen = () => {
         }
     };
 
+    const hasPickForPosition = (league: League, position: number): boolean => {
+        if (!league.positionStatus || !league.positionStatus.positions) {
+            return false;
+        }
+        const positionStatus = league.positionStatus.positions.find(p => p.position === position);
+        return positionStatus ? positionStatus.hasPick : false;
+    };
+
     const createLeague = async () => {
         if (!newLeagueName.trim()) {
             showToast('Please enter a league name', 'error');
@@ -218,8 +226,20 @@ const LeaguesScreen = () => {
                                 <Text style={styles.statLabel}>Positions:</Text>
                                 <View style={styles.positionsContainer}>
                                     {league.requiredPositions.map((position, index) => (
-                                        <View key={position} style={styles.positionBadge}>
-                                            <Text style={styles.positionText}>P{position}</Text>
+                                        <View key={position} style={[
+                                            styles.positionBadge,
+                                            hasPickForPosition(league, position)
+                                                ? styles.positionBadgePicked
+                                                : styles.positionBadgeUnpicked
+                                        ]}>
+                                            <Text style={[
+                                                styles.positionText,
+                                                hasPickForPosition(league, position)
+                                                    ? styles.positionTextPicked
+                                                    : styles.positionTextUnpicked
+                                            ]}>
+                                                P{position}
+                                            </Text>
                                         </View>
                                     ))}
                                 </View>
@@ -791,6 +811,20 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
         color: Colors.light.textSecondary,
+    },
+    positionTextPicked: {
+        color: Colors.light.success,
+    },
+    positionTextUnpicked: {
+        color: Colors.light.textSecondary,
+    },
+    positionBadgePicked: {
+        backgroundColor: '#e8f5e8', // Softer green background
+        borderColor: '#c3e6c3', // Softer green border
+    },
+    positionBadgeUnpicked: {
+        backgroundColor: '#ffeaea', // Softer red background
+        borderColor: '#f5c6c6', // Softer red border
     },
 });
 

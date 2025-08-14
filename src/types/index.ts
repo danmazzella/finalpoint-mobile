@@ -37,6 +37,18 @@ export interface League {
     totalPicks?: number;
     totalActivity?: number;
     activityScore?: number;
+    positionStatus?: PositionStatus;
+}
+
+// Position status types for efficient pick status
+export interface PositionStatus {
+    weekNumber: number;
+    positions: PositionPickStatus[];
+}
+
+export interface PositionPickStatus {
+    position: number;
+    hasPick: boolean;
 }
 
 // Driver types

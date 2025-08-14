@@ -15,6 +15,8 @@ import { useSimpleToast } from '../src/context/SimpleToastContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useScreenSize } from '../hooks/useScreenSize';
 
 interface MemberPicksV2 {
     leagueId: number;
@@ -51,6 +53,7 @@ const MemberPicksScreen = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { showToast } = useSimpleToast();
+    const screenSize = useScreenSize();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
     const userId = Number(params.userId);
@@ -100,343 +103,329 @@ const MemberPicksScreen = () => {
                 }));
                 setLeagueMembers(membersFromResults);
             }
-        } catch (error: any) {
-            console.error('Error loading race results for member navigation:', error);
-            // Fallback to league members if race results fail
-            try {
-                const fallbackResponse = await leaguesAPI.getLeagueMembers(leagueId);
-                if (fallbackResponse.data.success) {
-                    setLeagueMembers(fallbackResponse.data.data);
-                }
-            } catch (fallbackError: any) {
-                console.error('Error loading league members fallback:', fallbackError);
-            }
+        } catch (error) {
+            console.error('Error loading league members:', error);
         }
     }, [leagueId, weekNumber]);
-
-    const navigateToMember = (newUserId: number, newUserName: string, memberIndex?: number) => {
-        const baseParams = {
-            leagueId: leagueId.toString(),
-            weekNumber: weekNumber.toString(),
-            userId: newUserId.toString(),
-            userName: newUserName,
-            leagueName: leagueName,
-        };
-
-        const finalParams = memberIndex !== undefined
-            ? { ...baseParams, memberIndex: memberIndex.toString() }
-            : baseParams;
-
-        // Use replace instead of push to avoid building up navigation stack
-        router.replace({
-            pathname: '/member-picks',
-            params: finalParams,
-        });
-    };
-
-    const getCurrentMemberIndex = () => {
-        // Handle duplicate userIds by finding ALL matches and using params to determine which one
-        const memberIndex = params.memberIndex ? parseInt(params.memberIndex as string) : null;
-
-        if (memberIndex !== null) {
-
-            return memberIndex >= 0 && memberIndex < leagueMembers.length ? memberIndex : 0;
-        }
-
-        // For backward compatibility, find by userId but handle duplicates
-        const allMatchingIndices = leagueMembers
-            .map((member, index) => member.id === userId ? index : -1)
-            .filter(index => index !== -1);
-
-
-
-        // Return the first match, or 0 if no match found
-        return allMatchingIndices.length > 0 ? allMatchingIndices[0] : 0;
-    };
-
-    const canNavigatePrevious = () => {
-        return getCurrentMemberIndex() > 0;
-    };
-
-    const canNavigateNext = () => {
-        return getCurrentMemberIndex() < leagueMembers.length - 1;
-    };
-
-    const navigateToPrevious = () => {
-        const currentIndex = getCurrentMemberIndex();
-        if (currentIndex > 0) {
-            const prevMember = leagueMembers[currentIndex - 1];
-            navigateToMember(prevMember.id, prevMember.name, currentIndex - 1);
-        }
-    };
-
-    const navigateToNext = () => {
-        const currentIndex = getCurrentMemberIndex();
-        if (currentIndex < leagueMembers.length - 1) {
-            const nextMember = leagueMembers[currentIndex + 1];
-            navigateToMember(nextMember.id, nextMember.name, currentIndex + 1);
-        }
-    };
 
     useEffect(() => {
         loadMemberPicks();
         loadLeagueMembers();
     }, [loadMemberPicks, loadLeagueMembers]);
 
+    const navigateToMember = (memberId: number, memberName: string) => {
+        router.push(`/member-picks?leagueId=${leagueId}&weekNumber=${weekNumber}&userId=${memberId}&userName=${memberName}&leagueName=${leagueName}` as any);
+    };
+
     const getPositionLabel = (position: number) => {
-        const labels: { [key: number]: string } = {
-            1: 'P1',
-            2: 'P2',
-            3: 'P3',
-            4: 'P4',
-            5: 'P5',
-            6: 'P6',
-            7: 'P7',
-            8: 'P8',
-            9: 'P9',
-            10: 'P10',
-            11: 'P11',
-            12: 'P12',
-            13: 'P13',
-            14: 'P14',
-            15: 'P15',
-            16: 'P16',
-            17: 'P17',
-            18: 'P18',
-            19: 'P19',
-            20: 'P20'
-        };
-        return labels[position] || `P${position}`;
+        return `P${position}`;
+    };
+
+    const getPositionColor = (position: number) => {
+        const colors = [
+            '#FFD700',      // P1 - Gold
+            '#C0C0C0',      // P2 - Silver  
+            '#CD7F32',      // P3 - Bronze
+            Colors.light.primary,   // P4
+            Colors.light.primary,   // P5
+            Colors.light.primary,   // P6
+            Colors.light.primary,   // P7
+            Colors.light.primary,   // P8
+            Colors.light.primary,   // P9
+            Colors.light.primary,   // P10
+        ];
+        return colors[position - 1] || Colors.light.primary;
+    };
+
+    const getPickStatus = (pick: MemberPicksV2['picks'][0]) => {
+        if (pick.isCorrect === null) return { text: 'Not Scored', color: Colors.light.textSecondary };
+        if (pick.isCorrect) return { text: 'Correct!', color: Colors.light.success };
+        return { text: 'Incorrect', color: Colors.light.error };
     };
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
                     <Text style={styles.loadingText}>Loading member picks...</Text>
                 </View>
             </SafeAreaView>
         );
     }
 
-    if (error) {
+    if (error || !memberPicks) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.container}>
                 <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle" size={48} color={Colors.light.error} />
                     <Text style={styles.errorTitle}>Error Loading Picks</Text>
-                    <Text style={styles.errorMessage}>{error}</Text>
+                    <Text style={styles.errorMessage}>{error || 'Member picks not found'}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={loadMemberPicks}>
-                        <Text style={styles.retryButtonText}>Try Again</Text>
+                        <Text style={styles.retryButtonText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
-        );
-    }
-
-    if (!memberPicks) {
-        return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <ScrollView style={styles.scrollView}>
-                    <View style={styles.header}>
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => router.back()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
-                        </TouchableOpacity>
-                        <View style={styles.headerContent}>
-                            <Text style={styles.title}>No Picks Available</Text>
-                            <Text style={styles.subtitle}>
-                                {leagueName || 'Loading...'}
-                            </Text>
-                            <Text style={styles.userInfo}>
-                                {userName} - Week {weekNumber}
-                            </Text>
-                        </View>
-                    </View>
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyMessage}>
-                            No picks are available for this member yet.
-                        </Text>
-                    </View>
-                </ScrollView>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
-                    </TouchableOpacity>
-                    <View style={styles.headerContent}>
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => router.back()}
+                        >
+                            <Ionicons name="arrow-back" size={24} color={Colors.light.buttonPrimary} />
+                            <Text style={styles.backButtonText}>Back to Results</Text>
+                        </TouchableOpacity>
+
                         <Text style={styles.title}>Member Picks</Text>
+                        <Text style={styles.subtitle}>{userName} • {leagueName}</Text>
+                        <Text style={styles.weekInfo}>Week {weekNumber}</Text>
                     </View>
-                </View>
 
-                <Text style={styles.description}>
-                    {leagueName || 'Loading...'} • Week {weekNumber}
-                </Text>
-
-                {/* Member Context with Navigation */}
-                <View style={styles.memberSection}>
-                    <View style={styles.navigationContainer}>
-                        {/* Previous Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.navigationButton,
-                                !canNavigatePrevious() && styles.navigationButtonDisabled
-                            ]}
-                            onPress={navigateToPrevious}
-                            disabled={!canNavigatePrevious()}
-                        >
-                            <Ionicons
-                                name="chevron-back"
-                                size={18}
-                                color={canNavigatePrevious() ? Colors.light.textPrimary : Colors.light.textSecondary}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Member Context */}
-                        <View style={styles.memberContext}>
-                            <Avatar
-                                src={memberPicks?.userAvatar}
-                                size="sm"
-                                fallback={userName?.charAt(0).toUpperCase() || 'U'}
-                            />
-                            <Text style={styles.memberLabel}>Viewing picks by {userName}</Text>
-                        </View>
-
-                        {/* Next Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.navigationButton,
-                                !canNavigateNext() && styles.navigationButtonDisabled
-                            ]}
-                            onPress={navigateToNext}
-                            disabled={!canNavigateNext()}
-                        >
-                            <Ionicons
-                                name="chevron-forward"
-                                size={18}
-                                color={canNavigateNext() ? Colors.light.textPrimary : Colors.light.textSecondary}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* Summary Stats */}
-                <View style={styles.summaryContainer}>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Total Picks</Text>
-                        <Text style={styles.summaryValue}>{memberPicks.totalPicks}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Correct Picks</Text>
-                        <Text style={styles.summaryValue}>{memberPicks.correctPicks}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Accuracy</Text>
-                        <Text style={styles.summaryValue}>{memberPicks.accuracy}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Total Points</Text>
-                        <Text style={styles.summaryValue}>{memberPicks.totalPoints}</Text>
-                    </View>
-                </View>
-
-                {/* Picks List */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>All Picks</Text>
-                    {memberPicks.picks.length === 0 ? (
-                        <View style={styles.emptyPicksContainer}>
-                            <Ionicons name="clipboard-outline" size={48} color={Colors.light.textSecondary} />
-                            <Text style={styles.emptyPicksTitle}>No Picks Made</Text>
-                            <Text style={styles.emptyPicksMessage}>
-                                {userName} hasn&apos;t made any picks for Week {weekNumber} yet.
-                            </Text>
-                        </View>
-                    ) : (
-                        memberPicks.picks.map((pick, index) => (
-                            <View key={index} style={styles.pickCard}>
-                                <View style={styles.pickHeader}>
-                                    <View style={styles.positionBadge}>
-                                        <Text style={styles.positionText}>P{pick.position}</Text>
+                    {/* Main Content - Responsive Layout */}
+                    {screenSize === 'tablet' ? (
+                        <View style={styles.tabletLayout}>
+                            {/* Left Column - Member Info & Stats */}
+                            <View style={styles.tabletLeftColumn}>
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Member Overview</Text>
+                                    <View style={styles.memberInfo}>
+                                        <Avatar
+                                            size="xl"
+                                            src={memberPicks.userAvatar}
+                                            fallback={userName.charAt(0).toUpperCase()}
+                                        />
+                                        <Text style={styles.memberName}>{userName}</Text>
+                                        <Text style={styles.memberLeague}>{leagueName}</Text>
                                     </View>
-                                    <View style={styles.pickInfo}>
-                                        <Text style={styles.pickLabel}>
-                                            {getPositionLabel(pick.position)}
-                                        </Text>
-                                        <Text style={styles.pickDriver}>
-                                            {pick.driverName || 'No pick made'}
-                                        </Text>
-                                        {pick.driverTeam && (
-                                            <Text style={styles.pickTeam}>
-                                                {pick.driverTeam}
-                                            </Text>
-                                        )}
-                                    </View>
-                                    {pick.points !== null && (
-                                        <View style={styles.scoreInfo}>
-                                            <Text style={styles.pointsText}>{pick.points} pts</Text>
+
+                                    <View style={styles.memberStats}>
+                                        <View style={styles.statItem}>
+                                            <Text style={styles.statLabel}>Total Points</Text>
+                                            <Text style={styles.statValue}>{memberPicks.totalPoints}</Text>
                                         </View>
-                                    )}
+                                        <View style={styles.statItem}>
+                                            <Text style={styles.statLabel}>Correct Picks</Text>
+                                            <Text style={styles.statValue}>{memberPicks.correctPicks}</Text>
+                                        </View>
+                                        <View style={styles.statItem}>
+                                            <Text style={styles.statLabel}>Accuracy</Text>
+                                            <Text style={styles.statValue}>{memberPicks.accuracy}</Text>
+                                        </View>
+                                        <View style={styles.statItem}>
+                                            <Text style={styles.statLabel}>Total Picks</Text>
+                                            <Text style={styles.statValue}>{memberPicks.totalPicks}</Text>
+                                        </View>
+                                    </View>
                                 </View>
 
-                                {/* Actual Result */}
-                                {pick.actualDriverName && (
-                                    <View style={[
-                                        styles.actualResult,
-                                        pick.isCorrect === true ? styles.correctResult : styles.incorrectResult
-                                    ]}>
-                                        <Text style={[
-                                            styles.actualResultLabel,
-                                            pick.isCorrect === true ? styles.correctResultLabel : styles.incorrectResultLabel
-                                        ]}>Result:</Text>
-                                        <Text style={[
-                                            styles.actualResultDriver,
-                                            pick.isCorrect === true ? styles.correctResultDriver : styles.incorrectResultDriver
-                                        ]}>
-                                            {pick.actualDriverName} ({pick.actualDriverTeam})
-                                        </Text>
-                                        {pick.actualFinishPosition && (
-                                            <Text style={[
-                                                styles.actualPosition,
-                                                pick.isCorrect === true ? styles.correctResultPosition : styles.incorrectResultPosition
-                                            ]}>
-                                                Finished P{pick.actualFinishPosition}
-                                            </Text>
-                                        )}
-                                        {pick.isCorrect === true && (
-                                            <Text style={styles.correctText}>✓ Correct</Text>
-                                        )}
-                                        {pick.isCorrect === false && (
-                                            <Text style={styles.incorrectText}>✗ Incorrect</Text>
-                                        )}
+                                {/* Other Members */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Other Members</Text>
+                                    <View style={styles.membersList}>
+                                        {leagueMembers
+                                            .filter(member => member.id !== userId)
+                                            .slice(0, 5)
+                                            .map((member) => (
+                                                <TouchableOpacity
+                                                    key={member.id}
+                                                    style={styles.memberCard}
+                                                    onPress={() => navigateToMember(member.id, member.name)}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Avatar
+                                                        size="sm"
+                                                        src={member.avatar}
+                                                        fallback={member.name.charAt(0).toUpperCase()}
+                                                    />
+                                                    <Text style={styles.memberCardName}>{member.name}</Text>
+                                                    <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+                                                </TouchableOpacity>
+                                            ))}
                                     </View>
-                                )}
-
-                                {/* No Result Yet */}
-                                {!pick.actualDriverName && (
-                                    <View style={styles.noResult}>
-                                        <Text style={styles.noResultText}>
-                                            Race not scored yet
-                                        </Text>
-                                    </View>
-                                )}
+                                </View>
                             </View>
-                        ))
+
+                            {/* Right Column - Detailed Picks */}
+                            <View style={styles.tabletRightColumn}>
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>All Picks</Text>
+                                    <View style={styles.picksList}>
+                                        {memberPicks.picks.map((pick) => {
+                                            const status = getPickStatus(pick);
+                                            return (
+                                                <View key={pick.position} style={styles.pickCard}>
+                                                    <View style={styles.pickHeader}>
+                                                        <View style={[
+                                                            styles.positionBadge,
+                                                            { backgroundColor: getPositionColor(pick.position) }
+                                                        ]}>
+                                                            <Text style={styles.positionText}>
+                                                                {getPositionLabel(pick.position)}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={styles.pickInfo}>
+                                                            <Text style={styles.driverName}>{pick.driverName}</Text>
+                                                            <Text style={styles.teamName}>{pick.driverTeam}</Text>
+                                                        </View>
+                                                        <View style={styles.pickStatus}>
+                                                            <Text style={[styles.statusText, { color: status.color }]}>
+                                                                {status.text}
+                                                            </Text>
+                                                            {pick.points !== null && (
+                                                                <Text style={styles.pointsText}>
+                                                                    {pick.points} pts
+                                                                </Text>
+                                                            )}
+                                                        </View>
+                                                    </View>
+
+                                                    {pick.actualDriverName && (
+                                                        <View style={styles.actualResult}>
+                                                            <Text style={styles.actualLabel}>Actual Result:</Text>
+                                                            <Text style={styles.actualDriver}>
+                                                                {pick.actualDriverName} ({pick.actualDriverTeam})
+                                                            </Text>
+                                                            {pick.actualFinishPosition && (
+                                                                <Text style={styles.actualPosition}>
+                                                                    Finished P{pick.actualFinishPosition}
+                                                                </Text>
+                                                            )}
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    ) : (
+                        /* Mobile Layout (existing code) */
+                        <>
+                            {/* Member Info */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Member Overview</Text>
+                                <View style={styles.memberInfo}>
+                                    <Avatar
+                                        size="xl"
+                                        src={memberPicks.userAvatar}
+                                        fallback={userName.charAt(0).toUpperCase()}
+                                    />
+                                    <Text style={styles.memberName}>{userName}</Text>
+                                    <Text style={styles.memberLeague}>{leagueName}</Text>
+                                </View>
+
+                                <View style={styles.memberStats}>
+                                    <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>Total Points</Text>
+                                        <Text style={styles.statValue}>{memberPicks.totalPoints}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>Correct Picks</Text>
+                                        <Text style={styles.statValue}>{memberPicks.correctPicks}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>Accuracy</Text>
+                                        <Text style={styles.statValue}>{memberPicks.accuracy}</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>Total Picks</Text>
+                                        <Text style={styles.statValue}>{memberPicks.totalPicks}</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* All Picks */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>All Picks</Text>
+                                <View style={styles.picksList}>
+                                    {memberPicks.picks.map((pick) => {
+                                        const status = getPickStatus(pick);
+                                        return (
+                                            <View key={pick.position} style={styles.pickCard}>
+                                                <View style={styles.pickHeader}>
+                                                    <View style={[
+                                                        styles.positionBadge,
+                                                        { backgroundColor: getPositionColor(pick.position) }
+                                                    ]}>
+                                                        <Text style={styles.positionText}>
+                                                            {getPositionLabel(pick.position)}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.pickInfo}>
+                                                        <Text style={styles.driverName}>{pick.driverName}</Text>
+                                                        <Text style={styles.teamName}>{pick.driverTeam}</Text>
+                                                    </View>
+                                                    <View style={styles.pickStatus}>
+                                                        <Text style={[styles.statusText, { color: status.color }]}>
+                                                            {status.text}
+                                                        </Text>
+                                                        {pick.points !== null && (
+                                                            <Text style={styles.pointsText}>
+                                                                {pick.points} pts
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                </View>
+
+                                                {pick.actualDriverName && (
+                                                    <View style={styles.actualResult}>
+                                                        <Text style={styles.actualLabel}>Actual Result:</Text>
+                                                        <Text style={styles.actualDriver}>
+                                                            {pick.actualDriverName} ({pick.actualDriverTeam})
+                                                        </Text>
+                                                        {pick.actualFinishPosition && (
+                                                            <Text style={styles.actualPosition}>
+                                                                Finished P{pick.actualFinishPosition}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
+                            {/* Other Members */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Other Members</Text>
+                                <View style={styles.membersList}>
+                                    {leagueMembers
+                                        .filter(member => member.id !== userId)
+                                        .slice(0, 5)
+                                        .map((member) => (
+                                            <TouchableOpacity
+                                                key={member.id}
+                                                style={styles.memberCard}
+                                                onPress={() => navigateToMember(member.id, member.name)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Avatar
+                                                    size="sm"
+                                                    src={member.avatar}
+                                                    fallback={member.name.charAt(0).toUpperCase()}
+                                                />
+                                                <Text style={styles.memberCardName}>{member.name}</Text>
+                                                <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+                                            </TouchableOpacity>
+                                        ))}
+                                </View>
+                            </View>
+                        </>
                     )}
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 };
@@ -444,10 +433,13 @@ const MemberPicksScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.background,
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     scrollView: {
         flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 100,
     },
     loadingContainer: {
         flex: 1,
@@ -468,8 +460,7 @@ const styles = StyleSheet.create({
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginTop: spacing.md,
+        color: Colors.light.error,
         marginBottom: spacing.sm,
     },
     errorMessage: {
@@ -479,7 +470,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
     retryButton: {
-        backgroundColor: Colors.light.primary,
+        backgroundColor: Colors.light.buttonPrimary,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
         borderRadius: borderRadius.md,
@@ -487,278 +478,202 @@ const styles = StyleSheet.create({
     retryButtonText: {
         color: Colors.light.textInverse,
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
     },
     backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
     },
-    headerContent: {
-        flex: 1,
+    backButtonText: {
+        fontSize: 16,
+        color: Colors.light.buttonPrimary,
+        fontWeight: '600',
     },
     title: {
-        fontSize: 20,
+        fontSize: 28,
         fontWeight: 'bold',
         color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
     subtitle: {
         fontSize: 16,
         color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
+        marginBottom: spacing.xs,
     },
     weekInfo: {
         fontSize: 14,
         color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    userInfo: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    summaryContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        gap: spacing.sm,
-        justifyContent: 'space-between',
-    },
-    summaryCard: {
-        flex: 1,
-        backgroundColor: Colors.light.cardBackground,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 60,
-        ...shadows.sm,
-    },
-    summaryLabel: {
-        fontSize: 10,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.xs,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    summaryValue: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
+        marginBottom: spacing.lg,
     },
     section: {
-        margin: spacing.lg,
+        backgroundColor: Colors.light.cardBackground,
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.lg,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        ...shadows.md,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '600',
         color: Colors.light.textPrimary,
         marginBottom: spacing.md,
     },
+    memberInfo: {
+        alignItems: 'center',
+        marginBottom: spacing.lg,
+    },
+    memberName: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginTop: spacing.md,
+        marginBottom: spacing.xs,
+    },
+    memberLeague: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        marginBottom: spacing.md,
+    },
+    memberStats: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-around',
+        gap: spacing.md,
+    },
+    statItem: {
+        alignItems: 'center',
+        minWidth: 80,
+    },
+    statLabel: {
+        fontSize: 12,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+    },
+    statValue: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: Colors.light.buttonPrimary,
+    },
+    picksList: {
+        gap: spacing.md,
+    },
     pickCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.md,
+        backgroundColor: Colors.light.backgroundPrimary,
         borderRadius: borderRadius.md,
-        marginBottom: spacing.sm,
-        ...shadows.sm,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
     },
     pickHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.sm,
+        gap: spacing.md,
+        marginBottom: spacing.md,
     },
     positionBadge: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.light.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.md,
     },
     positionText: {
-        color: Colors.light.textInverse,
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: 'bold',
+        color: Colors.light.textInverse,
     },
     pickInfo: {
         flex: 1,
     },
-    pickLabel: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
+    driverName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
         marginBottom: spacing.xs,
     },
-    pickDriver: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    pickTeam: {
-        fontSize: 12,
+    teamName: {
+        fontSize: 14,
         color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
     },
-    scoreInfo: {
+    pickStatus: {
         alignItems: 'flex-end',
     },
-    pointsText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    correctText: {
-        fontSize: 12,
-        color: Colors.light.success,
-        fontWeight: 'bold',
-    },
-    actualResult: {
-        padding: spacing.md,
-        borderRadius: borderRadius.sm,
-        marginTop: spacing.sm,
-    },
-    correctResult: {
-        backgroundColor: Colors.light.successLight,
-    },
-    incorrectResult: {
-        backgroundColor: Colors.light.errorLight,
-    },
-    actualResultLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
+    statusText: {
+        fontSize: 14,
+        fontWeight: '500',
         marginBottom: spacing.xs,
     },
-    correctResultLabel: {
-        color: Colors.light.success,
-    },
-    incorrectResultLabel: {
-        color: Colors.light.error,
-    },
-    actualResultDriver: {
+    pointsText: {
         fontSize: 14,
-        fontWeight: 'bold',
-    },
-    correctResultDriver: {
+        fontWeight: '600',
         color: Colors.light.success,
     },
-    incorrectResultDriver: {
-        color: Colors.light.error,
+    actualResult: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        borderLeftWidth: 3,
+        borderLeftColor: Colors.light.primary,
+    },
+    actualLabel: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
+        marginBottom: spacing.xs,
+        textTransform: 'uppercase',
+    },
+    actualDriver: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
     actualPosition: {
         fontSize: 12,
-        marginTop: spacing.xs,
-    },
-    correctResultPosition: {
-        color: Colors.light.success,
-    },
-    incorrectResultPosition: {
-        color: Colors.light.error,
-    },
-    incorrectText: {
-        fontSize: 12,
-        color: Colors.light.error,
-        fontWeight: 'bold',
-        marginTop: spacing.sm,
-    },
-    noResult: {
-        backgroundColor: Colors.light.warningLight,
-        padding: spacing.md,
-        borderRadius: borderRadius.sm,
-        marginTop: spacing.sm,
-    },
-    noResultText: {
-        fontSize: 12,
-        color: Colors.light.warning,
-        fontStyle: 'italic',
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.lg,
-    },
-    emptyMessage: {
-        fontSize: 16,
         color: Colors.light.textSecondary,
-        textAlign: 'center',
-        lineHeight: 24,
     },
-    emptyPicksContainer: {
-        alignItems: 'center',
-        paddingVertical: spacing.xl,
-        paddingHorizontal: spacing.lg,
+    membersList: {
+        gap: spacing.sm,
     },
-    emptyPicksTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginTop: spacing.md,
-        marginBottom: spacing.sm,
-        textAlign: 'center',
-    },
-    emptyPicksMessage: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    description: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.md,
-        marginBottom: spacing.md,
-        textAlign: 'center',
-    },
-    memberContext: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        flex: 1,
-        paddingHorizontal: spacing.sm,
-    },
-    memberLabel: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        fontWeight: '500',
-        marginTop: spacing.xs,
-        textAlign: 'center',
-    },
-    memberSection: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.md,
-    },
-    navigationContainer: {
+    memberCard: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: spacing.sm,
-    },
-    navigationButton: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.sm,
-        borderRadius: borderRadius.full,
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderRadius: borderRadius.md,
         borderWidth: 1,
         borderColor: Colors.light.borderLight,
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...shadows.sm,
     },
-    navigationButtonDisabled: {
-        backgroundColor: Colors.light.borderLight,
-        borderColor: Colors.light.borderLight,
+    memberCardName: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '500',
+        color: Colors.light.textPrimary,
+    },
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        paddingHorizontal: spacing.md,
+    },
+    tabletLeftColumn: {
+        flex: 1,
+        gap: spacing.lg,
+    },
+    tabletRightColumn: {
+        flex: 2,
+        gap: spacing.lg,
     },
 });
 

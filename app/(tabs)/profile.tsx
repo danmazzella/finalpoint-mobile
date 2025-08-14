@@ -18,12 +18,15 @@ import { router } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import Colors from '../../constants/Colors';
-import { spacing, borderRadius } from '../../utils/styles';
+import { spacing, borderRadius, shadows } from '../../utils/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
+import { useScreenSize } from '../../hooks/useScreenSize';
 
 const ProfileScreen = () => {
     const { user, logout, refreshUser } = useAuth();
     const { showToast } = useSimpleToast();
+    const screenSize = useScreenSize();
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0); // Force re-render when avatar updates
 
@@ -101,69 +104,16 @@ const ProfileScreen = () => {
         );
     };
 
-    const handleAboutFinalPoint = async () => {
-        try {
-            const url = `${getBaseUrl()}/info`;
-            const supported = await Linking.canOpenURL(url);
-
-            if (supported) {
-                await Linking.openURL(url);
-            } else {
-                showToast('Unable to open link', 'error');
-            }
-        } catch (error) {
-            console.error('Error opening About FinalPoint link:', error);
-            showToast('Unable to open link', 'error');
-        }
-    };
-
-    const handlePrivacyPolicy = async () => {
-        try {
-            const url = `${getBaseUrl()}/privacy`;
-            const supported = await Linking.canOpenURL(url);
-            if (supported) {
-                await Linking.openURL(url);
-            } else {
-                showToast('Unable to open Privacy Policy link', 'error');
-            }
-        } catch (error) {
-            console.error('Error opening Privacy Policy link:', error);
-            showToast('Unable to open link', 'error');
-        }
-    };
-
-    const handleTermsOfService = async () => {
-        try {
-            const url = `${getBaseUrl()}/terms`;
-            const supported = await Linking.canOpenURL(url);
-            if (supported) {
-                await Linking.openURL(url);
-            } else {
-                showToast('Unable to open Terms of Service link', 'error');
-            }
-        } catch (error) {
-            console.error('Error opening Terms of Service link:', error);
-            showToast('Unable to open link', 'error');
-        }
-    };
-
-    const handleHelpAndSupport = async () => {
-        try {
-            const emailUrl = 'mailto:dan@mazzella.me?subject=FinalPoint%20Support%20Request';
-            const supported = await Linking.canOpenURL(emailUrl);
-            if (supported) {
-                await Linking.openURL(emailUrl);
-            } else {
-                showToast('Unable to open email client', 'error');
-            }
-        } catch (error) {
-            console.error('Error opening email client:', error);
-            showToast('Unable to open email client', 'error');
-        }
-    };
-
     const handleAvatarUpload = async () => {
         try {
+            // Request permissions
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                showToast('Permission to access camera roll is required!', 'error');
+                return;
+            }
+
+            // Launch image picker
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
@@ -171,171 +121,412 @@ const ProfileScreen = () => {
                 quality: 0.8,
             });
 
-            if (!result.canceled && result.assets && result.assets[0]) {
-                const asset = result.assets[0];
-
-                // Check file size (5MB limit)
-                if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-                    showToast('File size must be less than 5MB', 'error');
-                    return;
-                }
-
-                setUploadingAvatar(true);
-
-                const formData = new FormData();
-                formData.append('avatar', {
-                    uri: asset.uri,
-                    type: 'image/jpeg',
-                    name: 'avatar.jpg',
-                } as any);
-
-                const response = await apiService.put('/users/avatar', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-
-                if (response.data.success) {
-                    showToast('Avatar updated successfully!', 'success');
-
-                    // Refresh user data from API to get the updated avatar
-                    await refreshUserData();
-
-                    // Also update the local profile avatar state using the API service
-                    try {
-                        const profileResponse = await apiService.get('/users/profile');
-                        if (profileResponse.data.success && profileResponse.data.data) {
-                            setProfileAvatar(profileResponse.data.data.avatar);
-                        }
-                    } catch (profileError) {
-                        console.error('Error refreshing profile data:', profileError);
-                    }
-                } else {
-                    showToast('Failed to update avatar', 'error');
-                }
+            if (!result.canceled && result.assets[0]) {
+                await uploadAvatar(result.assets[0]);
             }
         } catch (error) {
+            console.error('Error picking image:', error);
+            showToast('Error selecting image. Please try again.', 'error');
+        }
+    };
+
+    const uploadAvatar = async (imageAsset: ImagePicker.ImagePickerAsset) => {
+        try {
+            setUploadingAvatar(true);
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('avatar', {
+                uri: imageAsset.uri,
+                type: 'image/jpeg',
+                name: 'avatar.jpg',
+            } as any);
+
+            // Upload avatar
+            const response = await apiService.put('/users/avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.success) {
+                showToast('Avatar updated successfully!', 'success');
+                setProfileAvatar(response.data.data.avatar);
+                setRefreshKey(prev => prev + 1); // Force re-render
+            } else {
+                showToast('Failed to update avatar. Please try again.', 'error');
+            }
+        } catch (error: any) {
             console.error('Error uploading avatar:', error);
-            showToast('Failed to upload avatar', 'error');
+            if (error.response?.status === 413) {
+                showToast('Image file is too large. Please select a smaller image.', 'error');
+            } else {
+                showToast('Error uploading avatar. Please try again.', 'error');
+            }
         } finally {
             setUploadingAvatar(false);
         }
     };
 
+    const handleRemoveAvatar = async () => {
+        try {
+            setUploadingAvatar(true);
+
+            const response = await apiService.delete('/users/avatar');
+            if (response.data.success) {
+                showToast('Avatar removed successfully!', 'success');
+                setProfileAvatar(null);
+                setRefreshKey(prev => prev + 1); // Force re-render
+            } else {
+                showToast('Failed to remove avatar. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error removing avatar:', error);
+            showToast('Error removing avatar. Please try again.', 'error');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
+    const openWebApp = () => {
+        const url = getBaseUrl();
+        Linking.openURL(url);
+    };
+
+    const openInfoPage = () => {
+        const url = `${getBaseUrl()}/info`;
+        Linking.openURL(url);
+    };
+
+    const openTermsPage = () => {
+        const url = `${getBaseUrl()}/terms`;
+        Linking.openURL(url);
+    };
+
+    const openPrivacyPage = () => {
+        const url = `${getBaseUrl()}/privacy`;
+        Linking.openURL(url);
+    };
+
+    const openScoringPage = () => {
+        const url = `${getBaseUrl()}/scoring`;
+        Linking.openURL(url);
+    };
+
+    if (!user) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
+                    <Text style={styles.loadingText}>Loading profile...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView}>
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.avatarContainer}
-                        onPress={handleAvatarUpload}
-                        disabled={uploadingAvatar}
-                    >
-                        {uploadingAvatar ? (
-                            <ActivityIndicator size="small" color={Colors.light.textInverse} />
-                        ) : (
-                            <Avatar
-                                key={refreshKey} // Force re-render when avatar updates
-                                src={profileAvatar || user?.avatar}
-                                size="xl"
-                                fallback={user?.name?.charAt(0).toUpperCase() || 'U'}
-                            />
-                        )}
-                        <View style={styles.avatarOverlay}>
-                            <Ionicons name="camera" size={20} color={Colors.light.textInverse} />
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Profile</Text>
+                        <Text style={styles.subtitle}>Manage your account and preferences</Text>
+                    </View>
+
+                    {/* Main Content - Responsive Layout */}
+                    {screenSize === 'tablet' ? (
+                        <View style={styles.tabletLayout}>
+                            {/* Left Column - Profile Info & Avatar */}
+                            <View style={styles.tabletLeftColumn}>
+                                {/* Profile Information */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Profile Information</Text>
+                                    <View style={styles.profileInfo}>
+                                        <View style={styles.avatarContainer}>
+                                            <Avatar
+                                                size="xl"
+                                                src={profileAvatar}
+                                                fallback={user.name?.charAt(0).toUpperCase() || 'U'}
+                                            />
+                                            <View style={styles.avatarActions}>
+                                                <TouchableOpacity
+                                                    style={styles.avatarButton}
+                                                    onPress={handleAvatarUpload}
+                                                    disabled={uploadingAvatar}
+                                                >
+                                                    {uploadingAvatar ? (
+                                                        <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                                    ) : (
+                                                        <>
+                                                            <Ionicons name="camera" size={16} color={Colors.light.textInverse} />
+                                                            <Text style={styles.avatarButtonText}>Change</Text>
+                                                        </>
+                                                    )}
+                                                </TouchableOpacity>
+                                                {profileAvatar && (
+                                                    <TouchableOpacity
+                                                        style={styles.avatarButtonSecondary}
+                                                        onPress={handleRemoveAvatar}
+                                                        disabled={uploadingAvatar}
+                                                    >
+                                                        <Ionicons name="trash" size={16} color={Colors.light.error} />
+                                                        <Text style={styles.avatarButtonTextSecondary}>Remove</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        </View>
+                                        <View style={styles.userInfo}>
+                                            <Text style={styles.userName}>{user.name}</Text>
+                                            <Text style={styles.userEmail}>{user.email}</Text>
+                                            <Text style={styles.userRole}>
+                                                Role: {user.role || 'User'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* Account Actions */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Account Actions</Text>
+                                    <View style={styles.actionButtons}>
+                                        <TouchableOpacity
+                                            style={styles.actionButton}
+                                            onPress={() => router.push('/edit-profile')}
+                                        >
+                                            <Ionicons name="create-outline" size={20} color={Colors.light.buttonPrimary} />
+                                            <Text style={styles.actionButtonText}>Edit Profile</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.actionButton}
+                                            onPress={() => router.push('/change-password')}
+                                        >
+                                            <Ionicons name="key-outline" size={20} color={Colors.light.buttonPrimary} />
+                                            <Text style={styles.actionButtonText}>Change Password</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.actionButton}
+                                            onPress={() => router.push('/delete-account')}
+                                        >
+                                            <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
+                                            <Text style={[styles.actionButtonText, { color: Colors.light.error }]}>
+                                                Delete Account
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Right Column - Quick Links & Logout */}
+                            <View style={styles.tabletRightColumn}>
+                                {/* Quick Links */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Quick Links</Text>
+                                    <View style={styles.quickLinks}>
+                                        <TouchableOpacity
+                                            style={styles.quickLink}
+                                            onPress={openWebApp}
+                                        >
+                                            <Ionicons name="globe-outline" size={20} color={Colors.light.buttonPrimary} />
+                                            <Text style={styles.quickLinkText}>Open Web App</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.quickLink}
+                                            onPress={openScoringPage}
+                                        >
+                                            <Ionicons name="help-circle-outline" size={20} color={Colors.light.buttonPrimary} />
+                                            <Text style={styles.quickLinkText}>How Scoring Works</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.quickLink}
+                                            onPress={openInfoPage}
+                                        >
+                                            <Ionicons name="information-circle-outline" size={20} color={Colors.light.buttonPrimary} />
+                                            <Text style={styles.quickLinkText}>About FinalPoint</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {/* Legal & Support */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Legal & Support</Text>
+                                    <View style={styles.legalLinks}>
+                                        <TouchableOpacity
+                                            style={styles.legalLink}
+                                            onPress={openTermsPage}
+                                        >
+                                            <Ionicons name="document-text-outline" size={20} color={Colors.light.textSecondary} />
+                                            <Text style={styles.legalLinkText}>Terms of Service</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.legalLink}
+                                            onPress={openPrivacyPage}
+                                        >
+                                            <Ionicons name="shield-checkmark-outline" size={20} color={Colors.light.textSecondary} />
+                                            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {/* Logout */}
+                                <View style={styles.section}>
+                                    <TouchableOpacity
+                                        style={styles.logoutButton}
+                                        onPress={handleLogout}
+                                    >
+                                        <Ionicons name="log-out-outline" size={20} color={Colors.light.textInverse} />
+                                        <Text style={styles.logoutButtonText}>Logout</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
-                    </TouchableOpacity>
-                    <Text style={styles.userName}>{user?.name || 'User'}</Text>
-                    <Text style={styles.userEmail}>{user?.email}</Text>
-                    <Text style={styles.avatarHint}>Tap to change avatar</Text>
+                    ) : (
+                        /* Mobile Layout (existing code) */
+                        <>
+                            {/* Profile Information */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Profile Information</Text>
+                                <View style={styles.profileInfo}>
+                                    <View style={styles.avatarContainer}>
+                                        <Avatar
+                                            size="xl"
+                                            src={profileAvatar}
+                                            fallback={user.name?.charAt(0).toUpperCase() || 'U'}
+                                        />
+                                        <View style={styles.avatarActions}>
+                                            <TouchableOpacity
+                                                style={styles.avatarButton}
+                                                onPress={handleAvatarUpload}
+                                                disabled={uploadingAvatar}
+                                            >
+                                                {uploadingAvatar ? (
+                                                    <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                                ) : (
+                                                    <>
+                                                        <Ionicons name="camera" size={16} color={Colors.light.textInverse} />
+                                                        <Text style={styles.avatarButtonText}>Change</Text>
+                                                    </>
+                                                )}
+                                            </TouchableOpacity>
+                                            {profileAvatar && (
+                                                <TouchableOpacity
+                                                    style={styles.avatarButtonSecondary}
+                                                    onPress={handleRemoveAvatar}
+                                                    disabled={uploadingAvatar}
+                                                >
+                                                    <Ionicons name="trash" size={16} color={Colors.light.error} />
+                                                    <Text style={styles.avatarButtonTextSecondary}>Remove</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    </View>
+                                    <View style={styles.userInfo}>
+                                        <Text style={styles.userName}>{user.name}</Text>
+                                        <Text style={styles.userEmail}>{user.email}</Text>
+                                        <Text style={styles.userRole}>
+                                            Role: {user.role || 'User'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
 
+                            {/* Account Actions */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Account Actions</Text>
+                                <View style={styles.actionButtons}>
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={() => router.push('/edit-profile')}
+                                    >
+                                        <Ionicons name="create-outline" size={20} color={Colors.light.buttonPrimary} />
+                                        <Text style={styles.actionButtonText}>Edit Profile</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={() => router.push('/change-password')}
+                                    >
+                                        <Ionicons name="key-outline" size={20} color={Colors.light.buttonPrimary} />
+                                        <Text style={styles.actionButtonText}>Change Password</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={() => router.push('/delete-account')}
+                                    >
+                                        <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
+                                        <Text style={[styles.actionButtonText, { color: Colors.light.error }]}>
+                                            Delete Account
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
 
-                </View>
+                            {/* Quick Links */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Quick Links</Text>
+                                <View style={styles.quickLinks}>
+                                    <TouchableOpacity
+                                        style={styles.quickLink}
+                                        onPress={openWebApp}
+                                    >
+                                        <Ionicons name="globe-outline" size={20} color={Colors.light.buttonPrimary} />
+                                        <Text style={styles.quickLinkText}>Open Web App</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.quickLink}
+                                        onPress={openScoringPage}
+                                    >
+                                        <Ionicons name="help-circle-outline" size={20} color={Colors.light.buttonPrimary} />
+                                        <Text style={styles.quickLinkText}>How Scoring Works</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.quickLink}
+                                        onPress={openInfoPage}
+                                    >
+                                        <Ionicons name="information-circle-outline" size={20} color={Colors.light.buttonPrimary} />
+                                        <Text style={styles.quickLinkText}>About FinalPoint</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account</Text>
+                            {/* Legal & Support */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Legal & Support</Text>
+                                <View style={styles.legalLinks}>
+                                    <TouchableOpacity
+                                        style={styles.legalLink}
+                                        onPress={openTermsPage}
+                                    >
+                                        <Ionicons name="document-text-outline" size={20} color={Colors.light.textSecondary} />
+                                        <Text style={styles.legalLinkText}>Terms of Service</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.legalLink}
+                                        onPress={openPrivacyPage}
+                                    >
+                                        <Ionicons name="shield-checkmark-outline" size={20} color={Colors.light.textSecondary} />
+                                        <Text style={styles.legalLinkText}>Privacy Policy</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
 
-                    <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={() => router.push('/edit-profile')}
-                    >
-                        <Text style={styles.menuItemText}>Edit Profile</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={() => router.push('/change-password')}
-                    >
-                        <Text style={styles.menuItemText}>Change Password</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={() => router.push('/notifications')}
-                    >
-                        <Text style={styles.menuItemText}>Notification Settings</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.menuItem, styles.deleteAccountItem]}
-                        onPress={() => router.push('/delete-account')}
-                    >
-                        <Text style={styles.deleteAccountText}>Delete Account</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.error} />
-                    </TouchableOpacity>
-
-                    {user?.role === 'admin' && (
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => router.push('/admin')}
-                        >
-                            <Text style={styles.menuItemText}>Admin Dashboard</Text>
-                            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                        </TouchableOpacity>
+                            {/* Logout */}
+                            <View style={styles.section}>
+                                <TouchableOpacity
+                                    style={styles.logoutButton}
+                                    onPress={handleLogout}
+                                >
+                                    <Ionicons name="log-out-outline" size={20} color={Colors.light.textInverse} />
+                                    <Text style={styles.logoutButtonText}>Logout</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </>
                     )}
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>App</Text>
-
-                    <TouchableOpacity
-                        style={styles.menuItem}
-                        onPress={handleAboutFinalPoint}
-                    >
-                        <Text style={styles.menuItemText}>About FinalPoint</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.menuItem} onPress={handlePrivacyPolicy}>
-                        <Text style={styles.menuItemText}>Privacy Policy</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.menuItem} onPress={handleTermsOfService}>
-                        <Text style={styles.menuItemText}>Terms of Service</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.menuItem} onPress={handleHelpAndSupport}>
-                        <Text style={styles.menuItemText}>Help & Support</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.section}>
-                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                        <Text style={styles.logoutButtonText}>Logout</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>FinalPoint v1.0.0</Text>
-                    <Text style={styles.footerSubtext}>F1 Prediction Game</Text>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 };
@@ -348,35 +539,92 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
-    header: {
-        backgroundColor: Colors.light.cardBackground,
-        padding: spacing.lg,
-        alignItems: 'center',
-        minHeight: 64,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+    scrollContent: {
+        paddingBottom: 100,
     },
-    avatarContainer: {
-        position: 'relative',
-        marginBottom: spacing.md,
-    },
-    avatarOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        backgroundColor: Colors.light.primary,
-        borderRadius: 12,
-        width: 24,
-        height: 24,
+    loadingContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: Colors.light.cardBackground,
     },
-    avatarHint: {
-        fontSize: 12,
+    loadingText: {
+        marginTop: spacing.md,
+        fontSize: 16,
         color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
+    },
+    header: {
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+    },
+    section: {
+        backgroundColor: Colors.light.cardBackground,
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.lg,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        ...shadows.md,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.md,
+    },
+    profileInfo: {
+        alignItems: 'center',
+    },
+    avatarContainer: {
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    avatarActions: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginTop: spacing.md,
+    },
+    avatarButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    avatarButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    avatarButtonSecondary: {
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
+        borderColor: Colors.light.error,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    avatarButtonTextSecondary: {
+        color: Colors.light.error,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    userInfo: {
+        alignItems: 'center',
     },
     userName: {
         fontSize: 24,
@@ -387,67 +635,98 @@ const styles = StyleSheet.create({
     userEmail: {
         fontSize: 16,
         color: Colors.light.textSecondary,
+        marginBottom: spacing.xs,
     },
-    section: {
-        marginTop: spacing.lg,
-        backgroundColor: Colors.light.cardBackground,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
+    userRole: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        fontStyle: 'italic',
+    },
+    actionButtons: {
+        gap: spacing.md,
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
         borderColor: Colors.light.borderLight,
     },
-    sectionTitle: {
+    actionButtonText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '500',
         color: Colors.light.textPrimary,
-        padding: spacing.lg,
-        paddingBottom: spacing.sm,
     },
-    menuItem: {
+    quickLinks: {
+        gap: spacing.md,
+    },
+    quickLink: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
     },
-    menuItemText: {
+    quickLinkText: {
         fontSize: 16,
+        fontWeight: '500',
         color: Colors.light.textPrimary,
+    },
+    legalLinks: {
+        gap: spacing.md,
+    },
+    legalLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    legalLinkText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
     },
     logoutButton: {
         backgroundColor: Colors.light.error,
-        margin: spacing.lg,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
     },
     logoutButtonText: {
         color: Colors.light.textInverse,
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
-    footer: {
-        alignItems: 'center',
-        padding: spacing.lg,
-        marginTop: spacing.lg,
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        paddingHorizontal: spacing.md,
     },
-    footerText: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.xs,
+    tabletLeftColumn: {
+        flex: 2,
+        gap: spacing.lg,
     },
-    footerSubtext: {
-        fontSize: 12,
-        color: Colors.light.textTertiary,
+    tabletRightColumn: {
+        flex: 1,
+        gap: spacing.lg,
     },
-    deleteAccountItem: {
-        borderBottomWidth: 0,
-    },
-    deleteAccountText: {
-        fontSize: 16,
-        color: Colors.light.error,
-    },
-
 });
 
 export default ProfileScreen;

@@ -15,6 +15,8 @@ import Colors from '../../../constants/Colors';
 import { spacing, borderRadius, shadows } from '../../../utils/styles';
 import { leaguesAPI } from '../../../src/services/apiService';
 import Avatar from '../../../src/components/Avatar';
+import ResponsiveContainer from '../../../components/ResponsiveContainer';
+import { useScreenSize } from '../../../hooks/useScreenSize';
 
 interface DetailedStanding {
     id: number;
@@ -47,6 +49,7 @@ export default function StandingsPage() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { showToast } = useSimpleToast();
+    const screenSize = useScreenSize();
     const leagueId = params.id as string;
 
     const [league, setLeague] = useState<League | null>(null);
@@ -100,161 +103,293 @@ export default function StandingsPage() {
         return '#dc2626';
     };
 
-    const getDistanceColor = (distance: number) => {
-        if (distance <= 2) return '#059669';
-        if (distance <= 5) return '#d97706';
-        return '#dc2626';
+    const getAccuracyLabel = (accuracy: number) => {
+        if (accuracy >= 80) return 'Excellent';
+        if (accuracy >= 60) return 'Good';
+        if (accuracy >= 40) return 'Fair';
+        return 'Poor';
     };
 
-    const cleanName = (name: string | null | undefined): string => {
-        if (!name) return 'Unknown User';
-        return name.trim() || 'Unknown User';
+    const navigateToMemberPicks = (userId: number, userName: string) => {
+        router.push(`/member-picks?leagueId=${leagueId}&userId=${userId}&userName=${userName}&leagueName=${league?.name}` as any);
     };
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
                     <Text style={styles.loadingText}>Loading standings...</Text>
                 </View>
             </SafeAreaView>
         );
     }
 
-    return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+    if (!league) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>League Not Found</Text>
+                    <Text style={styles.errorMessage}>The requested league could not be found.</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+                        <Text style={styles.retryButtonText}>Go Back</Text>
                     </TouchableOpacity>
-                    <View style={styles.headerContent}>
-                        <Text style={styles.title}>Standings</Text>
-                    </View>
                 </View>
+            </SafeAreaView>
+        );
+    }
 
-                <Text style={styles.description}>
-                    {league?.name} • {standings.length} member{standings.length !== 1 ? 's' : ''}
-                </Text>
-                <Text style={styles.seasonInfo}>
-                    Season {league?.seasonYear}
-                </Text>
+    return (
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => router.back()}
+                        >
+                            <Ionicons name="arrow-back" size={24} color={Colors.light.buttonPrimary} />
+                            <Text style={styles.backButtonText}>Back to League</Text>
+                        </TouchableOpacity>
 
-                {/* Stats Overview */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="trending-up" size={20} color={Colors.light.primary} />
-                            <Text style={styles.statLabel}>Total Points</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.reduce((sum, s) => sum + s.totalPoints, 0)}
-                        </Text>
+                        <Text style={styles.title}>League Standings</Text>
+                        <Text style={styles.subtitle}>{league.name}</Text>
                     </View>
 
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="checkmark-circle" size={20} color="#059669" />
-                            <Text style={styles.statLabel}>Perfect Picks</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.reduce((sum, s) => sum + s.perfectPicks, 0)}
-                        </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="time" size={20} color={Colors.light.primary} />
-                            <Text style={styles.statLabel}>Avg Accuracy</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.length > 0
-                                ? Math.round(standings.reduce((sum, s) => sum + s.accuracy, 0) / standings.length)
-                                : 0}%
-                        </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="people" size={20} color="#7c3aed" />
-                            <Text style={styles.statLabel}>Active Members</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.filter(s => s.racesParticipated > 0).length}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Standings List */}
-                <View style={styles.standingsContainer}>
-                    {sortedStandings.map((member, index) => (
-                        <View key={member.id} style={styles.memberCard}>
-                            <View style={styles.memberHeader}>
-                                <View style={styles.avatarContainer}>
-                                    <Avatar
-                                        src={member.avatar}
-                                        size="md"
-                                        fallback={cleanName(member.name)?.charAt(0).toUpperCase() || 'U'}
-                                        style={styles.memberAvatar}
-                                    />
-                                    <View style={[styles.positionBadge, getPositionColor(index)]}>
-                                        <Text style={[styles.positionBadgeText, { color: getPositionColor(index).color }]}>
-                                            {index + 1}
-                                        </Text>
+                    {/* Main Content - Responsive Layout */}
+                    {screenSize === 'tablet' ? (
+                        <View style={styles.tabletLayout}>
+                            {/* Left Column - League Stats */}
+                            <View style={styles.tabletLeftColumn}>
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>League Overview</Text>
+                                    <View style={styles.leagueStats}>
+                                        <View style={styles.leagueStat}>
+                                            <Text style={styles.leagueStatNumber}>{league.memberCount}</Text>
+                                            <Text style={styles.leagueStatLabel}>Members</Text>
+                                        </View>
+                                        <View style={styles.leagueStat}>
+                                            <Text style={styles.leagueStatNumber}>
+                                                {Math.max(...standings.map(s => s.racesParticipated), 0)}
+                                            </Text>
+                                            <Text style={styles.leagueStatLabel}>Races</Text>
+                                        </View>
+                                        <View style={styles.leagueStat}>
+                                            <Text style={styles.leagueStatNumber}>
+                                                {Math.round(standings.reduce((sum, s) => sum + s.accuracy, 0) / standings.length)}
+                                            </Text>
+                                            <Text style={styles.leagueStatLabel}>Avg Accuracy</Text>
+                                        </View>
                                     </View>
                                 </View>
-                                <View style={styles.memberInfo}>
-                                    <View style={styles.memberNameRow}>
-                                        <Text style={styles.memberName}>
-                                            {cleanName(member.name)}
-                                        </Text>
-                                        {member.isOwner ? (
-                                            <View style={styles.ownerBadge}>
-                                                <Ionicons name="shield-checkmark" size={12} color="#7c3aed" />
-                                                <Text style={styles.ownerText}>Owner</Text>
+
+                                {/* Top 3 Podium */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Podium</Text>
+                                    <View style={styles.podium}>
+                                        {sortedStandings.slice(0, 3).map((standing, index) => (
+                                            <View key={standing.id} style={styles.podiumPosition}>
+                                                <View style={[
+                                                    styles.podiumRank,
+                                                    { backgroundColor: getPositionColor(index).backgroundColor }
+                                                ]}>
+                                                    <Text style={[
+                                                        styles.podiumRankText,
+                                                        { color: getPositionColor(index).color }
+                                                    ]}>
+                                                        {index + 1}
+                                                    </Text>
+                                                </View>
+                                                <Avatar
+                                                    size="md"
+                                                    src={standing.avatar}
+                                                    fallback={standing.name.charAt(0).toUpperCase()}
+                                                />
+                                                <View style={styles.podiumInfo}>
+                                                    <Text style={styles.podiumName}>{standing.name}</Text>
+                                                    <Text style={styles.podiumPoints}>
+                                                        {standing.totalPoints} pts
+                                                    </Text>
+                                                    <Text style={styles.podiumAccuracy}>
+                                                        {standing.accuracy}% accuracy
+                                                    </Text>
+                                                </View>
                                             </View>
-                                        ) : null}
+                                        ))}
                                     </View>
-                                    <Text style={styles.memberStats}>
-                                        {member.totalPicks} picks • {member.correctPicks} correct
-                                    </Text>
                                 </View>
                             </View>
 
-                            <View style={styles.memberStatsGrid}>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Points</Text>
-                                    <Text style={styles.statItemValue}>{member.totalPoints}</Text>
-                                    <Text style={styles.statItemSubtext}>{member.averagePointsPerRace} avg/race</Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Accuracy</Text>
-                                    <Text style={[styles.statItemValue, { color: getAccuracyColor(member.accuracy) }]}>
-                                        {member.accuracy}%
-                                    </Text>
-                                    <Text style={styles.statItemSubtext}>{member.perfectPicks} perfect</Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Avg Distance</Text>
-                                    <Text style={[styles.statItemValue, { color: getDistanceColor(member.averageDistanceFromCorrect) }]}>
-                                        {member.averageDistanceFromCorrect || 0} positions
-                                    </Text>
-                                    <Text style={styles.statItemSubtext}>from target</Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Races</Text>
-                                    <Text style={styles.statItemValue}>{member.racesParticipated}</Text>
+                            {/* Right Column - Full Standings */}
+                            <View style={styles.tabletRightColumn}>
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Full Standings</Text>
+                                    <View style={styles.standingsList}>
+                                        {sortedStandings.map((standing, index) => (
+                                            <TouchableOpacity
+                                                key={standing.id}
+                                                style={styles.standingCard}
+                                                onPress={() => navigateToMemberPicks(standing.id, standing.name)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={styles.standingHeader}>
+                                                    <View style={[
+                                                        styles.standingRank,
+                                                        { backgroundColor: getPositionColor(index).backgroundColor }
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.standingRankText,
+                                                            { color: getPositionColor(index).color }
+                                                        ]}>
+                                                            {index + 1}
+                                                        </Text>
+                                                    </View>
+                                                    <Avatar
+                                                        size="sm"
+                                                        src={standing.avatar}
+                                                        fallback={standing.name.charAt(0).toUpperCase()}
+                                                    />
+                                                    <View style={styles.standingInfo}>
+                                                        <Text style={styles.standingName}>{standing.name}</Text>
+                                                        {standing.isOwner === 1 && (
+                                                            <View style={styles.ownerBadge}>
+                                                                <Ionicons name="star" size={12} color={Colors.light.warning} />
+                                                                <Text style={styles.ownerText}>Owner</Text>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.standingStats}>
+                                                    <View style={styles.statRow}>
+                                                        <Text style={styles.statLabel}>Total Points:</Text>
+                                                        <Text style={styles.statValue}>{standing.totalPoints}</Text>
+                                                    </View>
+                                                    <View style={styles.statRow}>
+                                                        <Text style={styles.statLabel}>Accuracy:</Text>
+                                                        <Text style={[
+                                                            styles.statValue,
+                                                            { color: getAccuracyColor(standing.accuracy) }
+                                                        ]}>
+                                                            {standing.accuracy}% ({getAccuracyLabel(standing.accuracy)})
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.statRow}>
+                                                        <Text style={styles.statLabel}>Races:</Text>
+                                                        <Text style={styles.statValue}>{standing.racesParticipated}</Text>
+                                                    </View>
+                                                    <View style={styles.statRow}>
+                                                        <Text style={styles.statLabel}>Perfect Picks:</Text>
+                                                        <Text style={styles.statValue}>{standing.perfectPicks}</Text>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
                                 </View>
                             </View>
                         </View>
-                    ))}
-                </View>
-            </ScrollView>
+                    ) : (
+                        /* Mobile Layout (existing code) */
+                        <>
+                            {/* League Stats */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>League Overview</Text>
+                                <View style={styles.leagueStats}>
+                                    <View style={styles.leagueStat}>
+                                        <Text style={styles.leagueStatNumber}>{league.memberCount}</Text>
+                                        <Text style={styles.leagueStatLabel}>Members</Text>
+                                    </View>
+                                    <View style={styles.leagueStat}>
+                                        <Text style={styles.leagueStatNumber}>
+                                            {Math.max(...standings.map(s => s.racesParticipated), 0)}
+                                        </Text>
+                                        <Text style={styles.leagueStatLabel}>Races</Text>
+                                    </View>
+                                    <View style={styles.leagueStat}>
+                                        <Text style={styles.leagueStatNumber}>
+                                            {Math.round(standings.reduce((sum, s) => sum + s.accuracy, 0) / standings.length)}
+                                        </Text>
+                                        <Text style={styles.leagueStatLabel}>Avg Accuracy</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Full Standings */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Full Standings</Text>
+                                <View style={styles.standingsList}>
+                                    {sortedStandings.map((standing, index) => (
+                                        <TouchableOpacity
+                                            key={standing.id}
+                                            style={styles.standingCard}
+                                            onPress={() => navigateToMemberPicks(standing.id, standing.name)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.standingHeader}>
+                                                <View style={[
+                                                    styles.standingRank,
+                                                    { backgroundColor: getPositionColor(index).backgroundColor }
+                                                ]}>
+                                                    <Text style={[
+                                                        styles.standingRankText,
+                                                        { color: getPositionColor(index).color }
+                                                    ]}>
+                                                        {index + 1}
+                                                    </Text>
+                                                </View>
+                                                <Avatar
+                                                    size="sm"
+                                                    src={standing.avatar}
+                                                    fallback={standing.name.charAt(0).toUpperCase()}
+                                                />
+                                                <View style={styles.standingInfo}>
+                                                    <Text style={styles.standingName}>{standing.name}</Text>
+                                                    {standing.isOwner === 1 && (
+                                                        <View style={styles.ownerBadge}>
+                                                            <Ionicons name="star" size={12} color={Colors.light.warning} />
+                                                            <Text style={styles.ownerText}>Owner</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+
+                                            <View style={styles.standingStats}>
+                                                <View style={styles.statRow}>
+                                                    <Text style={styles.statLabel}>Total Points:</Text>
+                                                    <Text style={styles.statValue}>{standing.totalPoints}</Text>
+                                                </View>
+                                                <View style={styles.statRow}>
+                                                    <Text style={styles.statLabel}>Accuracy:</Text>
+                                                    <Text style={[
+                                                        styles.statValue,
+                                                        { color: getAccuracyColor(standing.accuracy) }
+                                                    ]}>
+                                                        {standing.accuracy}% ({getAccuracyLabel(standing.accuracy)})
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.statRow}>
+                                                    <Text style={styles.statLabel}>Races:</Text>
+                                                    <Text style={styles.statValue}>{standing.racesParticipated}</Text>
+                                                </View>
+                                                <View style={styles.statRow}>
+                                                    <Text style={styles.statLabel}>Perfect Picks:</Text>
+                                                    <Text style={styles.statValue}>{standing.perfectPicks}</Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        </>
+                    )}
+                </ScrollView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 }
@@ -267,6 +402,9 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
+    scrollContent: {
+        paddingBottom: 100,
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -277,210 +415,209 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: Colors.light.textSecondary,
     },
-    header: {
-        flexDirection: 'row',
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingRight: spacing.lg,
+        padding: spacing.lg,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.light.error,
+        marginBottom: spacing.sm,
+    },
+    errorMessage: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+    },
+    retryButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+        borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    header: {
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
     },
     backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
     },
-    headerContent: {
-        flex: 1,
+    backButtonText: {
+        fontSize: 16,
+        color: Colors.light.buttonPrimary,
+        fontWeight: '600',
     },
     title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
         color: Colors.light.textPrimary,
         marginBottom: spacing.xs,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 16,
         color: Colors.light.textSecondary,
-    },
-    description: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        paddingHorizontal: spacing.md,
         marginBottom: spacing.lg,
-        marginTop: spacing.md,
     },
-    seasonInfo: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.md,
-        textAlign: 'center',
-        opacity: 0.8,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.lg,
-        gap: spacing.sm,
-    },
-    statCard: {
+    section: {
         backgroundColor: Colors.light.cardBackground,
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.lg,
         borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '48%',
-        minHeight: 80,
+        padding: spacing.lg,
         ...shadows.md,
     },
-    statHeader: {
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.md,
+    },
+    leagueStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    leagueStat: {
+        alignItems: 'center',
+    },
+    leagueStatNumber: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.buttonPrimary,
+        marginBottom: spacing.xs,
+    },
+    leagueStatLabel: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+    },
+    podium: {
+        gap: spacing.md,
+    },
+    podiumPosition: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xs,
-        flex: 1,
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
     },
-    statIcon: {
+    podiumRank: {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: Colors.light.backgroundTertiary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.xs,
     },
-    statContent: {
-        flex: 1,
-    },
-    statLabel: {
-        fontSize: 11,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginLeft: spacing.sm,
-        flex: 1,
-        flexWrap: 'wrap',
-        textAlign: 'left',
-        lineHeight: 14,
-    },
-    statValue: {
-        fontSize: 20,
+    podiumRankText: {
+        fontSize: 16,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-        marginTop: spacing.xs,
     },
-    standingsContainer: {
-        paddingHorizontal: spacing.md,
-        paddingBottom: spacing.xl,
-    },
-    memberCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        marginBottom: spacing.md,
-        ...shadows.sm,
-    },
-    memberHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    avatarContainer: {
-        position: 'relative',
-        marginRight: spacing.md,
-    },
-    positionBadge: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: Colors.light.cardBackground,
-        shadowColor: Colors.light.cardShadow,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    positionBadgeText: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        lineHeight: 14,
-    },
-    memberInfo: {
+    podiumInfo: {
         flex: 1,
     },
-    memberAvatar: {
-        // Avatar styling handled by component
-    },
-    memberNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    memberName: {
+    podiumName: {
         fontSize: 16,
         fontWeight: '600',
         color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    podiumPoints: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.light.buttonPrimary,
+        marginBottom: spacing.xs,
+    },
+    podiumAccuracy: {
+        fontSize: 12,
+        color: Colors.light.textSecondary,
+    },
+    standingsList: {
+        gap: spacing.md,
+    },
+    standingCard: {
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    standingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.md,
+    },
+    standingRank: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    standingRankText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    standingInfo: {
         flex: 1,
+    },
+    standingName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
     ownerBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f3e8ff',
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 2,
-        borderRadius: borderRadius.sm,
+        gap: spacing.xs,
+        alignSelf: 'flex-start',
     },
     ownerText: {
-        fontSize: 10,
+        fontSize: 12,
+        color: Colors.light.warning,
         fontWeight: '500',
-        color: '#7c3aed',
-        marginLeft: 2,
     },
-    memberStats: {
+    standingStats: {
+        gap: spacing.sm,
+    },
+    statRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    statLabel: {
         fontSize: 14,
         color: Colors.light.textSecondary,
     },
-    memberStatsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        backgroundColor: Colors.light.backgroundTertiary,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-    },
-    statItem: {
-        width: '50%',
-        alignItems: 'center',
-        paddingVertical: spacing.sm,
-    },
-    statItemLabel: {
-        fontSize: 10,
+    statValue: {
+        fontSize: 14,
         fontWeight: '500',
-        color: Colors.light.textSecondary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: spacing.xs,
-    },
-    statItemValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
         color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
     },
-    statItemSubtext: {
-        fontSize: 10,
-        color: Colors.light.textSecondary,
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        paddingHorizontal: spacing.md,
+    },
+    tabletLeftColumn: {
+        flex: 1,
+        gap: spacing.lg,
+    },
+    tabletRightColumn: {
+        flex: 2,
+        gap: spacing.lg,
     },
 });

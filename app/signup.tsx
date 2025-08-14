@@ -19,6 +19,8 @@ import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useScreenSize } from '../hooks/useScreenSize';
 
 const SignupScreen = () => {
   const [name, setName] = useState('');
@@ -33,6 +35,7 @@ const SignupScreen = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signup, isLoading, isAuthenticating } = useAuth();
   const { showToast } = useSimpleToast();
+  const screenSize = useScreenSize();
 
   const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
@@ -102,354 +105,428 @@ const SignupScreen = () => {
         return;
       }
 
-      if (name.length > 30) {
-        showToast('Username must be less than 30 characters', 'error');
+      // Password validation
+      if (!passwordValidation.isValid) {
+        showToast('Password does not meet requirements', 'error');
         return;
       }
 
-      // Password validation
+      // Confirm password validation
       if (password !== confirmPassword) {
         showToast('Passwords do not match', 'error');
         return;
       }
 
-      if (!passwordValidation.isValid) {
-        showToast(passwordValidation.errors[0], 'error');
-        return;
-      }
-
-      // Show loading state
-      showToast('Creating your account...', 'info');
-
-      const result = await signup(email, password, name);
-
-      if (result.success && 'message' in result) {
-        showToast(result.message || 'Account created successfully!', 'success');
-        // Small delay to show success message before navigation
-        setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 1000);
-      } else if (!result.success && 'error' in result) {
-        // Handle specific API errors
-        const errorMessage = result.error || 'Failed to create account';
-
-        if (errorMessage.includes('email') && errorMessage.includes('already exists')) {
-          showToast('An account with this email already exists. Please try logging in instead.', 'error');
-        } else if (errorMessage.includes('Username') && errorMessage.includes('already taken')) {
-          showToast('This username is already taken. Please choose a different one.', 'error');
-        } else if (errorMessage.includes('Password must be at least 8 characters')) {
-          showToast('Password does not meet requirements. Please check the requirements below.', 'error');
-        } else if (errorMessage.includes('Invalid email format')) {
-          showToast('Please enter a valid email address.', 'error');
-        } else if (errorMessage.includes('Username must be 3-20 characters')) {
-          showToast('Username must be 3-20 characters long and contain only letters, numbers, and underscores.', 'error');
-        } else if (errorMessage.includes('Email, password, and name are required')) {
-          showToast('Please fill in all required fields.', 'error');
-        } else {
-          showToast(errorMessage, 'error');
-        }
+      const result = await signup(name, email, password);
+      if (result.success) {
+        showToast('Account created successfully!', 'success');
+        router.replace('/(tabs)');
       } else {
-        showToast('An unexpected error occurred. Please try again.', 'error');
+        showToast(result.error || 'Failed to create account', 'error');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-
-      // Handle network errors
-      if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        showToast('Network error. Please check your internet connection and try again.', 'error');
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        showToast('Request timed out. Please try again.', 'error');
-      } else if (error.message?.includes('Failed to fetch')) {
-        showToast('Unable to connect to server. Please check your internet connection.', 'error');
-      } else if (error.message?.includes('timeout')) {
-        showToast('Request timed out. Please try again.', 'error');
-      } else if (error.message?.includes('offline') || error.message?.includes('no internet')) {
-        showToast('You appear to be offline. Please check your internet connection and try again.', 'error');
-      } else if (error.message?.includes('server') || error.message?.includes('500')) {
-        showToast('Server error. Please try again later.', 'error');
-      } else {
-        showToast('An unexpected error occurred. Please try again later.', 'error');
-      }
+      showToast('Failed to create account. Please try again.', 'error');
     }
   };
 
-  const scrollToInput = (inputRef: React.RefObject<TextInput | null>) => {
-    if (scrollViewRef.current && inputRef.current) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          y: 200, // Fixed offset that should work for most cases
-          animated: true,
-        });
-      }, 100);
-    }
+  const handleBackToLogin = () => {
+    router.back();
   };
 
-  if (isLoading || isAuthenticating) {
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.light.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={true}
+    <SafeAreaView style={styles.container}>
+      <ResponsiveContainer>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
         >
-          {/* Logo and Branding Section */}
-          <View style={styles.logoSection}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Text style={styles.logoText}>FP</Text>
-                <View style={styles.logoAccent} />
-              </View>
-            </View>
-            <Text style={styles.appName}>FinalPoint</Text>
-            <Text style={styles.tagline}>F1 Prediction Game</Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formSection}>
-            {/* Name Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Username</Text>
-              <TextInput
-                ref={nameInputRef}
-                style={[
-                  styles.input,
-                  nameFocused && styles.inputFocused,
-                ]}
-                placeholder="Enter your username"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={name}
-                onChangeText={setName}
-                onFocus={() => {
-                  setNameFocused(true);
-                }}
-                onBlur={() => setNameFocused(false)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => emailInputRef.current?.focus()}
-              />
-            </View>
-
-            {/* Email Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email address</Text>
-              <TextInput
-                ref={emailInputRef}
-                style={[
-                  styles.input,
-                  emailFocused && styles.inputFocused,
-                ]}
-                placeholder="Enter your email address"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => {
-                  setEmailFocused(true);
-                }}
-                onBlur={() => setEmailFocused(false)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => passwordInputRef.current?.focus()}
-              />
-            </View>
-
-            {/* Password Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  ref={passwordInputRef}
-                  style={[
-                    styles.passwordInput,
-                    passwordFocused && styles.inputFocused,
-                  ]}
-                  placeholder="Create a password"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => {
-                    setPasswordFocused(true);
-                  }}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="password"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color={Colors.light.gray500}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* Password Requirements */}
-              {password.length > 0 && (
-                <View style={styles.requirementsContainer}>
-                  <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                  {[
-                    { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
-                    { test: (p: string) => /[a-z]/.test(p), label: 'Contains lowercase letter' },
-                    { test: (p: string) => /[A-Z]/.test(p), label: 'Contains uppercase letter' },
-                    { test: (p: string) => /\d/.test(p), label: 'Contains number' },
-                    { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Contains special character' }
-                  ].map((req, index) => {
-                    const isMet = req.test(password);
-                    return (
-                      <View key={index} style={styles.requirementItem}>
-                        <Ionicons
-                          name={isMet ? 'checkmark-circle' : 'close-circle'}
-                          size={16}
-                          color={isMet ? Colors.light.success : Colors.light.error}
-                        />
-                        <Text style={[styles.requirementText, isMet && styles.requirementMet]}>
-                          {req.label}
-                        </Text>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets={true}
+          >
+            {/* Main Content - Responsive Layout */}
+            {screenSize === 'tablet' ? (
+              <View style={styles.tabletLayout}>
+                {/* Left Column - Logo & Branding */}
+                <View style={styles.tabletLeftColumn}>
+                  <View style={styles.logoSection}>
+                    <View style={styles.logoContainer}>
+                      <View style={styles.logo}>
+                        <Text style={styles.logoText}>FP</Text>
+                        <View style={styles.logoAccent} />
                       </View>
-                    );
-                  })}
-                  {passwordValidation.errors.some(error =>
-                    error.includes('repeated') ||
-                    error.includes('sequential') ||
-                    error.includes('keyboard') ||
-                    error.includes('common')
-                  ) && (
-                      <View style={styles.requirementItem}>
-                        <Ionicons
-                          name="close-circle"
-                          size={16}
-                          color={Colors.light.error}
-                        />
-                        <Text style={styles.requirementText}>
-                          {passwordValidation.errors.find(error =>
-                            error.includes('repeated') ||
-                            error.includes('sequential') ||
-                            error.includes('keyboard') ||
-                            error.includes('common')
-                          )}
-                        </Text>
-                      </View>
-                    )}
+                    </View>
+                    <Text style={styles.appName}>FinalPoint</Text>
+                    <Text style={styles.tagline}>F1 Prediction Game</Text>
+
+                    {/* Additional branding for tablets */}
+                    <View style={styles.tabletBranding}>
+                      <Text style={styles.tabletSubtitle}>
+                        Join the ultimate Formula 1 prediction competition
+                      </Text>
+                      <Text style={styles.tabletFeatures}>
+                        • Create your account{'\n'}
+                        • Join leagues and compete{'\n'}
+                        • Make race predictions{'\n'}
+                        • Track your performance
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              )}
-            </View>
 
-            {/* Confirm Password Field */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Confirm password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  ref={confirmPasswordInputRef}
-                  style={[
-                    styles.passwordInput,
-                    confirmPasswordFocused && styles.inputFocused,
-                  ]}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  onFocus={() => {
-                    setConfirmPasswordFocused(true);
-                  }}
-                  onBlur={() => setConfirmPasswordFocused(false)}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="password"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSignup}
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  <Ionicons
-                    name={showConfirmPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color={Colors.light.gray500}
-                  />
-                </TouchableOpacity>
+                {/* Right Column - Signup Form */}
+                <View style={styles.tabletRightColumn}>
+                  <View style={styles.formSection}>
+                    <Text style={styles.formTitle}>Create Account</Text>
+                    <Text style={styles.formSubtitle}>Join FinalPoint today</Text>
+
+                    {/* Name Field */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Full Name</Text>
+                      <TextInput
+                        ref={nameInputRef}
+                        style={[
+                          styles.input,
+                          nameFocused && styles.inputFocused,
+                        ]}
+                        placeholder="Enter your full name"
+                        placeholderTextColor={Colors.light.textSecondary}
+                        value={name}
+                        onChangeText={setName}
+                        onFocus={() => setNameFocused(true)}
+                        onBlur={() => setNameFocused(false)}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        returnKeyType="next"
+                        onSubmitEditing={() => emailInputRef.current?.focus()}
+                      />
+                    </View>
+
+                    {/* Email Field */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Email Address</Text>
+                      <TextInput
+                        ref={emailInputRef}
+                        style={[
+                          styles.input,
+                          emailFocused && styles.inputFocused,
+                        ]}
+                        placeholder="Enter your email address"
+                        placeholderTextColor={Colors.light.textSecondary}
+                        value={email}
+                        onChangeText={setEmail}
+                        onFocus={() => setEmailFocused(true)}
+                        onBlur={() => setEmailFocused(false)}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="next"
+                        onSubmitEditing={() => passwordInputRef.current?.focus()}
+                      />
+                    </View>
+
+                    {/* Password Field */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Password</Text>
+                      <View style={styles.passwordContainer}>
+                        <TextInput
+                          ref={passwordInputRef}
+                          style={[
+                            styles.passwordInput,
+                            passwordFocused && styles.inputFocused,
+                          ]}
+                          placeholder="Create a strong password"
+                          placeholderTextColor={Colors.light.textSecondary}
+                          value={password}
+                          onChangeText={setPassword}
+                          onFocus={() => setPasswordFocused(true)}
+                          onBlur={() => setPasswordFocused(false)}
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          returnKeyType="next"
+                          onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+                        />
+                        <TouchableOpacity
+                          style={styles.eyeButton}
+                          onPress={() => setShowPassword(!showPassword)}
+                        >
+                          <Ionicons
+                            name={showPassword ? 'eye-off' : 'eye'}
+                            size={20}
+                            color={Colors.light.textSecondary}
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Password Strength Indicator */}
+                      <View style={styles.passwordStrengthContainer}>
+                        <View style={styles.strengthBar}>
+                          <View
+                            style={[
+                              styles.strengthFill,
+                              { width: `${(passwordValidation.score / 5) * 100}%` }
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.strengthText}>
+                          {passwordValidation.score}/5 requirements met
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Confirm Password Field */}
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Confirm Password</Text>
+                      <View style={styles.passwordContainer}>
+                        <TextInput
+                          ref={confirmPasswordInputRef}
+                          style={[
+                            styles.passwordInput,
+                            confirmPasswordFocused && styles.inputFocused,
+                          ]}
+                          placeholder="Confirm your password"
+                          placeholderTextColor={Colors.light.textSecondary}
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          onFocus={() => setConfirmPasswordFocused(true)}
+                          onBlur={() => setConfirmPasswordFocused(false)}
+                          secureTextEntry={!showConfirmPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          returnKeyType="done"
+                          onSubmitEditing={handleSignup}
+                        />
+                        <TouchableOpacity
+                          style={styles.eyeButton}
+                          onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          <Ionicons
+                            name={showConfirmPassword ? 'eye-off' : 'eye'}
+                            size={20}
+                            color={Colors.light.textSecondary}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Sign Up Button */}
+                    <TouchableOpacity
+                      style={styles.signUpButton}
+                      onPress={handleSignup}
+                      disabled={isAuthenticating}
+                      activeOpacity={0.8}
+                    >
+                      {isAuthenticating ? (
+                        <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                      ) : (
+                        <Text style={styles.signUpButtonText}>Create Account</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Footer */}
+                    <View style={styles.footerSection}>
+                      <View style={styles.footerTextContainer}>
+                        <Text style={styles.footerText}>Already have an account? </Text>
+                        <TouchableOpacity onPress={handleBackToLogin}>
+                          <Text style={styles.footerLink}>Sign in</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </View>
               </View>
-              {confirmPassword.length > 0 && password !== confirmPassword && (
-                <Text style={styles.errorText}>Passwords do not match</Text>
-              )}
-            </View>
+            ) : (
+              /* Mobile Layout (existing code) */
+              <>
+                {/* Logo and Branding Section */}
+                <View style={styles.logoSection}>
+                  <View style={styles.logoContainer}>
+                    <View style={styles.logo}>
+                      <Text style={styles.logoText}>FP</Text>
+                      <View style={styles.logoAccent} />
+                    </View>
+                  </View>
+                  <Text style={styles.appName}>FinalPoint</Text>
+                  <Text style={styles.tagline}>F1 Prediction Game</Text>
+                </View>
 
-            {/* Create Account Button */}
-            <TouchableOpacity
-              style={[
-                styles.createAccountButton,
-                (!name || !email || !password || !confirmPassword || !passwordValidation.isValid || password !== confirmPassword) &&
-                styles.createAccountButtonDisabled,
-                isAuthenticating && { opacity: 0.7 }
-              ]}
-              onPress={handleSignup}
-              activeOpacity={0.8}
-              disabled={
-                !name ||
-                !email ||
-                !password ||
-                !confirmPassword ||
-                !passwordValidation.isValid ||
-                password !== confirmPassword ||
-                isAuthenticating
-              }
-            >
-              {isAuthenticating ? (
-                <ActivityIndicator size="small" color={Colors.light.textInverse} />
-              ) : (
-                <Text style={styles.createAccountButtonText}>Create account</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+                {/* Form Section */}
+                <View style={styles.formSection}>
+                  {/* Name Field */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Full Name</Text>
+                    <TextInput
+                      ref={nameInputRef}
+                      style={[
+                        styles.input,
+                        nameFocused && styles.inputFocused,
+                      ]}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={Colors.light.textSecondary}
+                      value={name}
+                      onChangeText={setName}
+                      onFocus={() => setNameFocused(true)}
+                      onBlur={() => setNameFocused(false)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                      onSubmitEditing={() => emailInputRef.current?.focus()}
+                    />
+                  </View>
 
-          {/* Footer Links */}
-          <View style={styles.footerSection}>
-            <View style={styles.footerTextContainer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.footerLink}>Sign in</Text>
-              </TouchableOpacity>
-            </View>
+                  {/* Email Field */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Email Address</Text>
+                    <TextInput
+                      ref={emailInputRef}
+                      style={[
+                        styles.input,
+                        emailFocused && styles.inputFocused,
+                      ]}
+                      placeholder="Enter your email address"
+                      placeholderTextColor={Colors.light.textSecondary}
+                      value={email}
+                      onChangeText={setEmail}
+                      onFocus={() => setEmailFocused(true)}
+                      onBlur={() => setEmailFocused(false)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                      onSubmitEditing={() => passwordInputRef.current?.focus()}
+                    />
+                  </View>
 
-            <TouchableOpacity
-              style={styles.learnMoreButton}
-              onPress={() => showToast('Learn more about FinalPoint', 'info')}
-            >
-              <Text style={styles.learnMoreText}>Learn more about FinalPoint</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+                  {/* Password Field */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <View style={styles.passwordContainer}>
+                      <TextInput
+                        ref={passwordInputRef}
+                        style={[
+                          styles.passwordInput,
+                          passwordFocused && styles.inputFocused,
+                        ]}
+                        placeholder="Create a strong password"
+                        placeholderTextColor={Colors.light.textSecondary}
+                        value={password}
+                        onChangeText={setPassword}
+                        onFocus={() => setPasswordFocused(true)}
+                        onBlur={() => setPasswordFocused(false)}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="next"
+                        onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                      >
+                        <Ionicons
+                          name={showPassword ? 'eye-off' : 'eye'}
+                          size={20}
+                          color={Colors.light.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Password Strength Indicator */}
+                    <View style={styles.passwordStrengthContainer}>
+                      <View style={styles.strengthBar}>
+                        <View
+                          style={[
+                            styles.strengthFill,
+                            { width: `${(passwordValidation.score / 5) * 100}%` }
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.strengthText}>
+                        {passwordValidation.score}/5 requirements met
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Confirm Password Field */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Confirm Password</Text>
+                    <View style={styles.passwordContainer}>
+                      <TextInput
+                        ref={confirmPasswordInputRef}
+                        style={[
+                          styles.passwordInput,
+                          confirmPasswordFocused && styles.inputFocused,
+                        ]}
+                        placeholder="Confirm your password"
+                        placeholderTextColor={Colors.light.textSecondary}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        onFocus={() => setConfirmPasswordFocused(true)}
+                        onBlur={() => setConfirmPasswordFocused(false)}
+                        secureTextEntry={!showConfirmPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="done"
+                        onSubmitEditing={handleSignup}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        <Ionicons
+                          name={showConfirmPassword ? 'eye-off' : 'eye'}
+                          size={20}
+                          color={Colors.light.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Sign Up Button */}
+                  <TouchableOpacity
+                    style={styles.signUpButton}
+                    onPress={handleSignup}
+                    disabled={isAuthenticating}
+                    activeOpacity={0.8}
+                  >
+                    {isAuthenticating ? (
+                      <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                    ) : (
+                      <Text style={styles.signUpButtonText}>Create Account</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Footer */}
+                  <View style={styles.footerSection}>
+                    <View style={styles.footerTextContainer}>
+                      <Text style={styles.footerText}>Already have an account? </Text>
+                      <TouchableOpacity onPress={handleBackToLogin}>
+                        <Text style={styles.footerLink}>Sign in</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ResponsiveContainer>
     </SafeAreaView>
   );
 };
@@ -457,13 +534,13 @@ const SignupScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.backgroundSecondary, // White background
+    backgroundColor: Colors.light.backgroundPrimary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.light.backgroundSecondary, // White background
+    backgroundColor: Colors.light.backgroundPrimary,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -473,22 +550,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingBottom: spacing.xl,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   logoContainer: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   logo: {
     width: 80,
     height: 80,
+    borderRadius: 40,
     backgroundColor: Colors.light.primary,
-    borderRadius: borderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -501,12 +577,12 @@ const styles = StyleSheet.create({
   },
   logoAccent: {
     position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 12,
-    height: 12,
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: Colors.light.warning,
-    borderRadius: 2,
   },
   appName: {
     fontSize: 28,
@@ -517,21 +593,53 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 16,
     color: Colors.light.textSecondary,
+    textAlign: 'center',
+  },
+  tabletBranding: {
+    marginTop: spacing.xl,
+    alignItems: 'center',
+  },
+  tabletSubtitle: {
+    fontSize: 18,
+    color: Colors.light.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 24,
+  },
+  tabletFeatures: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   formSection: {
-    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
-  inputContainer: {
+  formTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.light.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  formSubtitle: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.light.textPrimary,
     marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: Colors.light.backgroundSecondary, // White background
+    backgroundColor: Colors.light.backgroundSecondary,
     borderWidth: 1,
     borderColor: Colors.light.borderMedium,
     borderRadius: borderRadius.md,
@@ -548,7 +656,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: Colors.light.backgroundSecondary, // White background
+    backgroundColor: Colors.light.backgroundSecondary,
     borderWidth: 1,
     borderColor: Colors.light.borderMedium,
     borderRadius: borderRadius.md,
@@ -565,7 +673,27 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -10 }],
     padding: spacing.xs,
   },
-  createAccountButton: {
+  passwordStrengthContainer: {
+    marginTop: spacing.sm,
+  },
+  strengthBar: {
+    height: 4,
+    backgroundColor: Colors.light.borderLight,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+  },
+  strengthFill: {
+    height: '100%',
+    backgroundColor: Colors.light.primary,
+    borderRadius: 2,
+  },
+  strengthText: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+  },
+  signUpButton: {
     backgroundColor: Colors.light.primary,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
@@ -574,22 +702,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     ...shadows.sm,
   },
-  createAccountButtonDisabled: {
-    backgroundColor: Colors.light.borderMedium,
-    opacity: 0.7,
-  },
-  createAccountButtonText: {
+  signUpButtonText: {
     color: Colors.light.textInverse,
     fontSize: 16,
     fontWeight: 'bold',
   },
   footerSection: {
     alignItems: 'center',
+    marginTop: spacing.lg,
   },
   footerTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
   },
   footerText: {
     fontSize: 14,
@@ -600,48 +724,21 @@ const styles = StyleSheet.create({
     color: Colors.light.primary,
     fontWeight: '600',
   },
-  learnMoreButton: {
-    paddingVertical: spacing.sm,
-  },
-  learnMoreText: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    textDecorationLine: 'underline',
-  },
-  requirementsContainer: {
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: Colors.light.borderMedium,
-  },
-  requirementsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  requirementItem: {
+  // Tablet-specific styles
+  tabletLayout: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+    minHeight: '100%',
+    paddingHorizontal: spacing.lg,
   },
-  requirementText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    marginLeft: spacing.xs,
+  tabletLeftColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingRight: spacing.xl,
   },
-  requirementMet: {
-    color: Colors.light.success,
-    fontWeight: '600',
-  },
-  errorText: {
-    color: Colors.light.error,
-    fontSize: 12,
-    marginTop: spacing.xs,
-    marginLeft: spacing.md,
+  tabletRightColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: spacing.xl,
   },
 });
 

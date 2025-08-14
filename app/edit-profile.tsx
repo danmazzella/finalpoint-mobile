@@ -1,120 +1,278 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     TextInput,
     TouchableOpacity,
-    Alert,
+    StyleSheet,
     ActivityIndicator,
     ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import Colors from '../constants/Colors';
-import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
+import Colors from '../constants/Colors';
+import { spacing, borderRadius, shadows } from '../utils/styles';
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useScreenSize } from '../hooks/useScreenSize';
+import Avatar from '../src/components/Avatar';
 
 const EditProfileScreen = () => {
+    const [name, setName] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { user, updateProfile } = useAuth();
     const { showToast } = useSimpleToast();
-    const [name, setName] = useState(user?.name || '');
-    const [isLoading, setIsLoading] = useState(false);
+    const screenSize = useScreenSize();
 
-    const handleUpdateProfile = async () => {
+    const scrollViewRef = useRef<ScrollView>(null);
+    const nameInputRef = useRef<TextInput>(null);
+
+    // Initialize name from user data
+    React.useEffect(() => {
+        if (user?.name) {
+            setName(user.name);
+        }
+    }, [user]);
+
+    const handleSaveProfile = async () => {
         if (!name.trim()) {
-            showToast('Please enter a name', 'error');
+            showToast('Please enter a valid name', 'error');
             return;
         }
 
-        if (name.trim().length < 2) {
-            showToast('Name must be at least 2 characters long', 'error');
+        if (name.trim() === user?.name) {
+            showToast('No changes to save', 'info');
             return;
         }
 
         setIsLoading(true);
-
         try {
-            const success = await updateProfile(name.trim());
-            if (success) {
+            const result = await updateProfile(name.trim());
+            if (result) {
                 showToast('Profile updated successfully!', 'success');
-                Alert.alert(
-                    'Success',
-                    'Your profile has been updated successfully.',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.back(),
-                        },
-                    ]
-                );
+                router.back();
             } else {
-                showToast('Failed to update profile. Please try again.', 'error');
+                showToast('Failed to update profile', 'error');
             }
-        } catch (error: any) {
-            console.error('Update profile error:', error);
-            if (error?.response?.data?.errors?.some((e: any) => e.message === 'Username already taken')) {
-                showToast('Username already taken. Please choose a different username.', 'error');
-            } else {
-                showToast('An error occurred. Please try again.', 'error');
-            }
+        } catch (error) {
+            showToast('Failed to update profile. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleCancel = () => {
+        if (name !== user?.name) {
+            Alert.alert(
+                'Cancel Changes',
+                'Are you sure you want to cancel? Any unsaved changes will be lost.',
+                [
+                    { text: 'Keep Editing', style: 'cancel' },
+                    { text: 'Cancel', style: 'destructive', onPress: () => router.back() }
+                ]
+            );
+        } else {
+            router.back();
+        }
+    };
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <KeyboardAvoidingView
+                    style={styles.keyboardAvoidingView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
+                >
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={true}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Edit Profile</Text>
-                    <View style={styles.placeholder} />
-                </View>
+                        {/* Main Content - Responsive Layout */}
+                        {screenSize === 'tablet' ? (
+                            <View style={styles.tabletLayout}>
+                                {/* Left Column - Logo & Branding */}
+                                <View style={styles.tabletLeftColumn}>
+                                    <View style={styles.logoSection}>
+                                        <View style={styles.logoContainer}>
+                                            <View style={styles.logo}>
+                                                <Text style={styles.logoText}>FP</Text>
+                                                <View style={styles.logoAccent} />
+                                            </View>
+                                        </View>
+                                        <Text style={styles.appName}>FinalPoint</Text>
+                                        <Text style={styles.tagline}>F1 Prediction Game</Text>
 
-                {/* Form */}
-                <View style={styles.form}>
-                    {/* Name Field */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="Enter your name"
-                            placeholderTextColor={Colors.light.textSecondary}
-                            autoCapitalize="words"
-                            autoCorrect={false}
-                            maxLength={50}
-                        />
-                        <Text style={styles.hint}>Minimum 2 characters</Text>
-                    </View>
+                                        {/* Additional branding for tablets */}
+                                        <View style={styles.tabletBranding}>
+                                            <Text style={styles.tabletSubtitle}>
+                                                Update your profile information
+                                            </Text>
+                                            <Text style={styles.tabletFeatures}>
+                                                • Edit your display name{'\n'}
+                                                • Keep your profile current{'\n'}
+                                                • Maintain your identity{'\n'}
+                                                • Stay connected with friends
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
 
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            (!name.trim() || name.trim().length < 2) && styles.submitButtonDisabled
-                        ]}
-                        onPress={handleUpdateProfile}
-                        disabled={!name.trim() || name.trim().length < 2 || isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                {/* Right Column - Edit Profile Form */}
+                                <View style={styles.tabletRightColumn}>
+                                    <View style={styles.formSection}>
+                                        <Text style={styles.formTitle}>Edit Profile</Text>
+                                        <Text style={styles.formSubtitle}>
+                                            Update your profile information below.
+                                        </Text>
+
+                                        {/* Profile Picture Section */}
+                                        <View style={styles.avatarSection}>
+                                            <Avatar
+                                                src={user?.avatar}
+                                                size="xl"
+                                                fallback={user?.name?.[0] || 'U'}
+                                            />
+                                            <Text style={styles.avatarText}>
+                                                Profile picture managed in Profile settings
+                                            </Text>
+                                        </View>
+
+                                        {/* Name Field */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.inputLabel}>Display Name</Text>
+                                            <TextInput
+                                                ref={nameInputRef}
+                                                style={styles.input}
+                                                placeholder="Enter your display name"
+                                                placeholderTextColor={Colors.light.textSecondary}
+                                                value={name}
+                                                onChangeText={setName}
+                                                autoCapitalize="words"
+                                                autoCorrect={false}
+                                                returnKeyType="done"
+                                                onSubmitEditing={handleSaveProfile}
+                                            />
+                                        </View>
+
+                                        {/* Action Buttons */}
+                                        <View style={styles.buttonContainer}>
+                                            <TouchableOpacity
+                                                style={styles.saveButton}
+                                                onPress={handleSaveProfile}
+                                                disabled={isLoading}
+                                                activeOpacity={0.8}
+                                            >
+                                                {isLoading ? (
+                                                    <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                                ) : (
+                                                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                                                )}
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                style={styles.cancelButton}
+                                                onPress={handleCancel}
+                                                disabled={isLoading}
+                                                activeOpacity={0.8}
+                                            >
+                                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
                         ) : (
-                            <Text style={styles.submitButtonText}>Update Profile</Text>
+                            /* Mobile Layout (existing code) */
+                            <>
+                                {/* Logo and Branding Section */}
+                                <View style={styles.logoSection}>
+                                    <View style={styles.logoContainer}>
+                                        <View style={styles.logo}>
+                                            <Text style={styles.logoText}>FP</Text>
+                                            <View style={styles.logoAccent} />
+                                        </View>
+                                    </View>
+                                    <Text style={styles.appName}>FinalPoint</Text>
+                                    <Text style={styles.tagline}>F1 Prediction Game</Text>
+                                </View>
+
+                                {/* Form Section */}
+                                <View style={styles.formSection}>
+                                    <Text style={styles.formTitle}>Edit Profile</Text>
+                                    <Text style={styles.formSubtitle}>
+                                        Update your profile information below.
+                                    </Text>
+
+                                    {/* Profile Picture Section */}
+                                    <View style={styles.avatarSection}>
+                                        <Avatar
+                                            src={user?.avatar}
+                                            size="xl"
+                                            fallback={user?.name?.[0] || 'U'}
+                                        />
+                                        <Text style={styles.avatarText}>
+                                            Profile picture managed in Profile settings
+                                        </Text>
+                                    </View>
+
+                                    {/* Name Field */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Display Name</Text>
+                                        <TextInput
+                                            ref={nameInputRef}
+                                            style={styles.input}
+                                            placeholder="Enter your display name"
+                                            placeholderTextColor={Colors.light.textSecondary}
+                                            value={name}
+                                            onChangeText={setName}
+                                            autoCapitalize="words"
+                                            autoCorrect={false}
+                                            returnKeyType="done"
+                                            onSubmitEditing={handleSaveProfile}
+                                        />
+                                    </View>
+
+                                    {/* Action Buttons */}
+                                    <View style={styles.buttonContainer}>
+                                        <TouchableOpacity
+                                            style={styles.saveButton}
+                                            onPress={handleSaveProfile}
+                                            disabled={isLoading}
+                                            activeOpacity={0.8}
+                                        >
+                                            {isLoading ? (
+                                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                            ) : (
+                                                <Text style={styles.saveButtonText}>Save Changes</Text>
+                                            )}
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.cancelButton}
+                                            onPress={handleCancel}
+                                            disabled={isLoading}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </>
                         )}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 };
@@ -122,76 +280,172 @@ const EditProfileScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundSecondary, // White background
+        backgroundColor: Colors.light.backgroundPrimary,
+    },
+    keyboardAvoidingView: {
+        flex: 1,
     },
     scrollView: {
         flex: 1,
     },
-    header: {
-        flexDirection: 'row',
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: spacing.xl,
+    },
+    logoSection: {
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        minHeight: 64,
+        paddingTop: spacing.xl,
+        paddingBottom: spacing.lg,
     },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
+    logoContainer: {
+        marginBottom: spacing.md,
     },
-    headerTitle: {
-        fontSize: 20,
+    logo: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: Colors.light.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        ...shadows.md,
+    },
+    logoText: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: Colors.light.textInverse,
+    },
+    logoAccent: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: Colors.light.warning,
+    },
+    appName: {
+        fontSize: 28,
         fontWeight: 'bold',
         color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
-    placeholder: {
-        width: 40,
+    tagline: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
     },
-    form: {
-        padding: spacing.lg,
+    tabletBranding: {
+        marginTop: spacing.xl,
+        alignItems: 'center',
     },
-    inputGroup: {
+    tabletSubtitle: {
+        fontSize: 18,
+        color: Colors.light.textPrimary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+        lineHeight: 24,
+    },
+    tabletFeatures: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
+    },
+    formSection: {
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.lg,
+    },
+    formTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+    },
+    formSubtitle: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+        lineHeight: 22,
+    },
+    avatarSection: {
+        alignItems: 'center',
         marginBottom: spacing.lg,
     },
-    label: {
+    avatarText: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginTop: spacing.sm,
+        lineHeight: 18,
+    },
+    inputContainer: {
+        marginBottom: spacing.md,
+    },
+    inputLabel: {
         fontSize: 16,
         fontWeight: '600',
         color: Colors.light.textPrimary,
         marginBottom: spacing.sm,
     },
     input: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderMedium,
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
         fontSize: 16,
         color: Colors.light.textPrimary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.md,
-        backgroundColor: Colors.light.cardBackground,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
     },
-    hint: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    submitButton: {
-        backgroundColor: Colors.light.primary,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
+    buttonContainer: {
         marginTop: spacing.lg,
+        gap: spacing.md,
     },
-    submitButtonDisabled: {
-        backgroundColor: Colors.light.gray400,
+    saveButton: {
+        backgroundColor: Colors.light.primary,
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        alignItems: 'center',
+        ...shadows.sm,
     },
-    submitButtonText: {
+    saveButtonText: {
         color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    cancelButton: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderMedium,
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: Colors.light.textPrimary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        minHeight: '100%',
+        paddingHorizontal: spacing.lg,
+    },
+    tabletLeftColumn: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingRight: spacing.xl,
+    },
+    tabletRightColumn: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingLeft: spacing.xl,
     },
 });
 

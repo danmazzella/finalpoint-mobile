@@ -18,10 +18,14 @@ import { UserStats, GlobalStats, League } from '../../src/types';
 import { router } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius, shadows, cardStyles, textStyles } from '../../utils/styles';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
+import { useScreenSize } from '../../hooks/useScreenSize';
+import TabletTestIndicator from '../../components/TabletTestIndicator';
 
 const HomeScreen = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useSimpleToast();
+  const screenSize = useScreenSize();
 
   // Determine base URL for web app based on environment
   const getBaseUrl = () => {
@@ -159,152 +163,290 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome back, {user?.name}!</Text>
-          <Text style={styles.subtitle}>Here&apos;s your F1 prediction overview</Text>
-        </View>
+      <ResponsiveContainer>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <Text style={styles.welcomeText}>Welcome back, {user?.name}!</Text>
+            <Text style={styles.subtitle}>Here&apos;s your F1 prediction overview</Text>
+          </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleScoringPress}
-          >
-            <Ionicons name="help-circle-outline" size={20} color={Colors.light.primary} />
-            <Text style={styles.actionButtonText}>How Scoring Works</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Your Leagues Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Leagues</Text>
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
             <TouchableOpacity
-              style={styles.manageButton}
-              onPress={() => router.push('/(tabs)/leagues')}
+              style={styles.actionButton}
+              onPress={handleScoringPress}
             >
-              <Text style={styles.manageButtonText}>Manage Leagues</Text>
+              <Ionicons name="help-circle-outline" size={20} color={Colors.light.primary} />
+              <Text style={styles.actionButtonText}>How Scoring Works</Text>
             </TouchableOpacity>
           </View>
 
-          {leagues.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="trophy-outline" size={48} color={Colors.light.gray400} />
-              <Text style={styles.emptyStateTitle}>No leagues</Text>
-              <Text style={styles.emptyStateText}>Get started by creating or joining a league.</Text>
-              <View style={styles.emptyStateActions}>
-                <TouchableOpacity
-                  style={styles.emptyStateButton}
-                  onPress={() => showToast('Join league feature coming soon!', 'info')}
-                >
-                  <Text style={styles.emptyStateButtonText}>Join League</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.emptyStateButtonPrimary}
-                  onPress={() => router.push('/(tabs)/leagues')}
-                >
-                  <Text style={styles.emptyStateButtonPrimaryText}>Create League</Text>
-                </TouchableOpacity>
+          {/* Main Content Grid for Tablet */}
+          {screenSize === 'tablet' ? (
+            <View style={styles.tabletGrid}>
+              {/* Left Column */}
+              <View style={styles.tabletLeftColumn}>
+                {/* Your Leagues Section */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Your Leagues</Text>
+                    <TouchableOpacity
+                      style={styles.manageButton}
+                      onPress={() => router.push('/(tabs)/leagues')}
+                    >
+                      <Text style={styles.manageButtonText}>Manage Leagues</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {leagues.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="trophy-outline" size={48} color={Colors.light.gray400} />
+                      <Text style={styles.emptyStateTitle}>No leagues</Text>
+                      <Text style={styles.emptyStateText}>Get started by creating or joining a league.</Text>
+                      <View style={styles.emptyStateActions}>
+                        <TouchableOpacity
+                          style={styles.emptyStateButton}
+                          onPress={() => showToast('Join league feature coming soon!', 'info')}
+                        >
+                          <Text style={styles.emptyStateButtonText}>Join League</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.emptyStateButtonPrimary}
+                          onPress={() => router.push('/(tabs)/leagues')}
+                        >
+                          <Text style={styles.emptyStateButtonPrimaryText}>Create League</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.leaguesList}>
+                      {leagues.map((league) => (
+                        <TouchableOpacity
+                          key={league.id}
+                          style={styles.leagueCard}
+                          onPress={() => router.push(`/league/${league.id}`)}
+                        >
+                          <View style={styles.leagueInfo}>
+                            <Text style={styles.leagueName}>{league.name}</Text>
+                            <Text style={styles.leagueDetails}>
+                              Join Code: {league.joinCode}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.viewLeagueButton}
+                            onPress={() => router.push(`/league/${league.id}`)}
+                          >
+                            <Text style={styles.viewLeagueButtonText}>View League</Text>
+                          </TouchableOpacity>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* User Stats Section */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Your Statistics</Text>
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{userStats.totalPicks}</Text>
+                      <Text style={styles.statLabel}>Total Picks</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{userStats.correctPicks}</Text>
+                      <Text style={styles.statLabel}>Correct Picks</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{userStats.totalPoints}</Text>
+                      <Text style={styles.statLabel}>Total Points</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{userStats.accuracy}%</Text>
+                      <Text style={styles.statLabel}>Accuracy</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {/* Right Column */}
+              <View style={styles.tabletRightColumn}>
+                {/* Global Stats Section */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Platform Statistics</Text>
+
+                  {/* Lifetime Performance */}
+                  <View style={styles.globalStatsSubsection}>
+                    <Text style={styles.subsectionTitle}>Lifetime Performance</Text>
+                    <View style={styles.globalStatsGrid}>
+                      <View style={styles.globalStatCard}>
+                        <Text style={styles.globalStatNumber}>{globalStats.lifetimeAccuracy || 0}%</Text>
+                        <Text style={styles.globalStatLabel}>Global Accuracy</Text>
+                      </View>
+                      <View style={styles.globalStatCard}>
+                        <Text style={styles.globalStatNumber}>{globalStats.lifetimeAvgDistance || 0}</Text>
+                        <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Divider */}
+                  <View style={styles.divider} />
+
+                  {/* Past Week Performance */}
+                  <View style={styles.globalStatsSubsection}>
+                    <Text style={styles.subsectionTitle}>Past Week Performance</Text>
+                    <View style={styles.globalStatsGrid}>
+                      <View style={styles.globalStatCard}>
+                        <Text style={styles.globalStatNumber}>{globalStats.weekAccuracy || 0}%</Text>
+                        <Text style={styles.globalStatLabel}>Global Accuracy</Text>
+                      </View>
+                      <View style={styles.globalStatCard}>
+                        <Text style={styles.globalStatNumber}>{globalStats.weekAvgDistance || 0}</Text>
+                        <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
               </View>
             </View>
           ) : (
-            <View style={styles.leaguesList}>
-              {leagues.map((league) => (
-                <TouchableOpacity
-                  key={league.id}
-                  style={styles.leagueCard}
-                  onPress={() => router.push(`/league/${league.id}`)}
-                >
-                  <View style={styles.leagueInfo}>
-                    <Text style={styles.leagueName}>{league.name}</Text>
-                    <Text style={styles.leagueDetails}>
-                      Join Code: {league.joinCode}
-                    </Text>
-                  </View>
+            /* Mobile Layout (existing code) */
+            <>
+              {/* Your Leagues Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Your Leagues</Text>
                   <TouchableOpacity
-                    style={styles.viewLeagueButton}
-                    onPress={() => router.push(`/league/${league.id}`)}
+                    style={styles.manageButton}
+                    onPress={() => router.push('/(tabs)/leagues')}
                   >
-                    <Text style={styles.viewLeagueButtonText}>View League</Text>
+                    <Text style={styles.manageButtonText}>Manage Leagues</Text>
                   </TouchableOpacity>
-                </TouchableOpacity>
-              ))}
-            </View>
+                </View>
+
+                {leagues.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="trophy-outline" size={48} color={Colors.light.gray400} />
+                    <Text style={styles.emptyStateTitle}>No leagues</Text>
+                    <Text style={styles.emptyStateText}>Get started by creating or joining a league.</Text>
+                    <View style={styles.emptyStateActions}>
+                      <TouchableOpacity
+                        style={styles.emptyStateButton}
+                        onPress={() => showToast('Join league feature coming soon!', 'info')}
+                      >
+                        <Text style={styles.emptyStateButtonText}>Join League</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.emptyStateButtonPrimary}
+                        onPress={() => router.push('/(tabs)/leagues')}
+                      >
+                        <Text style={styles.emptyStateButtonPrimaryText}>Create League</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.leaguesList}>
+                    {leagues.map((league) => (
+                      <TouchableOpacity
+                        key={league.id}
+                        style={styles.leagueCard}
+                        onPress={() => router.push(`/league/${league.id}`)}
+                      >
+                        <View style={styles.leagueInfo}>
+                          <Text style={styles.leagueName}>{league.name}</Text>
+                          <Text style={styles.leagueDetails}>
+                            Join Code: {league.joinCode}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.viewLeagueButton}
+                          onPress={() => router.push(`/league/${league.id}`)}
+                        >
+                          <Text style={styles.viewLeagueButtonText}>View League</Text>
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* User Stats Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Your Statistics</Text>
+                <View style={styles.statsGrid}>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statNumber}>{userStats.totalPicks}</Text>
+                    <Text style={styles.statLabel}>Total Picks</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statNumber}>{userStats.correctPicks}</Text>
+                    <Text style={styles.statLabel}>Correct Picks</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statNumber}>{userStats.totalPoints}</Text>
+                    <Text style={styles.statLabel}>Total Points</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Text style={styles.statNumber}>{userStats.accuracy}%</Text>
+                    <Text style={styles.statLabel}>Accuracy</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Global Stats Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Platform Statistics</Text>
+
+                {/* Lifetime Performance */}
+                <View style={styles.globalStatsSubsection}>
+                  <Text style={styles.subsectionTitle}>Lifetime Performance</Text>
+                  <View style={styles.globalStatsGrid}>
+                    <View style={styles.globalStatCard}>
+                      <Text style={styles.globalStatNumber}>{globalStats.lifetimeAccuracy || 0}%</Text>
+                      <Text style={styles.globalStatLabel}>Global Accuracy</Text>
+                    </View>
+                    <View style={styles.globalStatCard}>
+                      <Text style={styles.globalStatNumber}>{globalStats.lifetimeAvgDistance || 0}</Text>
+                      <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Divider */}
+                <View style={styles.divider} />
+
+                {/* Past Week Performance */}
+                <View style={styles.globalStatsSubsection}>
+                  <Text style={styles.subsectionTitle}>Past Week Performance</Text>
+                  <View style={styles.globalStatsGrid}>
+                    <View style={styles.globalStatCard}>
+                      <Text style={styles.globalStatNumber}>{globalStats.weekAccuracy || 0}%</Text>
+                      <Text style={styles.globalStatLabel}>Global Accuracy</Text>
+                    </View>
+                    <View style={styles.globalStatCard}>
+                      <Text style={styles.globalStatNumber}>{globalStats.weekAvgDistance || 0}</Text>
+                      <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </>
           )}
-        </View>
 
-        {/* User Stats Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{userStats.totalPicks}</Text>
-              <Text style={styles.statLabel}>Total Picks</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{userStats.correctPicks}</Text>
-              <Text style={styles.statLabel}>Correct Picks</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{userStats.totalPoints}</Text>
-              <Text style={styles.statLabel}>Total Points</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{userStats.accuracy}%</Text>
-              <Text style={styles.statLabel}>Accuracy</Text>
-            </View>
-          </View>
-        </View>
+          {/* Bottom spacing for mobile to account for fixed bottom navigation */}
+          {screenSize === 'phone' && <View style={styles.bottomSpacing} />}
+        </ScrollView>
+      </ResponsiveContainer>
 
-        {/* Global Stats Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Platform Statistics</Text>
-
-          {/* Lifetime Performance */}
-          <View style={styles.globalStatsSubsection}>
-            <Text style={styles.subsectionTitle}>Lifetime Performance</Text>
-            <View style={styles.globalStatsGrid}>
-              <View style={styles.globalStatCard}>
-                <Text style={styles.globalStatNumber}>{globalStats.lifetimeAccuracy || 0}%</Text>
-                <Text style={styles.globalStatLabel}>Global Accuracy</Text>
-              </View>
-              <View style={styles.globalStatCard}>
-                <Text style={styles.globalStatNumber}>{globalStats.lifetimeAvgDistance || 0}</Text>
-                <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Past Week Performance */}
-          <View style={styles.globalStatsSubsection}>
-            <Text style={styles.subsectionTitle}>Past Week Performance</Text>
-            <View style={styles.globalStatsGrid}>
-              <View style={styles.globalStatCard}>
-                <Text style={styles.globalStatNumber}>{globalStats.weekAccuracy || 0}%</Text>
-                <Text style={styles.globalStatLabel}>Global Accuracy</Text>
-              </View>
-              <View style={styles.globalStatCard}>
-                <Text style={styles.globalStatNumber}>{globalStats.weekAvgDistance || 0}</Text>
-                <Text style={styles.globalStatLabel}>Avg Distance from Correct</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Bottom spacing for mobile to account for fixed bottom navigation */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+      {/* Test indicator - only in development */}
+      <TabletTestIndicator />
     </SafeAreaView>
   );
 };
@@ -571,6 +713,20 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 100, // Account for fixed bottom navigation
+  },
+  // Tablet-specific styles
+  tabletGrid: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  tabletLeftColumn: {
+    flex: 2,
+    gap: spacing.lg,
+  },
+  tabletRightColumn: {
+    flex: 1,
+    gap: spacing.lg,
   },
 });
 

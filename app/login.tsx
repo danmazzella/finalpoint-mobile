@@ -19,7 +19,8 @@ import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 import { shouldShowGoogleSignIn } from '../config/environment';
-
+import ResponsiveContainer from '../components/ResponsiveContainer';
+import { useScreenSize } from '../hooks/useScreenSize';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -29,6 +30,7 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, isLoading, isAuthenticating } = useAuth();
     const { showToast } = useSimpleToast();
+    const screenSize = useScreenSize();
 
     const scrollViewRef = useRef<ScrollView>(null);
     const emailInputRef = useRef<TextInput>(null);
@@ -51,166 +53,295 @@ const LoginScreen = () => {
         }
     };
 
-
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+            <SafeAreaView style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.light.primary} />
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <KeyboardAvoidingView
-                style={styles.keyboardAvoidingView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
-            >
-                <ScrollView
-                    ref={scrollViewRef}
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    automaticallyAdjustKeyboardInsets={true}
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <KeyboardAvoidingView
+                    style={styles.keyboardAvoidingView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
                 >
-                    {/* Logo and Branding Section */}
-                    <View style={styles.logoSection}>
-                        <View style={styles.logoContainer}>
-                            <View style={styles.logo}>
-                                <Text style={styles.logoText}>FP</Text>
-                                <View style={styles.logoAccent} />
-                            </View>
-                        </View>
-                        <Text style={styles.appName}>FinalPoint</Text>
-                        <Text style={styles.tagline}>F1 Prediction Game</Text>
-                    </View>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={true}
+                    >
+                        {/* Main Content - Responsive Layout */}
+                        {screenSize === 'tablet' ? (
+                            <View style={styles.tabletLayout}>
+                                {/* Left Column - Logo & Branding */}
+                                <View style={styles.tabletLeftColumn}>
+                                    <View style={styles.logoSection}>
+                                        <View style={styles.logoContainer}>
+                                            <View style={styles.logo}>
+                                                <Text style={styles.logoText}>FP</Text>
+                                                <View style={styles.logoAccent} />
+                                            </View>
+                                        </View>
+                                        <Text style={styles.appName}>FinalPoint</Text>
+                                        <Text style={styles.tagline}>F1 Prediction Game</Text>
 
-                    {/* Form Section */}
-                    <View style={styles.formSection}>
-                        {/* Email Field */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Email address</Text>
-                            <TextInput
-                                ref={emailInputRef}
-                                style={[
-                                    styles.input,
-                                    emailFocused && styles.inputFocused,
-                                ]}
-                                placeholder="Enter your email address"
-                                placeholderTextColor={Colors.light.textSecondary}
-                                value={email}
-                                onChangeText={setEmail}
-                                onFocus={() => {
-                                    setEmailFocused(true);
-                                }}
-                                onBlur={() => setEmailFocused(false)}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                autoComplete="email"
-                                returnKeyType="next"
-                                blurOnSubmit={false}
-                                onSubmitEditing={() => passwordInputRef.current?.focus()}
-                            />
-                        </View>
-
-                        {/* Password Field */}
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Password</Text>
-                            <View style={styles.passwordContainer}>
-                                <TextInput
-                                    ref={passwordInputRef}
-                                    style={[
-                                        styles.passwordInput,
-                                        passwordFocused && styles.inputFocused,
-                                    ]}
-                                    placeholder="Enter your password"
-                                    placeholderTextColor={Colors.light.textSecondary}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    onFocus={() => {
-                                        setPasswordFocused(true);
-                                    }}
-                                    onBlur={() => setPasswordFocused(false)}
-                                    secureTextEntry={!showPassword}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                    autoComplete="password"
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleLogin}
-                                />
-                                <TouchableOpacity
-                                    style={styles.eyeButton}
-                                    onPress={() => setShowPassword(!showPassword)}
-                                >
-                                    <Ionicons
-                                        name={showPassword ? 'eye-off' : 'eye'}
-                                        size={20}
-                                        color={Colors.light.gray500}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Sign In Button */}
-                        <TouchableOpacity
-                            style={[styles.signInButton, isAuthenticating && { opacity: 0.7 }]}
-                            onPress={handleLogin}
-                            activeOpacity={0.8}
-                            disabled={isAuthenticating}
-                        >
-                            {isAuthenticating ? (
-                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
-                            ) : (
-                                <Text style={styles.signInButtonText}>Sign in</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        {/* Google Sign-In Section */}
-                        {shouldShowGoogleSignIn() && (
-                            <>
-                                {/* Divider */}
-                                <View style={styles.dividerContainer}>
-                                    <View style={styles.dividerLine} />
-                                    <Text style={styles.dividerText}>or</Text>
-                                    <View style={styles.dividerLine} />
+                                        {/* Additional branding for tablets */}
+                                        <View style={styles.tabletBranding}>
+                                            <Text style={styles.tabletSubtitle}>
+                                                Join the ultimate Formula 1 prediction competition
+                                            </Text>
+                                            <Text style={styles.tabletFeatures}>
+                                                • Make race predictions{'\n'}
+                                                • Compete with friends{'\n'}
+                                                • Track your performance{'\n'}
+                                                • Win prizes and bragging rights
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
 
-                                {/* Conditional Google Sign-In Button */}
-                                <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                                {/* Right Column - Login Form */}
+                                <View style={styles.tabletRightColumn}>
+                                    <View style={styles.formSection}>
+                                        <Text style={styles.formTitle}>Welcome Back</Text>
+                                        <Text style={styles.formSubtitle}>Sign in to your account</Text>
+
+                                        {/* Email Field */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.inputLabel}>Email address</Text>
+                                            <TextInput
+                                                ref={emailInputRef}
+                                                style={[
+                                                    styles.input,
+                                                    emailFocused && styles.inputFocused,
+                                                ]}
+                                                placeholder="Enter your email"
+                                                placeholderTextColor={Colors.light.textSecondary}
+                                                value={email}
+                                                onChangeText={setEmail}
+                                                onFocus={() => setEmailFocused(true)}
+                                                onBlur={() => setEmailFocused(false)}
+                                                keyboardType="email-address"
+                                                autoCapitalize="none"
+                                                autoCorrect={false}
+                                                returnKeyType="next"
+                                                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                                            />
+                                        </View>
+
+                                        {/* Password Field */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.inputLabel}>Password</Text>
+                                            <View style={styles.passwordContainer}>
+                                                <TextInput
+                                                    ref={passwordInputRef}
+                                                    style={[
+                                                        styles.passwordInput,
+                                                        passwordFocused && styles.inputFocused,
+                                                    ]}
+                                                    placeholder="Enter your password"
+                                                    placeholderTextColor={Colors.light.textSecondary}
+                                                    value={password}
+                                                    onChangeText={setPassword}
+                                                    onFocus={() => setPasswordFocused(true)}
+                                                    onBlur={() => setPasswordFocused(false)}
+                                                    secureTextEntry={!showPassword}
+                                                    autoCapitalize="none"
+                                                    autoCorrect={false}
+                                                    returnKeyType="done"
+                                                    onSubmitEditing={handleLogin}
+                                                />
+                                                <TouchableOpacity
+                                                    style={styles.eyeButton}
+                                                    onPress={() => setShowPassword(!showPassword)}
+                                                >
+                                                    <Ionicons
+                                                        name={showPassword ? 'eye-off' : 'eye'}
+                                                        size={20}
+                                                        color={Colors.light.textSecondary}
+                                                    />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+
+                                        {/* Sign In Button */}
+                                        <TouchableOpacity
+                                            style={styles.signInButton}
+                                            onPress={handleLogin}
+                                            disabled={isAuthenticating}
+                                            activeOpacity={0.8}
+                                        >
+                                            {isAuthenticating ? (
+                                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                            ) : (
+                                                <Text style={styles.signInButtonText}>Sign In</Text>
+                                            )}
+                                        </TouchableOpacity>
+
+                                        {/* Forgot Password */}
+                                        <TouchableOpacity
+                                            style={styles.forgotPasswordButton}
+                                            onPress={() => router.push('/forgot-password' as any)}
+                                        >
+                                            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                                        </TouchableOpacity>
+
+                                        {/* Google Sign In */}
+                                        {shouldShowGoogleSignIn() && (
+                                            <>
+                                                <View style={styles.dividerContainer}>
+                                                    <View style={styles.dividerLine} />
+                                                    <Text style={styles.dividerText}>or</Text>
+                                                    <View style={styles.dividerLine} />
+                                                </View>
+                                                <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                                            </>
+                                        )}
+
+                                        {/* Footer */}
+                                        <View style={styles.footerSection}>
+                                            <View style={styles.footerTextContainer}>
+                                                <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+                                                <TouchableOpacity onPress={() => router.push('/signup' as any)}>
+                                                    <Text style={styles.footerLink}>Sign up</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : (
+                            /* Mobile Layout (existing code) */
+                            <>
+                                {/* Logo and Branding Section */}
+                                <View style={styles.logoSection}>
+                                    <View style={styles.logoContainer}>
+                                        <View style={styles.logo}>
+                                            <Text style={styles.logoText}>FP</Text>
+                                            <View style={styles.logoAccent} />
+                                        </View>
+                                    </View>
+                                    <Text style={styles.appName}>FinalPoint</Text>
+                                    <Text style={styles.tagline}>F1 Prediction Game</Text>
+                                </View>
+
+                                {/* Form Section */}
+                                <View style={styles.formSection}>
+                                    {/* Email Field */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Email address</Text>
+                                        <TextInput
+                                            ref={emailInputRef}
+                                            style={[
+                                                styles.input,
+                                                emailFocused && styles.inputFocused,
+                                            ]}
+                                            placeholder="Enter your email"
+                                            placeholderTextColor={Colors.light.textSecondary}
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            onFocus={() => setEmailFocused(true)}
+                                            onBlur={() => setEmailFocused(false)}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                            returnKeyType="next"
+                                            onSubmitEditing={() => passwordInputRef.current?.focus()}
+                                        />
+                                    </View>
+
+                                    {/* Password Field */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Password</Text>
+                                        <View style={styles.passwordContainer}>
+                                            <TextInput
+                                                ref={passwordInputRef}
+                                                style={[
+                                                    styles.passwordInput,
+                                                    passwordFocused && styles.inputFocused,
+                                                ]}
+                                                placeholder="Enter your password"
+                                                placeholderTextColor={Colors.light.textSecondary}
+                                                value={password}
+                                                onChangeText={setPassword}
+                                                onFocus={() => setPasswordFocused(true)}
+                                                onBlur={() => setPasswordFocused(false)}
+                                                secureTextEntry={!showPassword}
+                                                autoCapitalize="none"
+                                                autoCorrect={false}
+                                                returnKeyType="done"
+                                                onSubmitEditing={handleLogin}
+                                            />
+                                            <TouchableOpacity
+                                                style={styles.eyeButton}
+                                                onPress={() => setShowPassword(!showPassword)}
+                                            >
+                                                <Ionicons
+                                                    name={showPassword ? 'eye-off' : 'eye'}
+                                                    size={20}
+                                                    color={Colors.light.textSecondary}
+                                                />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+
+                                    {/* Sign In Button */}
+                                    <TouchableOpacity
+                                        style={styles.signInButton}
+                                        onPress={handleLogin}
+                                        disabled={isAuthenticating}
+                                        activeOpacity={0.8}
+                                    >
+                                        {isAuthenticating ? (
+                                            <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                        ) : (
+                                            <Text style={styles.signInButtonText}>Sign In</Text>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    {/* Forgot Password */}
+                                    <TouchableOpacity
+                                        style={styles.forgotPasswordButton}
+                                        onPress={() => router.push('/forgot-password' as any)}
+                                    >
+                                        <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                                    </TouchableOpacity>
+
+                                    {/* Google Sign In */}
+                                    {shouldShowGoogleSignIn() && (
+                                        <>
+                                            <View style={styles.dividerContainer}>
+                                                <View style={styles.dividerLine} />
+                                                <Text style={styles.dividerText}>or</Text>
+                                                <View style={styles.dividerLine} />
+                                            </View>
+                                            <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                                        </>
+                                    )}
+
+                                    {/* Footer */}
+                                    <View style={styles.footerSection}>
+                                        <View style={styles.footerTextContainer}>
+                                            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+                                            <TouchableOpacity onPress={() => router.push('/signup' as any)}>
+                                                <Text style={styles.footerLink}>Sign up</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
                             </>
                         )}
-
-                        {/* Forgot Password Link */}
-                        <TouchableOpacity
-                            style={styles.forgotPasswordButton}
-                            onPress={() => router.push('/forgot-password')}
-                        >
-                            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Footer Links */}
-                    <View style={styles.footerSection}>
-                        <View style={styles.footerTextContainer}>
-                            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-                            <TouchableOpacity onPress={() => router.push('/signup')}>
-                                <Text style={styles.footerLink}>Create an account</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.learnMoreButton}
-                            onPress={() => showToast('Learn more about FinalPoint', 'info')}
-                        >
-                            <Text style={styles.learnMoreText}>Learn more about FinalPoint</Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 };
@@ -234,22 +365,21 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.xl,
+        paddingBottom: spacing.xl,
     },
     logoSection: {
         alignItems: 'center',
-        marginBottom: spacing.xxl,
+        paddingTop: spacing.xl,
+        paddingBottom: spacing.lg,
     },
     logoContainer: {
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
     logo: {
         width: 80,
         height: 80,
+        borderRadius: 40,
         backgroundColor: Colors.light.primary,
-        borderRadius: borderRadius.lg,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
@@ -262,12 +392,12 @@ const styles = StyleSheet.create({
     },
     logoAccent: {
         position: 'absolute',
-        right: 8,
-        top: 8,
-        width: 12,
-        height: 12,
+        bottom: -2,
+        right: -2,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         backgroundColor: Colors.light.warning,
-        borderRadius: 2,
     },
     appName: {
         fontSize: 28,
@@ -278,21 +408,53 @@ const styles = StyleSheet.create({
     tagline: {
         fontSize: 16,
         color: Colors.light.textSecondary,
+        textAlign: 'center',
+    },
+    tabletBranding: {
+        marginTop: spacing.xl,
+        alignItems: 'center',
+    },
+    tabletSubtitle: {
+        fontSize: 18,
+        color: Colors.light.textPrimary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+        lineHeight: 24,
+    },
+    tabletFeatures: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
     },
     formSection: {
-        marginBottom: spacing.xxl,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.lg,
     },
-    inputContainer: {
+    formTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+    },
+    formSubtitle: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
         marginBottom: spacing.lg,
     },
+    inputContainer: {
+        marginBottom: spacing.md,
+    },
     inputLabel: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '600',
         color: Colors.light.textPrimary,
         marginBottom: spacing.sm,
     },
     input: {
-        backgroundColor: Colors.light.backgroundSecondary, // White background
+        backgroundColor: Colors.light.backgroundSecondary,
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
@@ -309,7 +471,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundSecondary, // White background
+        backgroundColor: Colors.light.backgroundSecondary,
         borderWidth: 1,
         borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
@@ -390,7 +552,22 @@ const styles = StyleSheet.create({
         color: Colors.light.textSecondary,
         fontWeight: '500',
     },
-
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        minHeight: '100%',
+        paddingHorizontal: spacing.lg,
+    },
+    tabletLeftColumn: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingRight: spacing.xl,
+    },
+    tabletRightColumn: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingLeft: spacing.xl,
+    },
 });
 
 export default LoginScreen;

@@ -15,11 +15,15 @@ import { useAuth } from '../../src/context/AuthContext';
 import { picksAPI, driversAPI, leaguesAPI, f1racesAPI } from '../../src/services/apiService';
 import { Driver, League, UserPickV2, PickV2, F1Race } from '../../src/types';
 import Colors from '../../constants/Colors';
-import { spacing } from '../../utils/styles';
+import { spacing, borderRadius, shadows } from '../../utils/styles';
+import ResponsiveContainer from '../../components/ResponsiveContainer';
+import { useScreenSize } from '../../hooks/useScreenSize';
+import { router } from 'expo-router';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useSimpleToast();
+    const screenSize = useScreenSize();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState<number | null>(null);
@@ -99,7 +103,7 @@ const PicksScreen = () => {
                 }));
                 setSelectedPicks(picks);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading user picks:', error);
         }
     };
@@ -112,339 +116,362 @@ const PicksScreen = () => {
             if (response.data.success) {
                 setLeaguePositions(response.data.data);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading league positions:', error);
+            // Default to P10 if there's an error
+            setLeaguePositions([10]);
+        }
+    };
+
+    const handleLeagueChange = (leagueId: number) => {
+        setSelectedLeague(leagueId);
+        setSelectedPicks([]);
+        setUserPicks([]);
+    };
+
+    const handleDriverSelect = (position: number, driverId: number) => {
+        setSelectedPicks(prev => {
+            const existing = prev.find(pick => pick.position === position);
+            if (existing) {
+                return prev.map(pick =>
+                    pick.position === position ? { ...pick, driverId } : pick
+                );
+            } else {
+                return [...prev, { position, driverId }];
+            }
+        });
+    };
+
+    const getSelectedDriver = (position: number) => {
+        const pick = selectedPicks.find(p => p.position === position);
+        return pick ? drivers.find(d => d.id === pick.driverId) : null;
+    };
+
+    const getDriverName = (driverId: number) => {
+        const driver = drivers.find(d => d.id === driverId);
+        return driver ? driver.name : 'Unknown Driver';
+    };
+
+    const submitPicks = async () => {
+        if (!selectedLeague || selectedPicks.length === 0) {
+            showToast('Please select a league and make your picks', 'error');
+            return;
+        }
+
+        if (selectedPicks.length !== leaguePositions.length) {
+            showToast(`Please make picks for all ${leaguePositions.length} required positions`, 'error');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            const response = await picksAPI.makePickV2(selectedLeague, currentWeek, selectedPicks);
+            if (response.data.success) {
+                showToast('Picks submitted successfully!', 'success');
+                loadUserPicks();
+            } else {
+                showToast(response.data.message || 'Failed to submit picks', 'error');
+            }
+        } catch (error: any) {
+            console.error('Error submitting picks:', error);
+            showToast('Failed to submit picks. Please try again.', 'error');
+        } finally {
+            setSubmitting(false);
         }
     };
 
     const onRefresh = async () => {
         setRefreshing(true);
         await loadData();
-        if (selectedLeague) {
-            await loadUserPicks();
-            await loadLeaguePositions();
-        }
         setRefreshing(false);
-    };
-
-    const makePick = async (position: number, driverId: number) => {
-        if (!selectedLeague) {
-            showToast('Please select a league first', 'error');
-            return;
-        }
-
-        // Check if picks are locked
-        if (currentRace?.picksLocked) {
-            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
-            return;
-        }
-
-        try {
-            setSubmitting(true);
-
-            // Update local state first
-            const newPick: PickV2 = { position, driverId };
-            const updatedPicks = selectedPicks.filter(pick => pick.position !== position);
-            updatedPicks.push(newPick);
-            setSelectedPicks(updatedPicks);
-
-            // Submit to API
-            const response = await picksAPI.makePickV2(selectedLeague, currentWeek, [newPick]);
-            if (response.data.success) {
-                showToast(`P${position} pick submitted successfully!`, 'success', 2000);
-                await loadUserPicks(); // Refresh picks
-            } else {
-                // Revert local state if API call failed
-                setSelectedPicks(selectedPicks);
-                showToast('Failed to submit pick. Please try again.', 'error');
-            }
-        } catch (error) {
-            console.error('Error making pick:', error);
-            showToast('Failed to submit pick. Please try again.', 'error');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const removePick = async (position: number) => {
-        if (!selectedLeague) {
-            showToast('Please select a league first', 'error');
-            return;
-        }
-
-        // Check if picks are locked
-        if (currentRace?.picksLocked) {
-            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
-            return;
-        }
-
-        try {
-            setSubmitting(true);
-
-            // Update local state first
-            const updatedPicks = selectedPicks.filter(pick => pick.position !== position);
-            setSelectedPicks(updatedPicks);
-
-            // Submit to API
-            const response = await picksAPI.removePickV2(selectedLeague, currentWeek, position);
-            if (response.data.success) {
-                showToast(`P${position} pick removed successfully!`, 'success', 2000);
-                await loadUserPicks(); // Refresh picks
-            } else {
-                // Revert local state if API call failed
-                setSelectedPicks(selectedPicks);
-                showToast('Failed to remove pick. Please try again.', 'error');
-            }
-        } catch (error) {
-            console.error('Error removing pick:', error);
-            showToast('Failed to remove pick. Please try again.', 'error');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const getCurrentPickForPosition = (position: number) => {
-        return userPicks.find(pick => pick.position === position);
-    };
-
-    const getSelectedDriverForPosition = (position: number) => {
-        return selectedPicks.find(pick => pick.position === position)?.driverId;
-    };
-
-    const isPositionLocked = (position: number) => {
-        const pick = getCurrentPickForPosition(position);
-        return pick?.isLocked || false;
-    };
-
-    const isRaceLocked = () => {
-        return currentRace?.isLocked || false;
     };
 
     if (authLoading || loading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color="#007bff" />
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
+                    <Text style={styles.loadingText}>Loading...</Text>
+                </View>
             </SafeAreaView>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
-                <Text style={styles.errorTitle}>Connection Error</Text>
-                <Text style={styles.errorMessage}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Connection Error</Text>
+                    <Text style={styles.errorMessage}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (leagues.length === 0) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyTitle}>No Leagues Found</Text>
+                    <Text style={styles.emptyMessage}>
+                        You need to join a league before you can make picks.
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.emptyButton}
+                        onPress={() => router.push('/(tabs)/leagues')}
+                    >
+                        <Text style={styles.emptyButtonText}>Go to Leagues</Text>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-            >
-                <View style={styles.header}>
-                    <Text style={styles.title}>Make Your Picks</Text>
-                </View>
+        <SafeAreaView style={styles.container}>
+            <ResponsiveContainer>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Make Your Picks</Text>
+                        <Text style={styles.subtitle}>
+                            Select drivers for your league&apos;s required positions
+                        </Text>
+                    </View>
 
-                <Text style={styles.description}>Week {currentWeek} - 2025 F1 Season</Text>
-
-                {/* League Selection */}
-                <View style={styles.leagueSection}>
-                    <Text style={styles.sectionTitle}>Select League</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueScroll}>
-                        {leagues.map((league) => (
-                            <TouchableOpacity
-                                key={league.id}
-                                style={[
-                                    styles.leagueCard,
-                                    selectedLeague === league.id && styles.selectedLeagueCard
-                                ]}
-                                onPress={() => setSelectedLeague(league.id)}
-                            >
-                                <View style={styles.leagueCardContent}>
-                                    <View style={styles.leagueNameContainer}>
-                                        <Text style={[
-                                            styles.leagueName,
-                                            selectedLeague === league.id && styles.selectedLeagueName
-                                        ]}>
-                                            {league.name}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.leagueDetails}>
-                                        {league.memberCount || 1} member{league.memberCount !== 1 ? 's' : ''}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Current Race Info */}
-                {currentRace && (
-                    <View style={styles.raceInfoSection}>
-                        <Text style={styles.sectionTitle}>Current Race</Text>
-
-                        {/* Pick Locking Status Banner */}
-                        {currentRace.picksLocked && (
-                            <View style={styles.lockedBanner}>
-                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
-                            </View>
-                        )}
-
-                        {/* Pick Locking Countdown */}
-                        {!currentRace.picksLocked && currentRace.showCountdown && (
-                            <View style={styles.countdownBanner}>
-                                <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
-                                <Text style={styles.countdownBannerMessage}>{currentRace.lockMessage}</Text>
-                            </View>
-                        )}
-
-                        <View style={styles.raceCard}>
+                    {/* Current Race Info */}
+                    {currentRace && (
+                        <View style={styles.raceInfo}>
                             <Text style={styles.raceName}>{currentRace.raceName}</Text>
+                            <Text style={styles.raceDetails}>
+                                Week {currentRace.weekNumber} • {currentRace.circuitName}
+                            </Text>
                             <Text style={styles.raceDate}>
                                 {new Date(currentRace.raceDate).toLocaleDateString()}
                             </Text>
-                            {currentRace.qualifyingDate && (
-                                <Text style={styles.qualifyingDate}>
-                                    Qualifying: {new Date(currentRace.qualifyingDate).toLocaleDateString()}
-                                </Text>
-                            )}
-                            <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
-                                Status: {isRaceLocked() ? 'Locked' : currentRace.status}
-                            </Text>
                         </View>
-                    </View>
-                )}
+                    )}
 
-                {/* League Positions */}
-                {selectedLeague && leaguePositions.length > 0 && (
-                    <View style={styles.positionsSection}>
-                        <Text style={styles.sectionTitle}>League Positions</Text>
-                        <Text style={styles.positionsSubtitle}>
-                            This league requires picks for positions: {leaguePositions.map(p => `P${p}`).join(', ')}
-                        </Text>
-                    </View>
-                )}
-
-                {/* Position Picks */}
-                {selectedLeague && leaguePositions.length > 0 && (
-                    <View style={styles.picksSection}>
-                        <Text style={styles.sectionTitle}>Your Picks</Text>
-                        {leaguePositions.map((position) => {
-                            const currentPick = getCurrentPickForPosition(position);
-                            const selectedDriverId = getSelectedDriverForPosition(position);
-                            const isLocked = isPositionLocked(position);
-                            const isRaceLockedNow = isRaceLocked();
-
-                            return (
-                                <View key={position} style={styles.positionCard}>
-                                    <View style={styles.positionHeader}>
-                                        <Text style={styles.positionTitle}>P{position}</Text>
-                                        {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
+                    {/* Main Content - Responsive Layout */}
+                    {screenSize === 'tablet' ? (
+                        <View style={styles.tabletLayout}>
+                            {/* Left Column - League Selection & Picks */}
+                            <View style={styles.tabletLeftColumn}>
+                                {/* League Selection */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Select League</Text>
+                                    <View style={styles.leagueSelector}>
+                                        {leagues.map((league) => (
+                                            <TouchableOpacity
+                                                key={league.id}
+                                                style={[
+                                                    styles.leagueOption,
+                                                    selectedLeague === league.id && styles.leagueOptionSelected
+                                                ]}
+                                                onPress={() => handleLeagueChange(league.id)}
+                                            >
+                                                <Text style={[
+                                                    styles.leagueOptionText,
+                                                    selectedLeague === league.id && styles.leagueOptionTextSelected
+                                                ]}>
+                                                    {league.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
                                     </View>
-
-                                    {currentPick ? (
-                                        <View style={styles.currentPickCard}>
-                                            <Text style={styles.currentPickDriver}>{currentPick.driverName}</Text>
-                                            <Text style={styles.currentPickTeam}>{currentPick.driverTeam}</Text>
-                                            {!isLocked && !isRaceLockedNow && (
-                                                <TouchableOpacity
-                                                    style={styles.removePickIcon}
-                                                    onPress={() => removePick(position)}
-                                                    disabled={submitting}
-                                                >
-                                                    <Text style={styles.removePickIconText}>✕</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
-                                    ) : (
-                                        <Text style={styles.noPickText}>No pick made yet</Text>
-                                    )}
-
-                                    {!isLocked && !isRaceLockedNow && (
-                                        <View style={styles.driverSelection}>
-                                            <Text style={styles.selectionTitle}>Select Driver for P{position}</Text>
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                {drivers.map((driver) => (
-                                                    <TouchableOpacity
-                                                        key={driver.id}
-                                                        style={[
-                                                            styles.driverOption,
-                                                            selectedDriverId === driver.id && styles.selectedDriverOption
-                                                        ]}
-                                                        onPress={() => makePick(position, driver.id)}
-                                                        disabled={submitting || isRaceLocked()}
-                                                    >
-                                                        <Text style={styles.driverOptionNumber}>#{driver.driverNumber}</Text>
-                                                        <Text style={styles.driverOptionName} numberOfLines={1}>{driver.name}</Text>
-                                                        <Text style={styles.driverOptionTeam} numberOfLines={1}>{driver.team}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </ScrollView>
-                                        </View>
-                                    )}
-
-
                                 </View>
-                            );
-                        })}
-                    </View>
-                )}
 
-                {/* Legacy Single Pick Support */}
-                {selectedLeague && leaguePositions.length === 0 && (
-                    <View style={styles.legacySection}>
-                        <Text style={styles.sectionTitle}>Make Your P10 Pick</Text>
-                        <Text style={styles.legacySubtitle}>
-                            This league uses the legacy single-pick system
-                        </Text>
-
-                        {/* Show pick locking message for legacy picks */}
-                        {currentRace?.picksLocked && (
-                            <View style={styles.lockedBanner}>
-                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
-                            </View>
-                        )}
-
-                        <ScrollView style={styles.driversList}>
-                            {drivers.map((driver) => (
-                                <TouchableOpacity
-                                    key={driver.id}
-                                    style={[
-                                        styles.driverCard,
-                                        getSelectedDriverForPosition(10) === driver.id && styles.selectedDriverCard
-                                    ]}
-                                    onPress={() => makePick(10, driver.id)}
-                                    disabled={submitting || isRaceLocked() || currentRace?.picksLocked}
-                                >
-                                    <View style={styles.driverInfo}>
-                                        <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
-                                        <View style={styles.driverDetails}>
-                                            <Text style={styles.driverName}>{driver.name}</Text>
-                                            <Text style={styles.driverTeam}>{driver.team}</Text>
-                                            <Text style={styles.driverCountry}>{driver.country}</Text>
+                                {/* Picks Form */}
+                                {selectedLeague && (
+                                    <View style={styles.section}>
+                                        <Text style={styles.sectionTitle}>Your Picks</Text>
+                                        <View style={styles.picksForm}>
+                                            {leaguePositions.map((position) => (
+                                                <View key={position} style={styles.pickRow}>
+                                                    <Text style={styles.positionLabel}>P{position}</Text>
+                                                    <View style={styles.driverSelector}>
+                                                        <TouchableOpacity
+                                                            style={styles.driverButton}
+                                                            onPress={() => {
+                                                                // Show driver selection modal or navigate to driver picker
+                                                                showToast(`Select driver for P${position}`, 'info');
+                                                            }}
+                                                        >
+                                                            <Text style={styles.driverButtonText}>
+                                                                {getSelectedDriver(position)
+                                                                    ? getDriverName(getSelectedDriver(position)!.id)
+                                                                    : 'Select Driver'
+                                                                }
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                </View>
+                                            ))}
                                         </View>
                                     </View>
-                                    {getSelectedDriverForPosition(10) === driver.id && (
-                                        <View style={styles.selectedIndicator}>
-                                            <Text style={styles.selectedIndicatorText}>✓</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-            </ScrollView>
+                                )}
+                            </View>
+
+                            {/* Right Column - Drivers List & Submit */}
+                            <View style={styles.tabletRightColumn}>
+                                {/* Drivers List */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Available Drivers</Text>
+                                    <View style={styles.driversGrid}>
+                                        {drivers.map((driver) => (
+                                            <TouchableOpacity
+                                                key={driver.id}
+                                                style={styles.driverCard}
+                                                onPress={() => {
+                                                    // Handle driver selection
+                                                    showToast(`Selected ${driver.name}`, 'info');
+                                                }}
+                                            >
+                                                <Text style={styles.driverName}>
+                                                    {driver.name}
+                                                </Text>
+                                                <Text style={styles.driverTeam}>{driver.team}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+
+                                {/* Submit Button */}
+                                {selectedLeague && (
+                                    <View style={styles.section}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.submitButton,
+                                                (selectedPicks.length !== leaguePositions.length) && styles.submitButtonDisabled
+                                            ]}
+                                            onPress={submitPicks}
+                                            disabled={selectedPicks.length !== leaguePositions.length || submitting}
+                                        >
+                                            {submitting ? (
+                                                <ActivityIndicator color={Colors.light.textInverse} />
+                                            ) : (
+                                                <Text style={styles.submitButtonText}>
+                                                    Submit Picks ({selectedPicks.length}/{leaguePositions.length})
+                                                </Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    ) : (
+                        /* Mobile Layout (existing code) */
+                        <>
+                            {/* League Selection */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Select League</Text>
+                                <View style={styles.leagueSelector}>
+                                    {leagues.map((league) => (
+                                        <TouchableOpacity
+                                            key={league.id}
+                                            style={[
+                                                styles.leagueOption,
+                                                selectedLeague === league.id && styles.leagueOptionSelected
+                                            ]}
+                                            onPress={() => handleLeagueChange(league.id)}
+                                        >
+                                            <Text style={[
+                                                styles.leagueOptionText,
+                                                selectedLeague === league.id && styles.leagueOptionTextSelected
+                                            ]}>
+                                                {league.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Picks Form */}
+                            {selectedLeague && (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Your Picks</Text>
+                                    <View style={styles.picksForm}>
+                                        {leaguePositions.map((position) => (
+                                            <View key={position} style={styles.pickRow}>
+                                                <Text style={styles.positionLabel}>P{position}</Text>
+                                                <View style={styles.driverSelector}>
+                                                    <TouchableOpacity
+                                                        style={styles.driverButton}
+                                                        onPress={() => {
+                                                            // Show driver selection modal or navigate to driver picker
+                                                            showToast(`Select driver for P${position}`, 'info');
+                                                        }}
+                                                    >
+                                                        <Text style={styles.driverButtonText}>
+                                                            {getSelectedDriver(position)
+                                                                ? getDriverName(getSelectedDriver(position)!.id)
+                                                                : 'Select Driver'
+                                                            }
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Drivers List */}
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Available Drivers</Text>
+                                <View style={styles.driversGrid}>
+                                    {drivers.map((driver) => (
+                                        <TouchableOpacity
+                                            key={driver.id}
+                                            style={styles.driverCard}
+                                            onPress={() => {
+                                                // Handle driver selection
+                                                showToast(`Selected ${driver.name}`, 'info');
+                                            }}
+                                        >
+                                            <Text style={styles.driverName}>
+                                                {driver.name}
+                                            </Text>
+                                            <Text style={styles.driverTeam}>{driver.team}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Submit Button */}
+                            {selectedLeague && (
+                                <View style={styles.section}>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.submitButton,
+                                            (selectedPicks.length !== leaguePositions.length) && styles.submitButtonDisabled
+                                        ]}
+                                        onPress={submitPicks}
+                                        disabled={selectedPicks.length !== leaguePositions.length || submitting}
+                                    >
+                                        {submitting ? (
+                                            <ActivityIndicator color={Colors.light.textInverse} />
+                                        ) : (
+                                            <Text style={styles.submitButtonText}>
+                                                Submit Picks ({selectedPicks.length}/{leaguePositions.length})
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </>
+                    )}
+                </ScrollView>
+            </ResponsiveContainer>
         </SafeAreaView>
     );
 };
@@ -452,8 +479,7 @@ const PicksScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: Platform.OS === 'android' ? 0 : 0,
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     scrollView: {
         flex: 1,
@@ -465,403 +491,227 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+    },
+    loadingText: {
+        marginTop: spacing.md,
+        fontSize: 16,
+        color: Colors.light.textSecondary,
     },
     errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#f5f5f5',
+        padding: spacing.lg,
     },
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#dc3545',
-        marginBottom: 10,
+        color: Colors.light.error,
+        marginBottom: spacing.sm,
     },
     errorMessage: {
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: spacing.lg,
     },
     retryButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 12,
-        paddingHorizontal: 20,
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
     },
     retryButtonText: {
-        color: 'white',
+        color: Colors.light.textInverse,
         fontSize: 16,
+        fontWeight: '600',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.lg,
+    },
+    emptyTitle: {
+        fontSize: 20,
         fontWeight: 'bold',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.sm,
+    },
+    emptyMessage: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+    },
+    emptyButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+    },
+    emptyButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
     },
     header: {
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        justifyContent: 'center',
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
     },
     title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
-    description: {
+    subtitle: {
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
+    },
+    raceInfo: {
+        backgroundColor: Colors.light.cardBackground,
+        marginHorizontal: spacing.md,
         marginBottom: spacing.lg,
-        marginTop: spacing.md,
-        textAlign: 'center',
-    },
-    leagueSection: {
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-    },
-    leagueScroll: {
-        paddingVertical: 5,
-    },
-    leagueCard: {
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        padding: 10,
-        marginRight: 10,
-        width: 150,
-        height: 80,
-        borderWidth: 1,
-        borderColor: '#ddd',
-    },
-    selectedLeagueCard: {
-        backgroundColor: '#e0e0e0',
-        borderColor: '#ccc',
-    },
-    leagueCardContent: {
-        flex: 1,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
         alignItems: 'center',
-    },
-    leagueNameContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    leagueName: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
-        textAlign: 'center',
-    },
-    selectedLeagueName: {
-        color: '#007bff',
-    },
-    leagueDetails: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-    },
-    raceInfoSection: {
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    raceCard: {
-        backgroundColor: '#f8f8f8',
-        borderRadius: 8,
-        padding: 15,
-        marginTop: 10,
-        borderLeftWidth: 4,
-        borderLeftColor: '#007bff',
+        ...shadows.md,
     },
     raceName: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
+    },
+    raceDetails: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        marginBottom: spacing.xs,
+        textAlign: 'center',
     },
     raceDate: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
     },
-    raceStatus: {
-        fontSize: 14,
-        color: '#007bff',
+    section: {
+        backgroundColor: Colors.light.cardBackground,
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.lg,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        ...shadows.md,
     },
-    lockedStatus: {
-        color: '#ff4444',
-    },
-    positionsSection: {
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    positionsSubtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 4,
-    },
-    picksSection: {
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    positionCard: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#e9ecef',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    positionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    positionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    lockedBadge: {
-        backgroundColor: '#ff4444',
-        color: 'white',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    currentPickCard: {
-        backgroundColor: '#f0f8ff',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-        borderLeftWidth: 4,
-        borderLeftColor: '#007bff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    currentPickDriver: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
-    },
-    currentPickTeam: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
-    },
-    currentPickPoints: {
-        fontSize: 12,
-        color: '#666',
-        fontWeight: 'bold',
-    },
-    noPickText: {
-        fontSize: 14,
-        color: '#666',
-        fontStyle: 'italic',
-        marginBottom: 10,
-    },
-    driverSelection: {
-        marginBottom: 10,
-    },
-    selectionTitle: {
-        fontSize: 14,
+    sectionTitle: {
+        fontSize: 20,
         fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.md,
     },
-    driverOption: {
-        backgroundColor: 'white',
-        borderRadius: 6,
-        padding: 12,
-        marginRight: 10,
+    leagueSelector: {
+        gap: spacing.sm,
+    },
+    leagueOption: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
         borderWidth: 1,
-        borderColor: '#ddd',
-        minWidth: 120,
-        maxWidth: 140,
-        alignItems: 'center',
+        borderColor: Colors.light.borderLight,
+        backgroundColor: Colors.light.backgroundPrimary,
     },
-    selectedDriverOption: {
-        backgroundColor: '#e3f2fd',
-        borderColor: '#2196f3',
+    leagueOptionSelected: {
+        backgroundColor: Colors.light.buttonPrimary,
+        borderColor: Colors.light.buttonPrimary,
     },
-    driverOptionNumber: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#666',
-        marginBottom: 2,
-    },
-    driverOptionName: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 2,
+    leagueOptionText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
         textAlign: 'center',
     },
-    driverOptionTeam: {
-        fontSize: 9,
-        color: '#666',
-        textAlign: 'center',
+    leagueOptionTextSelected: {
+        color: Colors.light.textInverse,
     },
-    removePickIcon: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#dc3545',
-        borderRadius: 12,
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
+    picksForm: {
+        gap: spacing.md,
+    },
+    pickRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        zIndex: 1,
+        gap: spacing.md,
     },
-    removePickIconText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
+    positionLabel: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        minWidth: 40,
     },
-    legacySection: {
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+    driverSelector: {
+        flex: 1,
     },
-    legacySubtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 15,
+    driverButton: {
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        alignItems: 'center',
     },
-    driversList: {
-        maxHeight: 400,
+    driverButtonText: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+    },
+    driversGrid: {
+        gap: spacing.sm,
     },
     driverCard: {
-        backgroundColor: 'white',
-        borderRadius: 8,
-        padding: 15,
-        marginBottom: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    selectedDriverCard: {
-        backgroundColor: '#e3f2fd',
-    },
-    driverInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 5,
-    },
-    driverDetails: {
-        marginLeft: 10,
-    },
-    driverNumber: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#666',
-        marginRight: 10,
+        backgroundColor: Colors.light.backgroundPrimary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
     },
     driverName: {
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 2,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginBottom: spacing.xs,
     },
     driverTeam: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 2,
+        color: Colors.light.textSecondary,
     },
-    driverCountry: {
-        fontSize: 12,
-        color: '#999',
-    },
-    selectedIndicator: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
-        backgroundColor: '#4caf50',
-        borderRadius: 10,
-        width: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'white',
-    },
-    selectedIndicatorText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    lockedBanner: {
-        backgroundColor: '#ff4444',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
+    submitButton: {
+        backgroundColor: Colors.light.buttonPrimary,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
         alignItems: 'center',
     },
-    lockedBannerTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 4,
+    submitButtonDisabled: {
+        backgroundColor: Colors.light.gray500,
     },
-    lockedBannerMessage: {
-        fontSize: 12,
-        color: 'white',
-        textAlign: 'center',
+    submitButtonText: {
+        color: Colors.light.textInverse,
+        fontSize: 16,
+        fontWeight: '600',
     },
-    countdownBanner: {
-        backgroundColor: '#ff9800',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
-        alignItems: 'center',
+    // Tablet-specific styles
+    tabletLayout: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        paddingHorizontal: spacing.md,
     },
-    countdownBannerTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 4,
+    tabletLeftColumn: {
+        flex: 2,
+        gap: spacing.lg,
     },
-    countdownBannerMessage: {
-        fontSize: 12,
-        color: 'white',
-        textAlign: 'center',
-    },
-    qualifyingDate: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 4,
+    tabletRightColumn: {
+        flex: 1,
+        gap: spacing.lg,
     },
 });
 

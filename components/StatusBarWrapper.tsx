@@ -33,7 +33,7 @@ const StatusBarWrapper: React.FC<StatusBarWrapperProps> = ({
         : style;
 
     // Use provided background color or theme-based color
-    const statusBarColor = backgroundColor || Colors[colorScheme || 'light'].primary;
+    const statusBarColor = backgroundColor || Colors[colorScheme || 'light'].backgroundSecondary;
 
     // Don't show status bar background in Expo Go
     const shouldShowBackground = showBackground && Constants.appOwnership !== 'expo';

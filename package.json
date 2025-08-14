@@ -4,16 +4,34 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "dev": "APP_VARIANT=development expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "copy-icons": "node ./scripts/copy-app-icons.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:dev": "./scripts/build-env.sh development",
+    "build:staging": "./scripts/build-env.sh staging",
+    "build:prod": "./scripts/build-env.sh production",
+    "build:prod-apk": "./scripts/build-env.sh production-apk",
+    "build:dev:android": "./scripts/build-env.sh development android",
+    "build:staging:android": "./scripts/build-env.sh staging android",
+    "build:prod:android": "./scripts/build-env.sh production android",
+    "build:prod-apk:android": "./scripts/build-env.sh production-apk android",
+    "build:dev:ios": "./scripts/build-env.sh development ios",
+    "build:staging:ios": "./scripts/build-env.sh staging ios",
+    "build:prod:ios": "./scripts/build-env.sh production ios",
+    "version:init": "node scripts/version-manager.js init",
+    "version:status": "node scripts/version-manager.js status",
+    "version:increment": "node scripts/version-manager.js increment",
+    "version:update-config": "node scripts/version-manager.js update-config",
+    "version:reset": "node scripts/version-manager.js reset",
+    "version:help": "node scripts/version-manager.js help"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-google-signin/google-signin": "^15.0.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
@@ -49,7 +67,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "react-native-edge-to-edge": "1.6.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -59,6 +78,13 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
   },
   "private": true
 }

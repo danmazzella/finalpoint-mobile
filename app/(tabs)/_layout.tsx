@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '../../components/HapticTab';
 import { IconSymbol } from '../../components/ui/IconSymbol';
-import TabBarBackground from '../../components/ui/TabBarBackground';
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
 
@@ -21,7 +20,6 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.light.textSecondary,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
             borderTopWidth: 0,
@@ -32,7 +30,11 @@ export default function TabLayout() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: 'transparent',
+            backgroundColor: Colors.light.backgroundSecondary, // Use white background for iOS
+            shadowColor: Colors.light.cardShadow,
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
           },
           android: {
             backgroundColor: Colors.light.backgroundSecondary, // White background for Android

@@ -8,53 +8,56 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "NODE_ENV": "development"
+        "APP_VARIANT": "development"
       },
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug",
-        "env": {
-          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
-        }
+        "gradleCommand": ":app:assembleDebug"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Debug"
       }
     },
-    "preview": {
+    "staging": {
       "distribution": "internal",
       "env": {
-        "NODE_ENV": "production"
+        "APP_VARIANT": "staging"
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
-        "env": {
-          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
-        }
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
       }
     },
     "production": {
       "distribution": "store",
       "env": {
-        "NODE_ENV": "production"
+        "APP_VARIANT": "production"
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
-        "env": {
-          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
-        }
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
       }
     },
     "production-apk": {
       "env": {
-        "NODE_ENV": "production"
+        "APP_VARIANT": "production"
       },
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "env": {
-          "ANDROID_BUILD_TOOLS_VERSION": "36.0.0"
-        }
+        "gradleCommand": ":app:assembleRelease"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }

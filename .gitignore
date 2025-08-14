@@ -74,8 +74,12 @@ credentials.json
 
 /android
 /ios
-build-*
-/scripts
+
+# Build outputs
+builds/
+
+# Version management - only ignore auto-generated files
+version-config.local.json
 
 .env
 .env.local

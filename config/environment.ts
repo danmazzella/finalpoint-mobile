@@ -73,10 +73,10 @@ export const isDevelopment = (): boolean => {
 export const shouldShowGoogleSignIn = (): boolean => {
     // TEMPORARY: Enable Google Sign-In in production for testing
     // TODO: Revert this change after testing is complete
-    return true;
+    // return true;
 
     // Original logic (commented out for reversion):
-    // return environment.app.showGoogleSignIn;
+    return environment.app.showGoogleSignIn;
 };
 
 export const environment: EnvironmentConfig = isProduction ? PROD_CONFIG : DEV_CONFIG;

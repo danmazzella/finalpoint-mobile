@@ -21,8 +21,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "43",
-      "deploymentTarget": "17.0",
+      "buildNumber": "47",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
@@ -40,8 +39,9 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
+      "edgeToEdgeEnabled": true,
       "package": "com.finalpoint.mobile",
-      "versionCode": 15,
+      "versionCode": 19,
       "label": "FinalPoint",
       "resizeableActivity": true,
       "permissions": [
@@ -92,10 +92,23 @@
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
-            "enableEdgeToEdge": true
+            "enableEdgeToEdge": true,
+            "namespace": "com.finalpoint.mobile",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"
+          }
+        }
+      ],
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "parentTheme": "Default",
+            "enforceNavigationBarContrast": false
           }
         }
       ]
@@ -107,6 +120,7 @@
       "icon": "./assets/images/splash-icon.png",
       "color": "#000321",
       "iosDisplayInForeground": true
-    }
+    },
+    "owner": "danmazzella"
   }
 }

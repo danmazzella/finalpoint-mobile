@@ -116,7 +116,7 @@ function AppContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBarWrapper style="light">
+      <StatusBarWrapper style="dark">
         <Stack
           screenOptions={{
             headerShown: false,

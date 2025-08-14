@@ -1,0 +1,26 @@
+{
+    "development": {
+        "version": "1.0.8",
+        "androidVersionCode": 15,
+        "iosBuildNumber": 43,
+        "autoIncrement": true
+    },
+    "staging": {
+        "version": "1.0.8",
+        "androidVersionCode": 15,
+        "iosBuildNumber": 43,
+        "autoIncrement": true
+    },
+    "production": {
+        "version": "1.0.8",
+        "androidVersionCode": 15,
+        "iosBuildNumber": 43,
+        "autoIncrement": true
+    },
+    "production-apk": {
+        "version": "1.0.8",
+        "androidVersionCode": 15,
+        "iosBuildNumber": 43,
+        "autoIncrement": true
+    }
+}

@@ -62,7 +62,9 @@ const DEV_CONFIG: EnvironmentConfig = {
 };
 
 // Determine which configuration to use
-const isProduction = process.env.NODE_ENV === 'production' || process.env.EXPO_PUBLIC_APP_ENV === 'production';
+// Handle cases where NODE_ENV might not be set (like in EAS builds)
+const nodeEnv = process.env.NODE_ENV || process.env.EXPO_PUBLIC_APP_ENV || 'development';
+const isProduction = nodeEnv === 'production' || process.env.EXPO_PUBLIC_APP_ENV === 'production';
 
 // Helper function to check if running in development
 export const isDevelopment = (): boolean => {

@@ -5,23 +5,17 @@
     "version": "1.0.8",
     "orientation": "default",
     "scheme": "finalpoint",
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
       }
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "47",
+      "bundleIdentifier": "com.finalpoint.dev",
+      "buildNumber": "59",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
@@ -39,9 +33,8 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
-      "edgeToEdgeEnabled": true,
-      "package": "com.finalpoint.mobile",
-      "versionCode": 19,
+      "package": "com.finalpoint.dev",
+      "versionCode": 31,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -50,7 +43,16 @@
         "WRITE_EXTERNAL_STORAGE",
         "POST_NOTIFICATIONS"
       ],
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.MAIN",
+          "category": [
+            "android.intent.category.LAUNCHER"
+          ]
+        }
+      ],
+      "allowBackup": false
     },
     "web": {
       "bundler": "metro",
@@ -74,8 +76,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/splash-icon.png",
-          "color": "#000321",
+          "icon": "./assets/images/ic_notification_icon.png",
+          "color": "#0f172a",
           "defaultChannel": "default",
           "mode": "production",
           "androidMode": "default",
@@ -90,23 +92,18 @@
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
-            "enableEdgeToEdge": true,
-            "namespace": "com.finalpoint.mobile",
+            "namespace": "com.finalpoint.dev",
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0"
+            "buildToolsVersion": "36.0.0",
+            "gradleProperties": {
+              "android.suppressUnsupportedCompileSdk": "36",
+              "android.gradlePluginVersion": "8.6.0",
+              "android.gradleVersion": "8.6"
+            }
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"
-          }
-        }
-      ],
-      [
-        "react-native-edge-to-edge",
-        {
-          "android": {
-            "parentTheme": "Default",
-            "enforceNavigationBarContrast": false
           }
         }
       ]
@@ -115,8 +112,8 @@
       "typedRoutes": true
     },
     "notification": {
-      "icon": "./assets/images/splash-icon.png",
-      "color": "#000321",
+      "icon": "./assets/images/ic_notification_icon.png",
+      "color": "#0f172a",
       "iosDisplayInForeground": true
     },
     "owner": "danmazzella"

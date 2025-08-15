@@ -6,7 +6,6 @@ import {
     sendPushTokenToServer,
     addNotificationReceivedListener,
     addNotificationResponseReceivedListener,
-    getNotificationSupportInfo,
 } from '../utils/notifications';
 
 export interface UseNotificationsOptions {
@@ -54,10 +53,8 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     // Check if device supports notifications at all
     const checkDeviceSupport = async () => {
         try {
-            const supportInfo = await getNotificationSupportInfo();
-
-            // Device supports notifications if it can schedule them
-            return supportInfo.canScheduleNotifications;
+            // Simple device check - if it's a device, it likely supports notifications
+            return Device.isDevice;
         } catch (error) {
             console.error('❌ Error checking device support:', error);
             // Fallback to basic device check
@@ -142,12 +139,11 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
         return () => {
             if (notificationListener.current) {
                 try {
-                    // Try the new remove() method first, fallback to old method
+                    // Use the modern remove() method
                     if (typeof notificationListener.current.remove === 'function') {
                         notificationListener.current.remove();
                     } else {
-                        // Fallback to the old method if remove() doesn't exist
-                        (Notifications as any).removeNotificationSubscription(notificationListener.current);
+                        console.warn('Notification listener does not have remove() method');
                     }
                 } catch (error) {
                     console.warn('Error removing notification listener:', error);
@@ -155,25 +151,29 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
             }
             if (responseListener.current) {
                 try {
-                    // Try the new remove() method first, fallback to old method
+                    // Use the modern remove() method
                     if (typeof responseListener.current.remove === 'function') {
                         responseListener.current.remove();
                     } else {
-                        // Fallback to the old method if remove() doesn't exist
-                        (Notifications as any).removeNotificationSubscription(responseListener.current);
+                        console.warn('Response listener does not have remove() method');
                     }
                 } catch (error) {
                     console.warn('Error removing response listener:', error);
                 }
             }
         };
-    }, [autoRegister]);
+    }, [autoRegister, onNotificationReceived, onNotificationResponse]);
 
     // Update listeners when callbacks change
     useEffect(() => {
         if (notificationListener.current) {
             try {
-                (Notifications as any).removeNotificationSubscription(notificationListener.current);
+                // Use the modern remove() method
+                if (typeof notificationListener.current.remove === 'function') {
+                    notificationListener.current.remove();
+                } else {
+                    console.warn('Notification listener does not have remove() method');
+                }
             } catch (error) {
                 console.warn('Error removing notification listener:', error);
             }
@@ -186,7 +186,12 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     useEffect(() => {
         if (responseListener.current) {
             try {
-                (Notifications as any).removeNotificationSubscription(responseListener.current);
+                // Use the modern remove() method
+                if (typeof responseListener.current.remove === 'function') {
+                    responseListener.current.remove();
+                } else {
+                    console.warn('Response listener does not have remove() method');
+                }
             } catch (error) {
                 console.warn('Error removing response listener:', error);
             }

@@ -383,6 +383,49 @@ organize_build_outputs() {
     print_success "✅ Build outputs organized in $output_dir"
 }
 
+# Function to output adb install commands for Android builds
+output_adb_commands() {
+    local environment=$1
+    local platform=$2
+    local output_dir="./builds/$environment"
+    
+    if [ "$platform" = "android" ] || [ "$platform" = "all" ]; then
+        print_status "📱 Android build completed! Use these commands to install:"
+        echo ""
+        
+        # Find the most recently created APK file in the output directory (macOS compatible)
+        local latest_apk=$(find "$output_dir" -name "*.apk" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+        
+        if [ -n "$latest_apk" ]; then
+            echo "For APK installation:"
+            echo "adb install \"$latest_apk\""
+            echo ""
+        fi
+        
+        # Find the most recently created AAB file in the output directory (macOS compatible)
+        local latest_aab=$(find "$output_dir" -name "*.aab" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+        
+        if [ -n "$latest_aab" ]; then
+            echo "For AAB installation (requires bundletool):"
+            echo "bundletool build-apks --bundle=\"$latest_aab\" --output=\"$latest_aab.apks\""
+            echo "bundletool install-apks --apks=\"$latest_aab.apks\""
+            echo ""
+        fi
+        
+        # Check if device is connected
+        if command -v adb &> /dev/null; then
+            local device_count=$(adb devices | grep -v "List of devices" | grep -c "device$" || echo "0")
+            if [ "$device_count" -gt 0 ]; then
+                print_success "✅ Android device detected and ready for installation"
+            else
+                print_warning "⚠️  No Android devices connected. Connect a device and run 'adb devices' to verify."
+            fi
+        else
+            print_warning "⚠️  adb not found. Install Android SDK Platform Tools to use adb commands."
+        fi
+    fi
+}
+
 # Check if help is requested
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "help" ]; then
     show_help
@@ -498,6 +541,9 @@ esac
 
 # Organize build outputs after successful build
 organize_build_outputs "$ENVIRONMENT" "$PLATFORM"
+
+# Output adb install commands for Android builds
+output_adb_commands "$ENVIRONMENT" "$PLATFORM"
 
 print_success "Build completed for $ENVIRONMENT environment!"
 echo "📁 Build outputs organized in ./builds/$ENVIRONMENT/"

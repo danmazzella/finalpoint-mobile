@@ -8,6 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
+        "NODE_ENV": "development",
         "APP_VARIANT": "development",
         "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
         "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
@@ -25,6 +26,7 @@
     "staging": {
       "distribution": "internal",
       "env": {
+        "NODE_ENV": "staging",
         "APP_VARIANT": "staging",
         "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
         "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
@@ -42,6 +44,7 @@
     "production": {
       "distribution": "store",
       "env": {
+        "NODE_ENV": "production",
         "APP_VARIANT": "production",
         "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
         "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
@@ -58,6 +61,7 @@
     },
     "production_apk": {
       "env": {
+        "NODE_ENV": "production",
         "APP_VARIANT": "production",
         "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
         "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",

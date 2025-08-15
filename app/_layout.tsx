@@ -121,28 +121,96 @@ function AppContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBarWrapper style="dark">
+      <StatusBarWrapper style="light">
         <Stack
           screenOptions={{
             headerShown: false,
             header: () => null,
+            gestureEnabled: false,
+            animation: 'slide_from_right',
           }}
         >
           {user ? (
             // Authenticated user - show main app
             <>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                }}
+              />
               <Stack.Screen name="+not-found" />
-              <Stack.Screen name="activity" options={{ headerShown: false }} />
-              <Stack.Screen name="admin" options={{ headerShown: false }} />
-              <Stack.Screen name="notifications" options={{ headerShown: false }} />
-              <Stack.Screen name="race-results" options={{ headerShown: false }} />
-              <Stack.Screen name="position-results" options={{ headerShown: false }} />
-              <Stack.Screen name="member-picks" options={{ headerShown: false }} />
-              <Stack.Screen name="league" options={{ headerShown: false }} />
-              <Stack.Screen name="join-league" options={{ headerShown: false }} />
-              <Stack.Screen name="change-password" options={{ headerShown: false }} />
-              <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="activity"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="admin"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="notifications"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="race-results"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="position-results"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="member-picks"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="league"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="join-league"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="change-password"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="edit-profile"
+                options={{
+                  headerShown: false,
+                  presentation: 'card',
+                }}
+              />
+
             </>
           ) : (
             // Not authenticated - show auth screens
@@ -152,7 +220,7 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   header: () => null,
-                  presentation: 'modal'
+                  presentation: 'modal',
                 }}
               />
               <Stack.Screen
@@ -160,7 +228,7 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   header: () => null,
-                  presentation: 'modal'
+                  presentation: 'modal',
                 }}
               />
             </>
@@ -190,6 +258,8 @@ export default function RootLayout() {
   });
 
   const [providersReady, setProvidersReady] = useState(false);
+
+
 
   useEffect(() => {
     // Small delay to ensure providers are initialized

@@ -361,7 +361,7 @@ const PicksScreen = () => {
                                                     onPress={() => removePick(position)}
                                                     disabled={submitting}
                                                 >
-                                                    <Text style={styles.removePickIconText}>✕</Text>
+                                                    <Text style={styles.removePickIconText}>×</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </View>
@@ -741,11 +741,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1,
+        // Ensure perfect centering on mobile
+        paddingTop: 0,
+        paddingBottom: 0,
+        paddingLeft: 0,
+        paddingRight: 0,
+        // Alternative centering approach
+        overflow: 'hidden',
+        // Use flexbox for better centering
+        display: 'flex',
     },
     removePickIconText: {
         color: 'white',
-        fontSize: 14,
+        fontSize: 18,
         fontWeight: 'bold',
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+        lineHeight: 24,
+        // Ensure perfect centering on mobile
+        marginTop: 0,
+        marginBottom: 0,
+        marginLeft: 0,
+        marginRight: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        paddingLeft: 0,
+        paddingRight: 0,
+        // Use flexbox for better centering
+        flex: 1,
     },
     legacySection: {
         padding: 15,

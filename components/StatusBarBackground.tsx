@@ -39,8 +39,8 @@ const StatusBarBackground: React.FC<StatusBarBackgroundProps> = ({
 
 
 
-    // Use provided color, FinalPoint blue, or fallback to a neutral color
-    const backgroundColor = color || Colors[colorScheme || 'light'].primary;
+    // Use provided color, light blue background, or fallback to a neutral color
+    const backgroundColor = color || '#f8fafc'; // light gray-50 background for better contrast
 
     // Use provided height or calculated status bar height
     const finalHeight = height || statusBarHeight;

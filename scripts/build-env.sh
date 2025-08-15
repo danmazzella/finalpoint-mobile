@@ -48,7 +48,7 @@ show_help() {
     echo "  development, dev    - Development build (APK, auto-increment versions)"
     echo "  staging             - Staging build (AAB, auto-increment versions)"
     echo "  production, prod    - Production build (AAB, fixed versions)"
-    echo "  production-apk      - Production APK build (Android only, fixed versions)"
+    echo "  production_apk      - Production APK build (Android only, fixed versions)"
     echo ""
     echo "Platforms:"
     echo "  android             - Build for Android only"
@@ -59,7 +59,7 @@ show_help() {
     echo "  $0 development android"
     echo "  $0 staging ios"
     echo "  $0 production all"
-    echo "  $0 production-apk"
+    echo "  $0 production_apk"
     echo "  $0 staging --dry-run"
     echo ""
     echo "Version Management:"
@@ -94,8 +94,8 @@ manage_versions() {
             "production"|"prod")
                 environmentKey="production"
                 ;;
-            "production-apk")
-                environmentKey="production-apk"
+                    "production_apk")
+            environmentKey="production_apk"
                 ;;
         esac
         
@@ -111,7 +111,7 @@ manage_versions() {
             "development"|"dev"|"staging")
                 auto_increment=true
                 ;;
-            "production"|"prod"|"production-apk")
+            "production"|"prod"|"production_apk")
                 auto_increment=false
                 ;;
         esac
@@ -209,8 +209,8 @@ update_app_config() {
         "production"|"prod")
             environmentKey="production"
             ;;
-        "production-apk")
-            environmentKey="production-apk"
+        "production_apk")
+            environmentKey="production_apk"
             ;;
     esac
     
@@ -255,7 +255,7 @@ update_app_config() {
                '.expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
-        "production-apk")
+        "production_apk")
             # Update for production APK (Android only)
             jq --arg androidVersionCode "$androidVersionCode" \
                '.expo.android.versionCode = ($androidVersionCode | tonumber)' \
@@ -428,17 +428,17 @@ case $ENVIRONMENT in
         PROFILE="production"
         echo "Using production profile..."
         ;;
-    "production-apk")
-        PROFILE="production-apk"
+            "production_apk")
+            PROFILE="production_apk"
         echo "Using production APK profile (Android only)..."
-        # Force Android platform for production-apk
+        # Force Android platform for production_apk
         if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "all" ]; then
-            echo "Warning: production-apk is Android only. Setting platform to android."
+            echo "Warning: production_apk is Android only. Setting platform to android."
             PLATFORM="android"
         fi
         ;;
     *)
-        print_error "Invalid environment. Use: development, staging, production, or production-apk"
+        print_error "Invalid environment. Use: development, staging, production, or production_apk"
         echo "Run '$0' for help"
         exit 1
         ;;
@@ -471,18 +471,18 @@ case $PLATFORM in
         eas build --platform android --profile $PROFILE --local
         ;;
     "ios")
-        # Prevent iOS builds for production-apk
-        if [ "$ENVIRONMENT" = "production-apk" ]; then
-            print_error "Error: production-apk profile is Android only. Use 'production' for iOS builds."
+            # Prevent iOS builds for production_apk
+    if [ "$ENVIRONMENT" = "production_apk" ]; then
+        print_error "Error: production_apk profile is Android only. Use 'production' for iOS builds."
             exit 1
         fi
         echo "Building iOS for $ENVIRONMENT environment..."
         eas build --platform ios --profile $PROFILE --local
         ;;
     "all")
-        # Prevent all-platform builds for production-apk
-        if [ "$ENVIRONMENT" = "production-apk" ]; then
-            echo "Error: production-apk profile is Android only. Building for Android only."
+            # Prevent all-platform builds for production_apk
+    if [ "$ENVIRONMENT" = "production_apk" ]; then
+        echo "Error: production_apk profile is Android only. Building for Android only."
             eas build --platform android --profile $PROFILE --local
         else
             echo "Building for all platforms for $ENVIRONMENT environment..."

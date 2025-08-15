@@ -16,6 +16,8 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
+// Note: AsyncStorage persistence is not configured due to Firebase version compatibility
+// This will cause auth state to not persist between sessions, but the app will still function
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);

@@ -8,7 +8,10 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "development"
+        "APP_VARIANT": "development",
+        "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
+        "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "JAVA_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
       },
       "android": {
         "buildType": "apk",
@@ -22,7 +25,10 @@
     "staging": {
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "staging"
+        "APP_VARIANT": "staging",
+        "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
+        "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "JAVA_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
       },
       "android": {
         "buildType": "app-bundle",
@@ -36,7 +42,10 @@
     "production": {
       "distribution": "store",
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
+        "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "JAVA_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
       },
       "android": {
         "buildType": "app-bundle",
@@ -47,9 +56,12 @@
         "buildConfiguration": "Release"
       }
     },
-    "production-apk": {
+    "production_apk": {
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
+        "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "JAVA_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
       },
       "android": {
         "buildType": "apk",

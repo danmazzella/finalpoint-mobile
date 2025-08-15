@@ -42,7 +42,6 @@ const StatusBarWrapper: React.FC<StatusBarWrapperProps> = ({
         <View style={styles.container}>
             <StatusBar
                 style={statusBarStyle}
-                backgroundColor={statusBarColor}
                 translucent={true}
             />
             {shouldShowBackground && <StatusBarBackground color={statusBarColor} />}

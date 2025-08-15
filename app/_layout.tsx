@@ -60,30 +60,35 @@ function AppContent() {
   // Only set up notification listeners when notifications are enabled
   useEffect(() => {
     if (!shouldEnableNotifications()) {
-      console.log('🚫 Notifications disabled - skipping listener setup');
       return;
     }
 
-    console.log('🔔 Setting up notification listeners...');
+    let receivedSubscription: any;
+    let responseSubscription: any;
 
     // Import notification functions only when needed
     const setupNotifications = async () => {
       try {
         const { addNotificationReceivedListener, addNotificationResponseReceivedListener } = await import('../utils/notifications');
 
-        const receivedSubscription = addNotificationReceivedListener(handleNotificationReceived);
-        const responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
-
-        return () => {
-          receivedSubscription.remove();
-          responseSubscription.remove();
-        };
+        receivedSubscription = addNotificationReceivedListener(handleNotificationReceived);
+        responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
       } catch (error) {
-        console.error('🚫 Could not set up notification listeners:', error);
+        console.error('Could not set up notification listeners:', error);
       }
     };
 
     setupNotifications();
+
+    // Cleanup function - this will be called when the component unmounts
+    return () => {
+      if (receivedSubscription?.remove) {
+        receivedSubscription.remove();
+      }
+      if (responseSubscription?.remove) {
+        responseSubscription.remove();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -161,16 +166,16 @@ function AppContent() {
             </>
           )}
         </Stack>
-
-        {/* Toast Component - rendered outside Stack but inside ThemeProvider */}
-        <SimpleToast
-          message={toast.message}
-          type={toast.type}
-          isVisible={toast.isVisible}
-          onHide={hideToast}
-          duration={toast.duration}
-        />
       </StatusBarWrapper>
+
+      {/* Toast Component - rendered outside StatusBarWrapper to avoid layout warnings */}
+      <SimpleToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onHide={hideToast}
+        duration={toast.duration}
+      />
     </ThemeProvider>
   );
 }

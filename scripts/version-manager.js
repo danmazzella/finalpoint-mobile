@@ -28,7 +28,7 @@ const DEFAULT_VERSION_CONFIG = {
     iosBuildNumber: 43,
     autoIncrement: false
   },
-  "production-apk": {
+  "production_apk": {
     version: "1.0.8",
     androidVersionCode: 15,
     iosBuildNumber: 43,
@@ -274,7 +274,7 @@ Usage:
   npm run version:update-config <env>     # Update app.config.js with environment versions
   npm run version:reset                   # Reset to template values
 
-Environments: development, staging, production, production-apk
+Environments: development, staging, production, production_apk
 Types: build (default), patch, minor, major
 
 Examples:

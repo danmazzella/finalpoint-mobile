@@ -42,8 +42,6 @@
       "edgeToEdgeEnabled": true,
       "package": "com.finalpoint.mobile",
       "versionCode": 19,
-      "label": "FinalPoint",
-      "resizeableActivity": true,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

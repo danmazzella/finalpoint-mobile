@@ -34,6 +34,13 @@ const LoginScreen = () => {
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
 
+    // Function to ensure footer is visible
+    const ensureFooterVisible = () => {
+        if (scrollViewRef.current) {
+            scrollViewRef.current.scrollToEnd({ animated: true });
+        }
+    };
+
     const handleLogin = async () => {
         if (!email || !password) {
             showToast('Please fill in all fields', 'error');
@@ -61,7 +68,7 @@ const LoginScreen = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -75,6 +82,7 @@ const LoginScreen = () => {
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
                     automaticallyAdjustKeyboardInsets={true}
+                    contentInsetAdjustmentBehavior="automatic"
                 >
                     {/* Logo and Branding Section */}
                     <View style={styles.logoSection}>
@@ -208,6 +216,14 @@ const LoginScreen = () => {
                         >
                             <Text style={styles.learnMoreText}>Learn more about FinalPoint</Text>
                         </TouchableOpacity>
+
+                        {/* Scroll to bottom hint for smaller screens */}
+                        <TouchableOpacity
+                            style={styles.scrollHintButton}
+                            onPress={ensureFooterVisible}
+                        >
+                            <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                        </TouchableOpacity>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -234,12 +250,13 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.xl,
+        paddingBottom: spacing.xxl * 2, // Add extra bottom padding
     },
     logoSection: {
         alignItems: 'center',
+        marginTop: spacing.xxl,
         marginBottom: spacing.xxl,
     },
     logoContainer: {
@@ -351,6 +368,8 @@ const styles = StyleSheet.create({
     },
     footerSection: {
         alignItems: 'center',
+        marginTop: spacing.xl,
+        paddingBottom: spacing.lg,
     },
     footerTextContainer: {
         flexDirection: 'row',
@@ -389,6 +408,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.light.textSecondary,
         fontWeight: '500',
+    },
+    scrollHintButton: {
+        marginTop: spacing.md,
+        padding: spacing.sm,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
 });

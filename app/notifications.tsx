@@ -66,7 +66,6 @@ const NotificationSettingsScreen = () => {
       if (response.data.success) {
         // Convert database values (1/0) to proper booleans
         const rawData = response.data.data;
-        console.log('Raw notification preferences from backend:', rawData);
 
         setPreferences({
           emailReminders: Boolean(rawData.emailReminders),
@@ -83,20 +82,6 @@ const NotificationSettingsScreen = () => {
           pushOther: Boolean(rawData.pushOther ?? true)
         });
 
-        console.log('Processed notification preferences:', {
-          emailReminders: Boolean(rawData.emailReminders),
-          emailScoreUpdates: Boolean(rawData.emailScoreUpdates),
-          pushReminders: Boolean(rawData.pushReminders),
-          pushScoreUpdates: Boolean(rawData.pushScoreUpdates),
-          emailReminder5Days: Boolean(rawData.emailReminder5Days ?? true),
-          emailReminder3Days: Boolean(rawData.emailReminder3Days ?? true),
-          emailReminder1Day: Boolean(rawData.emailReminder1Day ?? true),
-          pushReminder5Days: Boolean(rawData.pushReminder5Days ?? true),
-          pushReminder3Days: Boolean(rawData.pushReminder3Days ?? true),
-          pushReminder1Day: Boolean(rawData.pushReminder1Day ?? true),
-          emailOther: Boolean(rawData.emailOther ?? true),
-          pushOther: Boolean(rawData.pushOther ?? true)
-        });
       }
     } catch (error: any) {
       console.error('Error loading preferences:', error);
@@ -173,10 +158,6 @@ const NotificationSettingsScreen = () => {
       }
     }
   };
-
-
-
-
 
   if (isLoading) {
     return (

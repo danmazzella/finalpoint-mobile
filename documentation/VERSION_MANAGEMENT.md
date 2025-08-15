@@ -59,7 +59,7 @@ The system uses a **hybrid approach** with multiple configuration files:
     "iosBuildNumber": 43,
     "autoIncrement": false
   },
-  "production-apk": {
+      "production_apk": {
     "version": "1.0.8",
     "androidVersionCode": 15,
     "iosBuildNumber": 43,
@@ -163,7 +163,7 @@ The system maps EAS build profiles to version configurations:
 - `development` → `development`
 - `staging` → `staging`
 - `production` → `production`
-- `production-apk` → `production-apk`
+- `production_apk` → `production_apk`
 
 ### **Universal Compatibility**
 

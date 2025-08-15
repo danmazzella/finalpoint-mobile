@@ -1,61 +1,87 @@
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-import { getEasProjectId, getFirebaseProjectId, isFirebaseConfigured } from '../config/firebase.config';
-
-// Import expo-notifications (will be available but we'll check before using)
 import * as Notifications from 'expo-notifications';
-
-// Check if we should enable notifications before importing expo-notifications
-const shouldEnableNotifications = () => {
-    return Constants.appOwnership !== 'expo';
-};
-
-// Helper function to check if notifications are available
-const isNotificationsAvailable = () => {
-    return shouldEnableNotifications();
-};
-
-// Configure how notifications are handled when the app is running
-if (isNotificationsAvailable()) {
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: false,
-            shouldShowBanner: true,
-            shouldShowList: true,
-        }),
-    });
-}
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+import { getEasProjectId } from '../config/firebase.config';
 
 export interface PushNotificationToken {
-    token: string;
     type: 'ios' | 'android';
 }
 
 /**
- * Register for push notifications and get the Expo push token
+ * Enhanced Android notification channel setup
+ */
+async function setupAndroidNotificationChannel(): Promise<void> {
+    if (Platform.OS !== 'android') return;
+
+    try {
+        // Create Pick Reminders channel
+        await Notifications.setNotificationChannelAsync('finalpoint_pick_reminders', {
+            name: 'Pick Reminders',
+            description: 'Reminders to make your F1 picks before races',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 500, 250, 500],
+            lightColor: '#FF6B35',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+        });
+
+        // Create Race Scoring channel
+        await Notifications.setNotificationChannelAsync('finalpoint_race_scoring', {
+            name: 'Race Scoring',
+            description: 'Updates when race results are scored and standings change',
+            importance: Notifications.AndroidImportance.DEFAULT,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#4CAF50',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+        });
+
+        // Create Miscellaneous channel
+        await Notifications.setNotificationChannelAsync('finalpoint_misc', {
+            name: 'Miscellaneous',
+            description: 'Other notifications like league invites, admin messages, etc.',
+            importance: Notifications.AndroidImportance.LOW,
+            vibrationPattern: [0, 250],
+            lightColor: '#9E9E9E',
+            sound: 'default',
+            enableVibrate: false,
+            showBadge: false,
+        });
+
+        // Keep the high priority channel for critical notifications
+        await Notifications.setNotificationChannelAsync('finalpoint_high_priority', {
+            name: 'High Priority',
+            description: 'Critical notifications requiring immediate attention',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 500, 250, 500],
+            lightColor: '#F44336',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+        });
+    } catch (error) {
+        console.error('Error setting up Android notification channels:', error);
+    }
+}
+
+/**
+ * Register for push notifications and get the appropriate token
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
-    // Check if notifications are enabled
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Notifications disabled in Expo Go');
+    if (!Device.isDevice) {
         return null;
     }
 
     let token = null;
 
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-        });
-    }
+    try {
+        // Setup Android notification channels first
+        if (Platform.OS === 'android') {
+            await setupAndroidNotificationChannel();
+        }
 
-    if (Device.isDevice) {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
 
@@ -65,54 +91,42 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
         }
 
         if (finalStatus !== 'granted') {
-            alert('Failed to get push token for push notification!');
             return null;
         }
 
-        try {
-            // Use EAS project ID for Expo push notifications (not Firebase project ID)
-            let projectId = getEasProjectId();
-
-            if (!projectId) {
-                throw new Error('EAS project ID not found in configuration');
-            }
-
-            console.log('🔑 Using EAS project ID for push notifications:', projectId);
-
-            token = (await Notifications.getExpoPushTokenAsync({
-                projectId,
-            })).data;
-
-            console.log('✅ Successfully obtained push token:', token);
-
-            // Store the token and check if it has changed
+        if (Platform.OS === 'android') {
+            // Get FCM device token for Android
             try {
-                const AsyncStorage = await import('@react-native-async-storage/async-storage');
-                await AsyncStorage.default.setItem('pushToken', token);
-                console.log('💾 Push token stored locally');
-            } catch (storageError) {
-                console.log('⚠️ Could not store push token locally:', storageError);
+                token = (await Notifications.getDevicePushTokenAsync()).data;
+            } catch (error) {
+                // Fallback to Expo push token
+                token = await getExpoPushToken();
             }
-
-        } catch (e) {
-            console.error('❌ Error getting push token:', e);
-
-            // Provide more specific error messages
-            if (e instanceof Error) {
-                if (e.message.includes('Firebase project ID not found')) {
-                    console.error('🔑 Firebase project ID issue - check environment variables');
-                } else if (e.message.includes('network')) {
-                    console.error('🌐 Network issue - check internet connection');
-                } else {
-                    console.error('❌ Unknown error during push token registration');
-                }
-            }
-
-            token = null;
+        } else {
+            // Get Expo push token for iOS
+            token = await getExpoPushToken();
         }
-    } else {
-        alert('Must use physical device for Push Notifications');
+    } catch (error) {
+        console.error('Error registering for push notifications:', error);
+        token = null;
     }
+
+    return token;
+}
+
+/**
+ * Get Expo push token
+ */
+async function getExpoPushToken(): Promise<string> {
+    let projectId = getEasProjectId();
+
+    if (!projectId) {
+        throw new Error('EAS project ID not found in configuration');
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync({
+        projectId,
+    })).data;
 
     return token;
 }
@@ -122,15 +136,10 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
  */
 export async function sendPushTokenToServer(token: string, userId?: string): Promise<void> {
     try {
-        console.log('🌐 Sending push token to server...');
-        // Use the actual FinalPoint API endpoint
         const { notificationsAPI } = await import('../src/services/apiService');
-
         await notificationsAPI.registerPushToken(token, Platform.OS as 'ios' | 'android');
-
-        console.log(`✅ Push token sent to server successfully for platform: ${Platform.OS}`);
     } catch (error) {
-        console.error('❌ Error sending push token to server:', error);
+        console.error('Error sending push token to server:', error);
         throw error;
     }
 }
@@ -140,14 +149,7 @@ export async function sendPushTokenToServer(token: string, userId?: string): Pro
  */
 export function addNotificationReceivedListener(
     listener: (notification: Notifications.Notification) => void
-): Notifications.Subscription {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Add notification received listener disabled in Expo Go');
-        // Return a mock subscription for Expo Go
-        return {
-            remove: () => { },
-        } as Notifications.Subscription;
-    }
+): Notifications.EventSubscription {
     return Notifications.addNotificationReceivedListener(listener);
 }
 
@@ -156,15 +158,15 @@ export function addNotificationReceivedListener(
  */
 export function addNotificationResponseReceivedListener(
     listener: (response: Notifications.NotificationResponse) => void
-): Notifications.Subscription {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Add notification response listener disabled in Expo Go');
-        // Return a mock subscription for Expo Go
-        return {
-            remove: () => { },
-        } as Notifications.Subscription;
-    }
+): Notifications.EventSubscription {
     return Notifications.addNotificationResponseReceivedListener(listener);
+}
+
+/**
+ * Remove notification listeners
+ */
+export function removeNotificationListeners(): void {
+    // Cleanup handled by individual subscription.remove() calls
 }
 
 /**
@@ -173,216 +175,57 @@ export function addNotificationResponseReceivedListener(
 export async function scheduleLocalNotification(
     title: string,
     body: string,
-    data?: any,
-    trigger?: Notifications.NotificationTriggerInput
+    data: any = {},
+    trigger: Notifications.NotificationTriggerInput = null
 ): Promise<string> {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Local notification disabled in Expo Go:', { title, body, data });
-        return 'disabled';
-    }
-
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    const identifier = await Notifications.scheduleNotificationAsync({
         content: {
             title,
             body,
             data,
+            sound: 'default',
         },
-        trigger: trigger || null, // null means show immediately
+        trigger,
     });
 
-    return notificationId;
+    return identifier;
 }
 
 /**
  * Cancel a scheduled notification
  */
-export async function cancelNotification(notificationId: string): Promise<void> {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Cancel notification disabled in Expo Go');
-        return;
-    }
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+export async function cancelScheduledNotification(identifier: string): Promise<void> {
+    await Notifications.cancelScheduledNotificationAsync(identifier);
 }
 
 /**
  * Cancel all scheduled notifications
  */
-export async function cancelAllNotifications(): Promise<void> {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Cancel all notifications disabled in Expo Go');
-        return;
-    }
+export async function cancelAllScheduledNotifications(): Promise<void> {
     await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 /**
- * Get notification permissions status
+ * Get all scheduled notifications
  */
-export async function getNotificationPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Get notification permissions disabled in Expo Go');
-        // Return a mock response for Expo Go
-        return {
-            status: 'denied',
-            canAskAgain: false,
-            expires: 'never'
-        } as Notifications.NotificationPermissionsStatus;
-    }
-    return await Notifications.getPermissionsAsync();
+export async function getAllScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+    return await Notifications.getAllScheduledNotificationsAsync();
 }
 
 /**
- * Request notification permissions
+ * Get badge count (iOS only)
  */
-export async function requestNotificationPermissions(): Promise<Notifications.NotificationPermissionsStatus> {
-    if (!isNotificationsAvailable()) {
-        console.log('🚫 Request notification permissions disabled in Expo Go');
-        // Return a mock response for Expo Go
-        return {
-            status: 'denied',
-            canAskAgain: false,
-            expires: 'never'
-        } as Notifications.NotificationPermissionsStatus;
-    }
-    return await Notifications.requestPermissionsAsync();
+export async function getBadgeCountAsync(): Promise<number> {
+    if (Platform.OS !== 'ios') return 0;
+    return await Notifications.getBadgeCountAsync();
 }
 
 /**
- * Test if the device actually supports notifications by attempting to schedule one
+ * Set badge count (iOS only)
  */
-export async function testNotificationSupport(): Promise<boolean> {
-    if (!isNotificationsAvailable()) {
-        return false;
-    }
-
-    try {
-        // Simply check if we have permissions - no need to schedule test notifications
-        const { status } = await Notifications.getPermissionsAsync();
-        return status === 'granted';
-    } catch (error) {
-        return false;
-    }
+export async function setBadgeCountAsync(count: number): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+    await Notifications.setBadgeCountAsync(count);
 }
 
-/**
- * Get detailed notification support information
- */
-export async function getNotificationSupportInfo(): Promise<{
-    deviceSupported: boolean;
-    permissionsGranted: boolean;
-    canScheduleNotifications: boolean;
-    platform: string;
-    isPhysicalDevice: boolean;
-}> {
-    const deviceSupported = Device.isDevice;
-    const permissionsGranted = (await Notifications.getPermissionsAsync()).status === 'granted';
-    const canScheduleNotifications = await testNotificationSupport();
 
-    return {
-        deviceSupported,
-        permissionsGranted,
-        canScheduleNotifications,
-        platform: Platform.OS,
-        isPhysicalDevice: Device.isDevice,
-    };
-}
-
-/**
- * Test the complete push notification flow
- * This function can be called manually to test the system
- */
-export async function testPushNotificationFlow(): Promise<{
-    success: boolean;
-    token?: string;
-    error?: string;
-    details: {
-        deviceSupported: boolean;
-        permissionsGranted: boolean;
-        canScheduleNotifications: boolean;
-        platform: string;
-        isPhysicalDevice: boolean;
-    };
-}> {
-    try {
-        console.log('🧪 Testing complete push notification flow...');
-
-        // Get device support info
-        const supportInfo = await getNotificationSupportInfo();
-
-        if (!supportInfo.deviceSupported) {
-            return {
-                success: false,
-                error: 'Device does not support notifications',
-                details: supportInfo
-            };
-        }
-
-        if (!supportInfo.permissionsGranted) {
-            return {
-                success: false,
-                error: 'Notification permissions not granted',
-                details: supportInfo
-            };
-        }
-
-        // Try to get push token
-        const token = await registerForPushNotificationsAsync();
-
-        if (!token) {
-            return {
-                success: false,
-                error: 'Failed to obtain push token',
-                details: supportInfo
-            };
-        }
-
-        console.log('✅ Push notification flow test successful');
-        return {
-            success: true,
-            token,
-            details: supportInfo
-        };
-
-    } catch (error) {
-        console.error('❌ Push notification flow test failed:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            details: await getNotificationSupportInfo()
-        };
-    }
-}
-
-/**
- * Check if the current push token is different from the stored one
- * This can happen when the app is updated or the device changes
- */
-export async function checkAndUpdatePushToken(
-    currentToken: string,
-    onTokenChange?: (newToken: string) => Promise<void>
-): Promise<boolean> {
-    try {
-        // Get the stored token from AsyncStorage
-        const AsyncStorage = await import('@react-native-async-storage/async-storage');
-        const storedToken = await AsyncStorage.default.getItem('pushToken');
-
-        if (storedToken !== currentToken) {
-            console.log('🔄 Push token has changed, updating...');
-
-            // Store the new token
-            await AsyncStorage.default.setItem('pushToken', currentToken);
-
-            // Call the callback if provided
-            if (onTokenChange) {
-                await onTokenChange(currentToken);
-            }
-
-            return true; // Token was updated
-        }
-
-        return false; // Token is the same
-    } catch (error) {
-        console.error('❌ Error checking push token:', error);
-        return false;
-    }
-}

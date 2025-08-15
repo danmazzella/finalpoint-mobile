@@ -141,10 +141,30 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
         // Cleanup listeners on unmount
         return () => {
             if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
+                try {
+                    // Try the new remove() method first, fallback to old method
+                    if (typeof notificationListener.current.remove === 'function') {
+                        notificationListener.current.remove();
+                    } else {
+                        // Fallback to the old method if remove() doesn't exist
+                        (Notifications as any).removeNotificationSubscription(notificationListener.current);
+                    }
+                } catch (error) {
+                    console.warn('Error removing notification listener:', error);
+                }
             }
             if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
+                try {
+                    // Try the new remove() method first, fallback to old method
+                    if (typeof responseListener.current.remove === 'function') {
+                        responseListener.current.remove();
+                    } else {
+                        // Fallback to the old method if remove() doesn't exist
+                        (Notifications as any).removeNotificationSubscription(responseListener.current);
+                    }
+                } catch (error) {
+                    console.warn('Error removing response listener:', error);
+                }
             }
         };
     }, [autoRegister]);
@@ -152,7 +172,11 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     // Update listeners when callbacks change
     useEffect(() => {
         if (notificationListener.current) {
-            Notifications.removeNotificationSubscription(notificationListener.current);
+            try {
+                (Notifications as any).removeNotificationSubscription(notificationListener.current);
+            } catch (error) {
+                console.warn('Error removing notification listener:', error);
+            }
         }
         if (onNotificationReceived) {
             notificationListener.current = addNotificationReceivedListener(onNotificationReceived);
@@ -161,7 +185,11 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
 
     useEffect(() => {
         if (responseListener.current) {
-            Notifications.removeNotificationSubscription(responseListener.current);
+            try {
+                (Notifications as any).removeNotificationSubscription(responseListener.current);
+            } catch (error) {
+                console.warn('Error removing response listener:', error);
+            }
         }
         if (onNotificationResponse) {
             responseListener.current = addNotificationResponseReceivedListener(onNotificationResponse);

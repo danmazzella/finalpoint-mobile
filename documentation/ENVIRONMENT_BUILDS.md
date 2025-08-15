@@ -50,7 +50,7 @@ This approach:
 - **Bundle ID**: `com.finalpoint.mobile`
 - **Slug**: `finalpoint-mobile`
 - **Scheme**: `finalpoint`
-- **Output**: `./builds/production-apk/`
+- **Output**: `./builds/production_apk/`
 - **Platform**: Android only (APK format)
 
 ## Build Output Organization
@@ -70,7 +70,7 @@ builds/
 ├── development/          # Development builds (APK, iOS) - auto-organized
 ├── staging/             # Staging builds (AAB, iOS) - auto-organized
 ├── production/          # Production builds (AAB, iOS) - auto-organized
-├── production-apk/      # Production APK builds - auto-organized
+├── production_apk/      # Production APK builds - auto-organized
 └── README.md            # Build documentation
 ```
 
@@ -116,7 +116,7 @@ npm run build:prod-apk:android # Production APK build (Android only)
 ./scripts/build-env.sh staging ios
 ./scripts/build-env.sh production android
 ./scripts/build-env.sh production ios
-./scripts/build-env.sh production-apk android
+./scripts/build-env.sh production_apk android
 ```
 
 ### Using EAS Build directly
@@ -198,7 +198,7 @@ finalpoint-mobile/
 │   ├── development/      # Development build artifacts
 │   ├── staging/          # Staging build artifacts
 │   ├── production/       # Production build artifacts
-│   └── production-apk/   # Production APK artifacts
+│   └── production_apk/   # Production APK artifacts
 ├── scripts/
 │   └── build-env.sh     # Build automation script
 └── documentation/

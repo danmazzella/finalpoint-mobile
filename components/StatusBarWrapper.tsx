@@ -27,9 +27,16 @@ const StatusBarWrapper: React.FC<StatusBarWrapperProps> = ({
     const colorScheme = useColorScheme();
 
     // Determine the status bar style based on theme and platform
-    const statusBarStyle = Platform.OS === 'android'
-        ? 'dark' // Always use dark text (black) on Android for better contrast with light background
-        : (style === 'auto' ? (colorScheme === 'dark' ? 'light' : 'dark') : style);
+    let statusBarStyle: 'light' | 'dark' | 'auto';
+
+    if (Platform.OS === 'ios') {
+        // On iOS, use dark text (black) for better visibility against light backgrounds
+        // This ensures status bar icons are always visible
+        statusBarStyle = 'dark';
+    } else {
+        // On Android, use dark text for better contrast with light background
+        statusBarStyle = 'dark';
+    }
 
     // Use provided background color or theme-based color
     const statusBarColor = backgroundColor || '#f8fafc'; // light gray-50 for better contrast

@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -156,6 +157,17 @@ const NotificationSettingsScreen = () => {
       } else {
         Alert.alert('Error', `Failed to send test ${type} notification`);
       }
+    }
+  };
+
+  const handleClearBadge = async () => {
+    try {
+      const { forceClearBadgeAsync } = await import('../utils/notifications');
+      await forceClearBadgeAsync();
+      Alert.alert('Success', 'Notification badge cleared successfully!');
+    } catch (error: any) {
+      console.error('Error clearing badge:', error);
+      Alert.alert('Error', 'Failed to clear notification badge');
     }
   };
 
@@ -441,6 +453,23 @@ const NotificationSettingsScreen = () => {
           </View>
         </View>
 
+        {/* Badge Management (iOS only) */}
+        {Platform.OS === 'ios' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Badge Management</Text>
+            <Text style={styles.sectionDescription}>
+              Clear notification badges that may persist after dismissing notifications
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.testButton, styles.badgeButton]}
+              onPress={handleClearBadge}
+            >
+              <Text style={styles.testButtonText}>Clear Badge</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Save Button */}
         <View style={styles.saveSection}>
           <TouchableOpacity
@@ -625,6 +654,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  badgeButton: {
+    backgroundColor: Colors.light.error,
+    marginTop: spacing.md,
   },
 });
 

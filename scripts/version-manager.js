@@ -23,7 +23,7 @@ const DEFAULT_VERSION_CONFIG = {
     autoIncrement: true
   },
   production: {
-    version: "1.0.8",
+    version: "1.0.9",
     androidVersionCode: 15,
     iosBuildNumber: 43,
     autoIncrement: false
@@ -92,7 +92,7 @@ class VersionManager {
     return { ...envConfig };
   }
 
-  incrementVersion(environment, type = 'build') {
+  incrementVersion(environment, platform = 'all', type = 'build') {
     const envConfig = this.config[environment];
     if (!envConfig) {
       throw new Error(`Unknown environment: ${environment}`);
@@ -103,24 +103,29 @@ class VersionManager {
       return envConfig;
     }
 
-    switch (type) {
-      case 'patch':
-        envConfig.version = this.incrementSemver(envConfig.version, 'patch');
-        break;
-      case 'minor':
-        envConfig.version = this.incrementSemver(envConfig.version, 'minor');
-        break;
-      case 'major':
-        envConfig.version = this.incrementSemver(envConfig.version, 'major');
-        break;
-      case 'build':
-      default:
-        envConfig.androidVersionCode++;
-        envConfig.iosBuildNumber++;
-        break;
+    // Handle semantic version increments (patch, minor, major)
+    if (type === 'patch' || type === 'minor' || type === 'major') {
+      envConfig.version = this.incrementSemver(envConfig.version, type);
+      console.log(`✅ Incremented ${type} version for ${environment}: ${envConfig.version}`);
+      return envConfig;
     }
 
-    console.log(`✅ Incremented ${type} for ${environment}:`, envConfig);
+    // Handle platform-specific build increments
+    if (platform === 'android') {
+      envConfig.androidVersionCode++;
+      console.log(`✅ Incremented Android version code for ${environment}: ${envConfig.androidVersionCode}`);
+    } else if (platform === 'ios') {
+      envConfig.iosBuildNumber++;
+      console.log(`✅ Incremented iOS build number for ${environment}: ${envConfig.iosBuildNumber}`);
+    } else if (platform === 'all') {
+      // Default behavior: increment both
+      envConfig.androidVersionCode++;
+      envConfig.iosBuildNumber++;
+      console.log(`✅ Incremented both platforms for ${environment}: Android ${envConfig.androidVersionCode}, iOS ${envConfig.iosBuildNumber}`);
+    } else {
+      throw new Error(`Invalid platform: ${platform}. Use 'android', 'ios', or 'all'`);
+    }
+
     return envConfig;
   }
 
@@ -228,7 +233,8 @@ function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   const environment = args[1];
-  const type = args[2];
+  const platform = args[2];
+  const type = args[3];
 
   const versionManager = new VersionManager();
 
@@ -243,10 +249,10 @@ function main() {
 
     case 'increment':
       if (!environment) {
-        console.error('❌ Please specify environment: npm run version:increment <environment>');
+        console.error('❌ Please specify environment: npm run version:increment <environment> [platform] [type]');
         process.exit(1);
       }
-      versionManager.incrementVersion(environment, type);
+      versionManager.incrementVersion(environment, platform, type);
       versionManager.saveConfig();
       break;
 
@@ -270,18 +276,21 @@ function main() {
 Usage:
   npm run version:init                    # Create initial local version configuration
   npm run version:status                  # Show version status for all environments
-  npm run version:increment <env> [type]  # Increment version for environment
+  npm run version:increment <env> [platform] [type]  # Increment version for environment
   npm run version:update-config <env>     # Update app.config.js with environment versions
   npm run version:reset                   # Reset to template values
 
-Environments: development, staging, production, production_apk
+Environments: development, staging, production, production_apk, production_ipa
+Platforms: android, ios, all (default: all)
 Types: build (default), patch, minor, major
 
 Examples:
-  npm run version:increment development    # Increment build numbers
-  npm run version:increment staging patch # Increment patch version
-  npm run version:update-config production # Update config with production versions
-  npm run version:reset                   # Reset to template values
+  npm run version:increment development           # Increment both platforms (default)
+  npm run version:increment development android  # Increment Android only
+  npm run version:increment development ios      # Increment iOS only
+  npm run version:increment staging patch        # Increment patch version
+  npm run version:update-config production       # Update config with production versions
+  npm run version:reset                          # Reset to template values
 
 Configuration Files:
   version-config.template.json            # Template (committed to git)

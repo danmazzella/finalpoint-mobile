@@ -4,28 +4,33 @@ import { PickV2, NotificationPreferences } from '../types';
 
 // API URL configuration
 const getApiBaseUrl = () => {
-    // Use environment variable if available, otherwise fall back to hardcoded values
+    // Use environment variable if available
     if (process.env.EXPO_PUBLIC_API_URL) {
-        // Ensure the URL ends with /api if it doesn't already
-        const url = process.env.EXPO_PUBLIC_API_URL;
-        if (!url.endsWith('/api')) {
-            return url.endsWith('/') ? url + 'api' : url + '/api';
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+
+        // Check if the URL already ends with /api
+        if (baseUrl.endsWith('/api')) {
+            // If it already ends with /api, use it as is
+            console.log('Constructed API URL:', baseUrl);
+            return baseUrl;
         }
-        return url;
+
+        // If it doesn't end with /api, ensure it doesn't end with a slash, then append /api
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const apiUrl = `${cleanBaseUrl}/api`;
+        return apiUrl;
     }
 
-    // Fallback for development vs production
-    if (__DEV__) {
-        return 'http://192.168.0.15:6075/api';
-    } else {
-        return 'https://api.finalpoint.app/api';
-    }
+    // If no environment variable is set, throw an error
+    throw new Error('EXPO_PUBLIC_API_URL environment variable is not set. Please check your .env file.');
 };
 
 // Helper function to get base URL without /api suffix (for avatar URLs)
 export const getBaseUrl = () => {
     const apiUrl = getApiBaseUrl();
-    return apiUrl.replace('/api', '');
+    // Remove /api suffix to get the base server URL for static files
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl.replace('/api', '');
+    return baseUrl;
 };
 
 const API_BASE_URL = getApiBaseUrl();

@@ -3,15 +3,6 @@
 # FinalPoint Mobile App - Environment-Specific Build Script
 # This script builds the app for different environments with appropriate configurations
 
-# Function to cleanup on exit
-cleanup() {
-    print_status "🧹 Cleaning up..."
-    restore_app_config
-}
-
-# Set trap to cleanup on exit
-trap cleanup EXIT
-
 set -e  # Exit on any error
 
 # Colors for output
@@ -49,6 +40,7 @@ show_help() {
     echo "  staging             - Staging build (AAB, auto-increment versions)"
     echo "  production, prod    - Production build (AAB, fixed versions)"
     echo "  production_apk      - Production APK build (Android only, fixed versions)"
+    echo "  production_ipa      - Production IPA build (iOS only, fixed versions)"
     echo ""
     echo "Platforms:"
     echo "  android             - Build for Android only"
@@ -60,14 +52,18 @@ show_help() {
     echo "  $0 staging ios"
     echo "  $0 production all"
     echo "  $0 production_apk"
+    echo "  $0 production_ipa"
     echo "  $0 staging --dry-run"
     echo ""
     echo "Version Management:"
-    echo "  Development/Staging: Auto-increments version codes"
-    echo "  Production: Uses fixed versions from version-config.template.json"
+    echo "  Development/Staging: Auto-increments build numbers (versionCode/buildNumber)"
+    echo "  Production: Uses fixed build numbers from version-config.template.json"
+    echo "  Semantic versions (1.0.8, etc.) are managed manually and not auto-incremented"
     echo ""
     echo "Options:"
     echo "  --dry-run           - Show configuration changes without building"
+    echo ""
+    echo "Note: This script modifies app.json directly. Manual changes will persist."
 }
 
 # Function to handle version management using version-manager.js
@@ -75,52 +71,27 @@ manage_versions() {
     local environment=$1
     local platform=$2
     
-    print_status "🔧 Managing versions for $environment environment..."
+    print_status "🔧 Managing build numbers for $environment environment..."
     
-    # Load version configuration to check auto-increment setting
-    local versionLocalPath="./version-config.local.json"
-    local auto_increment=false
+    # Determine if we should auto-increment build numbers (not semantic versions)
+    local should_increment_build_numbers=false
     
-    if [ -f "$versionLocalPath" ]; then
-        # Extract auto-increment setting for the specific environment
-        local environmentKey=""
-        case $environment in
-            "development"|"dev")
-                environmentKey="development"
-                ;;
-            "staging")
-                environmentKey="staging"
-                ;;
-            "production"|"prod")
-                environmentKey="production"
-                ;;
-                    "production_apk")
-            environmentKey="production_apk"
-                ;;
-        esac
+    case $environment in
+        "development"|"dev"|"staging")
+            should_increment_build_numbers=true
+            print_status "📋 Auto-incrementing build numbers for $environment environment"
+            ;;
+        "production"|"prod"|"production_apk"|"production_ipa")
+            should_increment_build_numbers=false
+            print_status "📋 Using fixed build numbers for $environment environment"
+            ;;
+    esac
+    
+    if [ "$should_increment_build_numbers" = true ]; then
+        print_status "🔄 Auto-incrementing build numbers (versionCode/buildNumber) for $environment environment..."
+        print_status "ℹ️  Semantic version will remain unchanged (managed manually)"
         
-        # Check if auto-increment is enabled for this environment
-        if [ -n "$environmentKey" ]; then
-            auto_increment=$(cat "$versionLocalPath" | jq -r ".$environmentKey.autoIncrement // false")
-            print_status "📋 Auto-increment setting for $environment: $auto_increment"
-        fi
-    else
-        print_status "📁 No local version config found, using default behavior"
-        # Default behavior: auto-increment for dev/staging, fixed for production
-        case $environment in
-            "development"|"dev"|"staging")
-                auto_increment=true
-                ;;
-            "production"|"prod"|"production_apk")
-                auto_increment=false
-                ;;
-        esac
-    fi
-    
-    if [ "$auto_increment" = true ]; then
-        print_status "🔄 Auto-incrementing versions for $environment environment..."
-        
-        # Only increment versions for the platforms being built
+        # Only increment build numbers for the platforms being built
         if [ "$platform" = "android" ]; then
             print_status "📱 Incrementing Android version code only..."
             node scripts/version-manager.js increment "$environment" "android"
@@ -128,18 +99,11 @@ manage_versions() {
             print_status "🍎 Incrementing iOS build number only..."
             node scripts/version-manager.js increment "$environment" "ios"
         elif [ "$platform" = "all" ]; then
-            # For "all" platforms, only increment if this is a development/staging build
-            # Production builds with "all" should not auto-increment (use fixed versions)
-            if [ "$environment" = "development" ] || [ "$environment" = "dev" ] || [ "$environment" = "staging" ]; then
-                print_status "📱🍎 Incrementing both Android and iOS versions for development/staging..."
-                node scripts/version-manager.js increment "$environment" "android"
-                node scripts/version-manager.js increment "$environment" "ios"
-            else
-                print_status "ℹ️  Production build with 'all' platforms - using fixed versions (no increment)"
-            fi
+            print_status "📱🍎 Incrementing both Android and iOS build numbers..."
+            node scripts/version-manager.js increment "$environment" "all"
         fi
     else
-        print_status "ℹ️  Using fixed versions for $environment environment"
+        print_status "ℹ️  Using fixed build numbers for $environment environment"
     fi
 }
 
@@ -165,27 +129,6 @@ update_app_config() {
         exit 1
     fi
     
-    # Create backup of original app.json in a more protected location
-    print_status "📋 Creating backup of app.json..."
-    local backupDir="./.build-backup"
-    mkdir -p "$backupDir"
-    
-    if cp app.json "$backupDir/app.json.backup"; then
-        print_success "✅ Backup created: $backupDir/app.json.backup"
-        # Verify backup exists and has content
-        if [ -f "$backupDir/app.json.backup" ] && [ -s "$backupDir/app.json.backup" ]; then
-            print_status "📋 Backup verified: $(wc -c < "$backupDir/app.json.backup") bytes"
-            # Also create a symlink for compatibility
-            ln -sf "$backupDir/app.json.backup" app.json.backup
-        else
-            print_error "❌ Backup creation failed or backup is empty"
-            exit 1
-        fi
-    else
-        print_error "❌ Failed to create backup of app.json"
-        exit 1
-    fi
-    
     # Load version configuration
     local versionLocalPath="./version-config.local.json"
     local versionInfo='{"version":"1.0.8","androidVersionCode":15,"iosBuildNumber":43}'
@@ -197,22 +140,25 @@ update_app_config() {
         print_status "📁 Using default version configuration"
     fi
     
-    # Parse version info for the specific environment
+    # Parse version info for the specific environment using jq
     local environmentKey=""
-    case $environment in
-        "development"|"dev")
-            environmentKey="development"
-            ;;
-        "staging")
-            environmentKey="staging"
-            ;;
-        "production"|"prod")
-            environmentKey="production"
-            ;;
-        "production_apk")
-            environmentKey="production_apk"
-            ;;
-    esac
+            case $environment in
+            "development"|"dev")
+                environmentKey="development"
+                ;;
+            "staging")
+                environmentKey="staging"
+                ;;
+            "production"|"prod")
+                environmentKey="production"
+                ;;
+            "production_apk")
+                environmentKey="production_apk"
+                ;;
+            "production_ipa")
+                environmentKey="production_ipa"
+                ;;
+        esac
     
     # Extract version info for the specific environment using jq
     local version=$(echo "$versionInfo" | jq -r ".$environmentKey.version // empty")
@@ -231,125 +177,68 @@ update_app_config() {
         "development"|"dev")
             # Update for development
             jq --arg name "FP Dev" \
+               --arg version "$version" \
                --arg scheme "finalpoint-dev" \
                --arg androidPackage "com.finalpoint.dev" \
                --arg androidVersionCode "$androidVersionCode" \
                --arg iosBuildNumber "$iosBuildNumber" \
-               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
+               --arg iosBundleId "com.finalpoint.dev" \
+               --arg namespace "com.finalpoint.dev" \
+               '.expo.name = $name | .expo.version = $version | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber | .expo.ios.bundleIdentifier = $iosBundleId | .expo.plugins[4][1].android.namespace = $namespace' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
         "staging")
             # Update for staging
             jq --arg name "FP Staging" \
+               --arg version "$version" \
                --arg scheme "finalpoint-staging" \
                --arg androidPackage "com.finalpoint.staging" \
                --arg androidVersionCode "$androidVersionCode" \
                --arg iosBuildNumber "$iosBuildNumber" \
-               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
+               --arg iosBundleId "com.finalpoint.staging" \
+               --arg namespace "com.finalpoint.staging" \
+               '.expo.name = $name | .expo.version = $version | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber | .expo.ios.bundleIdentifier = $iosBundleId | .expo.plugins[4][1].android.namespace = $namespace' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
         "production"|"prod")
             # Update for production
             jq --arg name "FinalPoint" \
+               --arg version "$version" \
                --arg scheme "finalpoint" \
                --arg androidPackage "com.finalpoint.mobile" \
                --arg androidVersionCode "$androidVersionCode" \
                --arg iosBuildNumber "$iosBuildNumber" \
-               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
+               --arg iosBundleId "com.finalpoint.mobile" \
+               --arg namespace "com.finalpoint.mobile" \
+               '.expo.name = $name | .expo.version = $version | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber | .expo.ios.bundleIdentifier = $iosBundleId | .expo.plugins[4][1].android.namespace = $namespace' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
         "production_apk")
             # Update for production APK (Android only)
             jq --arg name "FinalPoint" \
+               --arg version "$version" \
                --arg scheme "finalpoint" \
                --arg androidPackage "com.finalpoint.mobile" \
                --arg androidVersionCode "$androidVersionCode" \
-               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber)' \
+               --arg namespace "com.finalpoint.mobile" \
+               '.expo.name = $name | .expo.version = $version | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.plugins[4][1].android.namespace = $namespace' \
+               app.json > app.json.tmp && mv app.json.tmp app.json
+            ;;
+        "production_ipa")
+            # Update for production IPA (iOS only)
+            jq --arg name "FinalPoint" \
+               --arg version "$version" \
+               --arg scheme "finalpoint" \
+               --arg iosBuildNumber "$iosBuildNumber" \
+               --arg iosBundleId "com.finalpoint.mobile" \
+               --arg namespace "com.finalpoint.mobile" \
+               '.expo.name = $name | .expo.version = $version | .expo.scheme = $scheme | .expo.ios.buildNumber = $iosBuildNumber | .expo.ios.bundleIdentifier = $iosBundleId | .expo.plugins[4][1].android.namespace = $namespace' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
     esac
     
-    # Verify backup still exists after jq operations
-    local backupDir="./.build-backup"
-    if [ ! -f "$backupDir/app.json.backup" ] || [ ! -s "$backupDir/app.json.backup" ]; then
-        print_error "❌ Protected backup file was lost during configuration update"
-        exit 1
-    fi
-    
     print_success "✅ App configuration updated for $environment"
-}
-
-# Function to check backup status
-check_backup_status() {
-    local context="$1"
-    local backupDir="./.build-backup"
-    
-    if [ -f "$backupDir/app.json.backup" ]; then
-        if [ -s "$backupDir/app.json.backup" ]; then
-            print_status "📋 Backup status [$context]: $backupDir/app.json.backup ($(wc -c < "$backupDir/app.json.backup") bytes)"
-        else
-            print_warning "⚠️  Backup status [$context]: $backupDir/app.json.backup exists but is empty"
-        fi
-    elif [ -f "app.json.backup" ]; then
-        if [ -s "app.json.backup" ]; then
-            print_status "📋 Backup status [$context]: app.json.backup ($(wc -c < app.json.backup) bytes)"
-        else
-            print_warning "⚠️  Backup status [$context]: app.json.backup exists but is empty"
-        fi
-    else
-        print_warning "⚠️  Backup status [$context]: No backup file found in either location"
-    fi
-}
-
-# Function to restore original app.json
-restore_app_config() {
-    print_status "🔄 Restoring original app.json configuration..."
-    local backupDir="./.build-backup"
-    
-    # Check if backup exists and has content in protected directory
-    if [ -f "$backupDir/app.json.backup" ]; then
-        if [ -s "$backupDir/app.json.backup" ]; then
-            print_status "📋 Found backup: $backupDir/app.json.backup ($(wc -c < "$backupDir/app.json.backup") bytes)"
-            if cp "$backupDir/app.json.backup" app.json; then
-                print_success "✅ Original app.json restored from protected backup"
-                # Clean up
-                rm -f "$backupDir/app.json.backup"
-                rm -f app.json.backup  # Remove symlink if it exists
-                rmdir "$backupDir" 2>/dev/null || true
-            else
-                print_error "❌ Failed to restore app.json from protected backup"
-            fi
-        else
-            print_warning "⚠️  Protected backup file exists but is empty"
-            rm -f "$backupDir/app.json.backup"
-        fi
-    elif [ -f "app.json.backup" ]; then
-        if [ -s "app.json.backup" ]; then
-            print_status "📋 Found backup: app.json.backup ($(wc -c < app.json.backup) bytes)"
-            if mv app.json.backup app.json; then
-                print_success "✅ Original app.json restored"
-            else
-                print_error "❌ Failed to restore app.json from backup"
-                # Try to copy instead of move if move fails
-                if cp app.json.backup app.json; then
-                    print_success "✅ Original app.json restored (copied)"
-                    rm app.json.backup
-                else
-                    print_error "❌ Failed to restore app.json completely"
-                fi
-            fi
-        else
-            print_warning "⚠️  Backup file exists but is empty"
-            rm -f app.json.backup
-        fi
-    else
-        print_warning "⚠️  No backup found to restore"
-        # List files in current directory to help debug
-        print_status "📁 Current directory contents:"
-        ls -la | grep -E "(app\.json|backup)" || print_status "   No app.json or backup files found"
-        print_status "📁 Protected backup directory contents:"
-        ls -la "$backupDir" 2>/dev/null || print_status "   Protected backup directory not found"
-    fi
+    print_warning "⚠️  Note: app.json has been modified. Manual changes will persist."
 }
 
 # Function to organize build outputs after build completion
@@ -420,8 +309,9 @@ output_adb_commands() {
         
         # Check if device is connected
         if command -v adb &> /dev/null; then
-            local device_count=$(adb devices | grep -v "List of devices" | grep -c "device$" || echo "0")
-            if [ "$device_count" -gt 0 ]; then
+            local device_count=$(adb devices | grep -v "List of devices" | grep -c "device$" 2>/dev/null || echo "0")
+            # Ensure device_count is a valid number
+            if [[ "$device_count" =~ ^[0-9]+$ ]] && [ "$device_count" -gt 0 ]; then
                 print_success "✅ Android device detected and ready for installation"
             else
                 print_warning "⚠️  No Android devices connected. Connect a device and run 'adb devices' to verify."
@@ -477,8 +367,8 @@ case $ENVIRONMENT in
         PROFILE="production"
         echo "Using production profile..."
         ;;
-            "production_apk")
-            PROFILE="production_apk"
+                "production_apk")
+        PROFILE="production_apk"
         echo "Using production APK profile (Android only)..."
         # Force Android platform for production_apk
         if [ "$PLATFORM" != "android" ] && [ "$PLATFORM" != "all" ]; then
@@ -486,8 +376,17 @@ case $ENVIRONMENT in
             PLATFORM="android"
         fi
         ;;
+    "production_ipa")
+        PROFILE="production_ipa"
+        echo "Using production IPA profile (iOS only)..."
+        # Force iOS platform for production_ipa
+        if [ "$PLATFORM" != "ios" ] && [ "$PLATFORM" != "all" ]; then
+            echo "Warning: production_ipa is iOS only. Setting platform to ios."
+            PLATFORM="ios"
+        fi
+        ;;
     *)
-        print_error "Invalid environment. Use: development, staging, production, or production_apk"
+        print_error "Invalid environment. Use: development, staging, production, production_apk, or production_ipa"
         echo "Run '$0' for help"
         exit 1
         ;;
@@ -499,9 +398,6 @@ manage_versions "$ENVIRONMENT" "$PLATFORM"
 # Update app.json configuration for the environment
 update_app_config "$ENVIRONMENT" "$PLATFORM"
 
-# Check backup status after configuration update
-check_backup_status "after config update"
-
 # Skip build if in dry-run mode
 if [ "$DRY_RUN" = true ]; then
     print_status "🔍 DRY RUN: Configuration updated, skipping build"
@@ -509,9 +405,6 @@ if [ "$DRY_RUN" = true ]; then
     print_status "🔍 DRY RUN: Check app.json to see the changes that would be applied"
     exit 0
 fi
-
-# Check backup status before starting build
-check_backup_status "before build start"
 
 # Build based on platform (without --output flag to avoid directory conflicts)
 case $PLATFORM in
@@ -521,8 +414,13 @@ case $PLATFORM in
         ;;
     "ios")
             # Prevent iOS builds for production_apk
-    if [ "$ENVIRONMENT" = "production_apk" ]; then
-        print_error "Error: production_apk profile is Android only. Use 'production' for iOS builds."
+        if [ "$ENVIRONMENT" = "production_apk" ]; then
+            print_error "Error: production_apk profile is Android only. Use 'production' for iOS builds."
+            exit 1
+        fi
+        # Prevent Android builds for production_ipa
+        if [ "$ENVIRONMENT" = "production_ipa" ]; then
+            print_error "Error: production_ipa profile is iOS only. Use 'production' for Android builds."
             exit 1
         fi
         echo "Building iOS for $ENVIRONMENT environment..."
@@ -530,9 +428,13 @@ case $PLATFORM in
         ;;
     "all")
             # Prevent all-platform builds for production_apk
-    if [ "$ENVIRONMENT" = "production_apk" ]; then
-        echo "Error: production_apk profile is Android only. Building for Android only."
+        if [ "$ENVIRONMENT" = "production_apk" ]; then
+            echo "Error: production_apk profile is Android only. Building for Android only."
             eas build --platform android --profile $PROFILE --local
+        # Prevent all-platform builds for production_ipa
+        elif [ "$ENVIRONMENT" = "production_ipa" ]; then
+            echo "Error: production_ipa profile is iOS only. Building for iOS only."
+            eas build --platform ios --profile $PROFILE --local
         else
             echo "Building for all platforms for $ENVIRONMENT environment..."
             eas build --platform all --profile $PROFILE --local
@@ -553,3 +455,6 @@ output_adb_commands "$ENVIRONMENT" "$PLATFORM"
 
 print_success "Build completed for $ENVIRONMENT environment!"
 echo "📁 Build outputs organized in ./builds/$ENVIRONMENT/"
+print_warning "⚠️  Note: app.json has been modified for this environment. Manual changes will persist."
+print_status "ℹ️  Build numbers were auto-incremented for development/staging builds"
+print_status "ℹ️  Semantic version remains unchanged (manage manually in version-config.local.json)"

@@ -63,6 +63,7 @@ const RaceResultsScreen = () => {
 
     const [results, setResults] = useState<RaceResultV2[]>([]);
     const [loading, setLoading] = useState(true);
+    const [weekLoading, setWeekLoading] = useState(false);
     const [races, setRaces] = useState<Race[]>([]);
     const [selectedWeek, setSelectedWeek] = useState(weekNumber);
     const [showWeekSelector, setShowWeekSelector] = useState(false);
@@ -76,8 +77,14 @@ const RaceResultsScreen = () => {
 
     const loadData = async () => {
         try {
-            setLoading(true);
+            // Only show full loading on initial load or league change
+            if (results.length === 0) {
+                setLoading(true);
+            } else {
+                setWeekLoading(true);
+            }
             setError(null);
+
             const [leagueResponse, racesResponse, resultsResponse, positionsResponse] = await Promise.all([
                 leaguesAPI.getLeague(leagueId),
                 f1racesAPI.getAllRaces(),
@@ -106,10 +113,12 @@ const RaceResultsScreen = () => {
             showToast('Failed to load race results', 'error');
         } finally {
             setLoading(false);
+            setWeekLoading(false);
         }
     };
 
     const handleWeekChange = (week: number) => {
+        // Optimistically update the week immediately
         setSelectedWeek(week);
         setShowWeekSelector(false);
         router.replace(`/race-results?leagueId=${leagueId}&weekNumber=${week}` as any);
@@ -324,32 +333,37 @@ const RaceResultsScreen = () => {
                 {/* Week Navigation */}
                 <View style={styles.weekNavigation}>
                     <TouchableOpacity
-                        style={[styles.navButton, !canGoPrevious && styles.navButtonDisabled]}
+                        style={[styles.navButton, (!canGoPrevious || weekLoading) && styles.navButtonDisabled]}
                         onPress={goToPreviousWeek}
-                        disabled={!canGoPrevious}
+                        disabled={!canGoPrevious || weekLoading}
                     >
-                        <Ionicons name="chevron-back" size={16} color={canGoPrevious ? Colors.light.textPrimary : Colors.light.textSecondary} />
-                        <Text style={[styles.navButtonText, !canGoPrevious && styles.navButtonTextDisabled]}>Prev</Text>
+                        <Ionicons name="chevron-back" size={16} color={canGoPrevious && !weekLoading ? Colors.light.textPrimary : Colors.light.textSecondary} />
+                        <Text style={[styles.navButtonText, (!canGoPrevious || weekLoading) && styles.navButtonTextDisabled]}>Prev</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.weekSelector}
                         onPress={() => setShowWeekSelector(!showWeekSelector)}
+                        disabled={weekLoading}
                     >
                         <Text style={styles.weekNumber}>Week {selectedWeek}</Text>
                         <Text style={styles.raceName} numberOfLines={1}>
                             {currentRace?.raceName || 'Unknown Race'}
                         </Text>
-                        <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                        {weekLoading ? (
+                            <ActivityIndicator size="small" color={Colors.light.primary} />
+                        ) : (
+                            <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                        )}
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.navButton, !canGoNext && styles.navButtonDisabled]}
+                        style={[styles.navButton, (!canGoNext || weekLoading) && styles.navButtonDisabled]}
                         onPress={goToNextWeek}
-                        disabled={!canGoNext}
+                        disabled={!canGoNext || weekLoading}
                     >
-                        <Text style={[styles.navButtonText, !canGoNext && styles.navButtonTextDisabled]}>Next</Text>
-                        <Ionicons name="chevron-forward" size={16} color={canGoNext ? Colors.light.textPrimary : Colors.light.textSecondary} />
+                        <Text style={[styles.navButtonText, (!canGoNext || weekLoading) && styles.navButtonTextDisabled]}>Next</Text>
+                        <Ionicons name="chevron-forward" size={16} color={canGoNext && !weekLoading ? Colors.light.textPrimary : Colors.light.textSecondary} />
                     </TouchableOpacity>
                 </View>
 
@@ -361,6 +375,7 @@ const RaceResultsScreen = () => {
                                 key={race.weekNumber}
                                 style={[styles.weekOption, race.weekNumber === selectedWeek && styles.weekOptionSelected]}
                                 onPress={() => handleWeekChange(race.weekNumber)}
+                                disabled={weekLoading}
                             >
                                 <Text style={[styles.weekOptionText, race.weekNumber === selectedWeek && styles.weekOptionTextSelected]}>
                                     Week {race.weekNumber}
@@ -369,7 +384,7 @@ const RaceResultsScreen = () => {
                                     {race.raceName}
                                 </Text>
                                 {race.weekNumber === selectedWeek && (
-                                    <Ionicons name="checkmark" size={16} color={Colors.light.primary} />
+                                    <Ionicons name="checkmark" size="16" color={Colors.light.primary} />
                                 )}
                             </TouchableOpacity>
                         ))}

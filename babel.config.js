@@ -4,6 +4,7 @@ module.exports = function (api) {
         presets: ['babel-preset-expo'],
         plugins: [
             // Expo Router support is now included in babel-preset-expo
+            'react-native-reanimated/plugin',
         ],
     };
 };

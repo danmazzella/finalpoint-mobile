@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
-import { authAPI, apiService } from '../../src/services/apiService';
+import { authAPI, apiService, getBaseUrl } from '../../src/services/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
@@ -31,13 +31,7 @@ const ProfileScreen = () => {
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [isLoadingAvatar, setIsLoadingAvatar] = useState(true);
 
-    // Determine base URL based on environment
-    const getBaseUrl = () => {
-        // For development, use the local server
-        // For production, use finalpoint.app
-        // You can add environment detection logic here if needed
-        return __DEV__ ? 'http://192.168.0.15:6075' : 'https://finalpoint.app';
-    };
+    // Remove the conflicting getBaseUrl function - use the one from apiService
 
     // Fetch profile data directly from API when component mounts
     useEffect(() => {

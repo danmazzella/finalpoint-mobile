@@ -2,11 +2,16 @@
   "expo": {
     "name": "FinalPoint",
     "slug": "finalpoint-mobile",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "default",
     "scheme": "finalpoint",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "statusBar": {
+      "style": "dark",
+      "backgroundColor": "#f8fafc",
+      "translucent": true
+    },
     "extra": {
       "eas": {
         "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
@@ -14,15 +19,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finalpoint.dev",
-      "buildNumber": "59",
+      "bundleIdentifier": "com.finalpoint.mobile",
+      "buildNumber": "46",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
         "NSCameraUsageDescription": "This app uses the camera to allow users to take profile photos.",
         "NSPhotoLibraryUsageDescription": "This app accesses your photo library to allow you to select profile photos.",
         "NSPhotoLibraryAddUsageDescription": "This app saves photos to your photo library for profile pictures.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIStatusBarStyle": "UIStatusBarStyleDefault",
+        "UIViewControllerBasedStatusBarAppearance": false
       },
       "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"
     },
@@ -33,8 +40,10 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
-      "package": "com.finalpoint.dev",
-      "versionCode": 31,
+      "enableHermes": true,
+      "enableProguardInReleaseBuilds": false,
+      "package": "com.finalpoint.mobile",
+      "versionCode": 20,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -92,7 +101,7 @@
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
-            "namespace": "com.finalpoint.dev"
+            "namespace": "com.finalpoint.mobile"
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"

@@ -353,7 +353,6 @@ const LeagueDetailScreen = () => {
                     <TouchableOpacity
                         style={styles.settingsButton}
                         onPress={() => {
-                            console.log('Settings button pressed, setting showSettings to true');
                             setShowSettings(true);
                         }}
                     >
@@ -1174,6 +1173,8 @@ const styles = StyleSheet.create({
         padding: spacing.lg,
         width: '90%',
         maxWidth: 400,
+        maxHeight: '90%',
+        minHeight: 200,
         ...shadows.lg,
     },
     modalHeader: {
@@ -1191,10 +1192,11 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
     },
     modalContent: {
-        flex: 1,
+        minHeight: 150,
     },
     modalContentContainer: {
         paddingBottom: spacing.lg, // Add some padding at the bottom for the close button
+        minHeight: 120,
     },
     settingSection: {
         marginBottom: spacing.md,
@@ -1313,32 +1315,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         width: '100%',
     },
-    primaryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    primaryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    secondaryButton: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    secondaryButtonText: {
-        color: Colors.light.textSecondary,
-        fontSize: 16,
-        fontWeight: '600',
-    },
+
     leaveButtonContainer: {
         marginTop: spacing.md,
     },

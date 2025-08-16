@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, ImageErrorEventData, NativeSyntheticEvent } from 'react-native';
 import { getBaseUrl } from '../services/apiService';
 
@@ -22,14 +22,15 @@ const getAvatarUrl = (avatarPath: string | null | undefined): string | null => {
 
     // Get base URL from API service
     const baseUrl = getBaseUrl();
-
     // If it starts with /uploads/avatars/, it's already a full path, just add the base URL
     if (avatarPath.startsWith('/uploads/avatars/')) {
-        return `${baseUrl}${avatarPath}`;
+        const fullUrl = `${baseUrl}${avatarPath}`;
+        return fullUrl;
     }
 
     // For relative paths (just filename), construct the full URL
     const url = `${baseUrl}/uploads/avatars/${avatarPath}`;
+
     return url;
 };
 
@@ -51,6 +52,14 @@ const Avatar: React.FC<AvatarProps> = ({
 
     const avatarUrl = getAvatarUrl(src);
 
+    // Debug logging
+    useEffect(() => {
+        if (src) {
+            // console.log('Avatar component - src:', src);
+            // console.log('Avatar component - constructed URL:', avatarUrl);
+        }
+    }, [src, avatarUrl]);
+
     // If no URL or image failed to load, show fallback
     if (!avatarUrl || imageError) {
         return (
@@ -58,6 +67,13 @@ const Avatar: React.FC<AvatarProps> = ({
                 <Text style={[styles.fallbackText, { fontSize: sizeStyles[size].fontSize }]}>
                     {fallback}
                 </Text>
+                {/* Debug info */}
+                {__DEV__ && (
+                    <Text style={styles.debugText}>
+                        Debug: {src ? `src: ${src}` : 'no src'}
+                        {'\n'}URL: {avatarUrl ? avatarUrl : 'no URL'}
+                    </Text>
+                )}
             </View>
         );
     }
@@ -67,9 +83,12 @@ const Avatar: React.FC<AvatarProps> = ({
             source={{ uri: avatarUrl }}
             style={[styles.image, sizeStyles[size], style]}
             onError={(e: NativeSyntheticEvent<ImageErrorEventData>) => {
+                console.error('Avatar image load error:', e.nativeEvent);
+                console.error('Failed URL:', avatarUrl);
                 setImageError(true);
             }}
             onLoad={() => {
+                setImageError(false);
             }}
         />
     );
@@ -89,6 +108,11 @@ const styles = StyleSheet.create({
     fallbackText: {
         color: '#ffffff', // White text on blue background
         fontWeight: 'bold',
+    },
+    debugText: {
+        color: '#ffffff', // White text on blue background
+        fontSize: 12,
+        marginTop: 5,
     },
 });
 

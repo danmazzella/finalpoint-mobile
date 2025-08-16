@@ -71,6 +71,20 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       }
+    },
+    "production_ipa": {
+      "distribution": "internal",
+      "env": {
+        "NODE_ENV": "production",
+        "APP_VARIANT": "production",
+        "GRADLE_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8",
+        "GRADLE_DAEMON_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "JAVA_OPTS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      }
     }
   },
   "submit": {

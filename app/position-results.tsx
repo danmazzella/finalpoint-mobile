@@ -15,6 +15,7 @@ import { useSimpleToast } from '../src/context/SimpleToastContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import { usePositionNavigation } from '../hooks/usePositionNavigation';
 
 interface PositionResultV2 {
     leagueId: number;
@@ -46,7 +47,6 @@ interface PositionResultV2 {
 
 const PositionResultsScreen = () => {
     const params = useLocalSearchParams();
-    const router = useRouter();
     const { showToast } = useSimpleToast();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
@@ -57,6 +57,16 @@ const PositionResultsScreen = () => {
     const [availablePositions, setAvailablePositions] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Use custom navigation hook
+    const { navigateToPrevious, navigateToNext, canNavigate } = usePositionNavigation({
+        leagueId,
+        weekNumber,
+        leagueName,
+    });
+
+    // Router for back button navigation
+    const router = useRouter();
 
     const loadResults = useCallback(async () => {
         try {
@@ -96,18 +106,7 @@ const PositionResultsScreen = () => {
         }
     }, [leagueId]);
 
-    const navigateToPosition = (newPosition: number) => {
-        // Use replace instead of push to avoid building up navigation stack
-        router.replace({
-            pathname: '/position-results',
-            params: {
-                leagueId: leagueId.toString(),
-                weekNumber: weekNumber.toString(),
-                position: newPosition.toString(),
-                leagueName: leagueName,
-            },
-        });
-    };
+
 
     const getCurrentPositionIndex = () => {
         return availablePositions.findIndex(pos => pos === position);
@@ -121,19 +120,7 @@ const PositionResultsScreen = () => {
         return getCurrentPositionIndex() < availablePositions.length - 1;
     };
 
-    const navigateToPrevious = () => {
-        const currentIndex = getCurrentPositionIndex();
-        if (currentIndex > 0) {
-            navigateToPosition(availablePositions[currentIndex - 1]);
-        }
-    };
 
-    const navigateToNext = () => {
-        const currentIndex = getCurrentPositionIndex();
-        if (currentIndex < availablePositions.length - 1) {
-            navigateToPosition(availablePositions[currentIndex + 1]);
-        }
-    };
 
     useEffect(() => {
         loadResults();
@@ -250,15 +237,15 @@ const PositionResultsScreen = () => {
                         <TouchableOpacity
                             style={[
                                 styles.navigationButton,
-                                !canNavigatePrevious() && styles.navigationButtonDisabled
+                                (!canNavigatePrevious() || !canNavigate()) && styles.navigationButtonDisabled
                             ]}
-                            onPress={navigateToPrevious}
-                            disabled={!canNavigatePrevious()}
+                            onPress={() => navigateToPrevious(position, availablePositions)}
+                            disabled={!canNavigatePrevious() || !canNavigate()}
                         >
                             <Ionicons
                                 name="chevron-back"
                                 size={18}
-                                color={canNavigatePrevious() ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={(canNavigatePrevious() && canNavigate()) ? Colors.light.textPrimary : Colors.light.textSecondary}
                             />
                         </TouchableOpacity>
 
@@ -274,15 +261,15 @@ const PositionResultsScreen = () => {
                         <TouchableOpacity
                             style={[
                                 styles.navigationButton,
-                                !canNavigateNext() && styles.navigationButtonDisabled
+                                (!canNavigateNext() || !canNavigate()) && styles.navigationButtonDisabled
                             ]}
-                            onPress={navigateToNext}
-                            disabled={!canNavigateNext()}
+                            onPress={() => navigateToNext(position, availablePositions)}
+                            disabled={!canNavigateNext() || !canNavigate()}
                         >
                             <Ionicons
                                 name="chevron-forward"
                                 size={18}
-                                color={canNavigateNext() ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={(canNavigateNext() && canNavigate()) ? Colors.light.textPrimary : Colors.light.textSecondary}
                             />
                         </TouchableOpacity>
                     </View>

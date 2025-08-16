@@ -228,4 +228,132 @@ export async function setBadgeCountAsync(count: number): Promise<void> {
     await Notifications.setBadgeCountAsync(count);
 }
 
+/**
+ * Clear badge count (iOS only)
+ */
+export async function clearBadgeAsync(): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+    await Notifications.setBadgeCountAsync(0);
+}
+
+/**
+ * Decrement badge count by 1 (iOS only)
+ */
+export async function decrementBadgeAsync(): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+    const currentCount = await Notifications.getBadgeCountAsync();
+    const newCount = Math.max(0, currentCount - 1);
+    await Notifications.setBadgeCountAsync(newCount);
+}
+
+/**
+ * Get current badge count and clear it (iOS only)
+ * Useful for when user opens the app
+ */
+export async function getAndClearBadgeAsync(): Promise<number> {
+    if (Platform.OS !== 'ios') return 0;
+    const currentCount = await Notifications.getBadgeCountAsync();
+    if (currentCount > 0) {
+        await Notifications.setBadgeCountAsync(0);
+    }
+    return currentCount;
+}
+
+/**
+ * Handle background notification processing
+ * This should be called in your app's background notification handler
+ */
+export async function handleBackgroundNotification(notification: any): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+
+    try {
+        // For background notifications, we might want to increment the badge
+        // but this is usually handled automatically by iOS
+        // console.log('Background notification received:', notification);
+
+        // You can add custom logic here for background processing
+        // For example, updating local storage, scheduling local notifications, etc.
+    } catch (error) {
+        console.error('Error handling background notification:', error);
+    }
+}
+
+/**
+ * Reset badge count to 0 (iOS only)
+ * Useful for manual badge management
+ */
+export async function resetBadgeAsync(): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+    await Notifications.setBadgeCountAsync(0);
+}
+
+/**
+ * Debug utility for badge management (iOS only)
+ * Logs current badge count and provides management options
+ */
+export async function debugBadgeAsync(): Promise<void> {
+    if (Platform.OS !== 'ios') {
+        return;
+    }
+
+    // try {
+    // const currentCount = await Notifications.getBadgeCountAsync();
+
+    // if (currentCount > 0) {
+    //     console.log('💡 Badge is visible on app icon');
+    //     console.log('🔄 Use clearBadgeAsync() to remove badge');
+    // } else {
+    //     console.log('✅ No badge currently displayed');
+    // }
+    // } catch (error) {
+    //     console.error('❌ Error getting badge count:', error);
+    // }
+}
+
+/**
+ * Intelligently clear badge if no active notifications (iOS only)
+ * This helps handle cases where notifications were dismissed
+ */
+export async function smartClearBadgeAsync(): Promise<boolean> {
+    if (Platform.OS !== 'ios') return false;
+
+    try {
+        const currentCount = await Notifications.getBadgeCountAsync();
+        if (currentCount === 0) return false;
+
+        // Get all scheduled notifications to see if any are active
+        const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+
+        // If no scheduled notifications and there's a badge, clear it
+        if (scheduledNotifications.length === 0) {
+            await Notifications.setBadgeCountAsync(0);
+            // console.log(`Smart badge clearing: cleared ${currentCount} badges (no active notifications)`);
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Error in smart badge clearing:', error);
+        return false;
+    }
+}
+
+/**
+ * Force clear badge when user manually clears notifications (iOS only)
+ * This is useful when the user swipes and clears all notifications
+ */
+export async function forceClearBadgeAsync(): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+
+    try {
+        const currentCount = await Notifications.getBadgeCountAsync();
+        if (currentCount > 0) {
+            await Notifications.setBadgeCountAsync(0);
+            // console.log(`Force badge clearing: cleared ${currentCount} badges`);
+        }
+    } catch (error) {
+        console.error('Error in force badge clearing:', error);
+    }
+}
+
 

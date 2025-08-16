@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
-import { leaguesAPI, authAPI } from '../../src/services/apiService';
+import { leaguesAPI, authAPI, getBaseUrl } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router } from 'expo-router';
 import Colors from '../../constants/Colors';
@@ -23,12 +23,7 @@ const HomeScreen = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useSimpleToast();
 
-  // Determine base URL for web app based on environment
-  const getBaseUrl = () => {
-    // For development, use the local server
-    // For production, use finalpoint.app
-    return __DEV__ ? 'http://192.168.0.15:6075' : 'https://finalpoint.app';
-  };
+  // Remove the hardcoded getBaseUrl function - use the one from apiService
   const [leagues, setLeagues] = useState<League[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({
     totalPicks: 0,

@@ -3,7 +3,9 @@ import { useFonts } from 'expo-font';
 import { Stack, router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform, AppState } from 'react-native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SimpleToastProvider, useSimpleToast } from '../src/context/SimpleToastContext';
 import { useColorScheme } from '../hooks/useColorScheme';
@@ -13,12 +15,29 @@ import SimpleToast from '../components/SimpleToast';
 import StatusBarWrapper from '../components/StatusBarWrapper';
 import { shouldEnableNotifications, logEnvironmentInfo } from '../utils/environment';
 
+// Custom screen transition configuration for Android
+const getScreenOptions = (colorScheme: string | null | undefined) => ({
+  headerShown: false,
+  header: () => null,
+  gestureEnabled: true,
+  gestureDirection: 'horizontal' as const,
+  animation: 'slide_from_right' as const,
+  animationDuration: Platform.OS === 'android' ? 300 : 250,
+  contentStyle: {
+    backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+  },
+  // iOS-specific gesture handling
+  fullScreenGestureEnabled: true,
+  // Use card presentation for better Android compatibility
+  presentation: 'card' as const,
+});
+
 // Conditionally initialize Firebase configuration
 if (shouldEnableNotifications()) {
-  console.log('🔑 Initializing Firebase...');
+  // console.log('🔑 Initializing Firebase...');
   import('../config/firebase');
 } else {
-  console.log('🚫 Firebase disabled in Expo Go');
+  // console.log('🚫 Firebase disabled in Expo Go');
 }
 
 // Log environment information
@@ -31,17 +50,31 @@ function AppContent() {
   const pathname = usePathname();
 
   // Notification handlers (only active when notifications are enabled)
-  const handleNotificationReceived = (notification: any) => {
+  const handleNotificationReceived = async (notification: any) => {
     if (!shouldEnableNotifications()) return;
 
-    console.log('Notification received while app is running:', notification);
+    // Clear badge when notification is received while app is running
+    try {
+      const { clearBadgeAsync } = await import('../utils/notifications');
+      await clearBadgeAsync();
+    } catch (error) {
+      console.error('Error clearing badge:', error);
+    }
+
     // You can show a toast or update UI here
   };
 
-  const handleNotificationResponse = (response: any) => {
+  const handleNotificationResponse = async (response: any) => {
     if (!shouldEnableNotifications()) return;
 
-    console.log('User tapped notification:', response);
+    // Clear badge when user responds to notification
+    try {
+      const { clearBadgeAsync } = await import('../utils/notifications');
+      await clearBadgeAsync();
+    } catch (error) {
+      console.error('Error clearing badge:', error);
+    }
+
     // Handle navigation or actions when user taps notification
     const { notification } = response;
     if (notification.request.content.data) {
@@ -91,6 +124,45 @@ function AppContent() {
     };
   }, []);
 
+  // Clear badge when app becomes active
+  useEffect(() => {
+    if (!shouldEnableNotifications()) return;
+
+    const clearBadgeOnAppActive = async () => {
+      try {
+        const { getAndClearBadgeAsync } = await import('../utils/notifications');
+        const badgeCount = await getAndClearBadgeAsync();
+        // if (badgeCount > 0) {
+        //   console.log(`Cleared ${badgeCount} notification badges`);
+        // }
+      } catch (error) {
+        console.error('Error clearing badge on app active:', error);
+      }
+    };
+
+    // Clear badge immediately when component mounts (app is active)
+    clearBadgeOnAppActive();
+
+    // Also clear badge when app comes to foreground
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        clearBadgeOnAppActive();
+
+        // Also try smart clearing for dismissed notifications
+        try {
+          const { smartClearBadgeAsync } = await import('../utils/notifications');
+          await smartClearBadgeAsync();
+        } catch (error) {
+          console.error('Error in smart badge clearing on app active:', error);
+        }
+      }
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
   useEffect(() => {
     // Prevent redirects when on auth pages or when authentication is in progress
     if (pathname === '/login' || pathname === '/signup') {
@@ -121,17 +193,9 @@ function AppContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBarWrapper style="light">
+      <StatusBarWrapper style="dark">
         <Stack
-          screenOptions={{
-            headerShown: false,
-            header: () => null,
-            gestureEnabled: false,
-            animation: 'slide_from_right',
-            contentStyle: {
-              backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
-            },
-          }}
+          screenOptions={getScreenOptions(colorScheme)}
         >
           {user ? (
             // Authenticated user - show main app
@@ -148,6 +212,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -155,6 +221,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -162,6 +230,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -169,20 +239,33 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
                 name="position-results"
-                options={{
+                options={({ route }) => ({
                   headerShown: false,
                   presentation: 'card',
-                }}
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
+                  // Dynamic animation based on navigation direction
+                  animation: (route.params as any)?._direction === 'backward' ? 'slide_from_left' : 'slide_from_right',
+                  animationDuration: 300,
+                  // Fix for Android white screen issue
+                  contentStyle: {
+                    backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+                  },
+                })}
               />
               <Stack.Screen
                 name="member-picks"
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -190,6 +273,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -197,6 +282,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -204,6 +291,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -211,6 +300,8 @@ function AppContent() {
                 options={{
                   headerShown: false,
                   presentation: 'card',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
 
@@ -224,6 +315,8 @@ function AppContent() {
                   headerShown: false,
                   header: () => null,
                   presentation: 'modal',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
               <Stack.Screen
@@ -232,6 +325,8 @@ function AppContent() {
                   headerShown: false,
                   header: () => null,
                   presentation: 'modal',
+                  gestureEnabled: true,
+                  gestureDirection: 'horizontal',
                 }}
               />
             </>
@@ -286,10 +381,10 @@ export default function RootLayout() {
             <NotificationProvider
               autoRegister={false}
               onNotificationReceived={(notification) => {
-                console.log('Notification received globally:', notification);
+                // console.log('Notification received globally:', notification);
               }}
               onNotificationResponse={(response) => {
-                console.log('Notification response globally:', response);
+                // console.log('Notification response globally:', response);
               }}
             >
               <RootLayoutNav />

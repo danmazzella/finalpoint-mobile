@@ -22,5 +22,11 @@
         "androidVersionCode": 15,
         "iosBuildNumber": 43,
         "autoIncrement": true
+    },
+    "production_ipa": {
+        "version": "1.0.8",
+        "androidVersionCode": 15,
+        "iosBuildNumber": 43,
+        "autoIncrement": true
     }
 }

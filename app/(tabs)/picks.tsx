@@ -16,6 +16,7 @@ import { picksAPI, driversAPI, leaguesAPI, f1racesAPI } from '../../src/services
 import { Driver, League, UserPickV2, PickV2, F1Race } from '../../src/types';
 import Colors from '../../constants/Colors';
 import { spacing } from '../../utils/styles';
+import DriverSelectionModal from '../../components/DriverSelectionModal';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
@@ -32,6 +33,8 @@ const PicksScreen = () => {
     const [leaguePositions, setLeaguePositions] = useState<number[]>([]);
     const [selectedPicks, setSelectedPicks] = useState<PickV2[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
+    const [showDriverModal, setShowDriverModal] = useState(false);
 
     useEffect(() => {
         // Only load data when auth is complete and user is authenticated
@@ -203,6 +206,26 @@ const PicksScreen = () => {
         }
     };
 
+    const handlePositionPress = (position: number) => {
+        if (currentRace?.picksLocked || isRaceLocked()) {
+            showToast('Picks are currently locked for this race.', 'warning');
+            return;
+        }
+        setSelectedPosition(position);
+        setShowDriverModal(true);
+    };
+
+    const handleDriverSelect = (driver: Driver) => {
+        if (selectedPosition) {
+            makePick(selectedPosition, driver.id);
+        }
+    };
+
+    const closeDriverModal = () => {
+        setShowDriverModal(false);
+        setSelectedPosition(null);
+    };
+
     const getCurrentPickForPosition = (position: number) => {
         return userPicks.find(pick => pick.position === position);
     };
@@ -345,7 +368,16 @@ const PicksScreen = () => {
                             const isRaceLockedNow = isRaceLocked();
 
                             return (
-                                <View key={position} style={styles.positionCard}>
+                                <TouchableOpacity
+                                    key={position}
+                                    style={[
+                                        styles.positionCard,
+                                        !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                    ]}
+                                    onPress={() => handlePositionPress(position)}
+                                    disabled={isLocked || isRaceLockedNow || submitting}
+                                    activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
+                                >
                                     <View style={styles.positionHeader}>
                                         <Text style={styles.positionTitle}>P{position}</Text>
                                         {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
@@ -358,7 +390,10 @@ const PicksScreen = () => {
                                             {!isLocked && !isRaceLockedNow && (
                                                 <TouchableOpacity
                                                     style={styles.removePickIcon}
-                                                    onPress={() => removePick(position)}
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        removePick(position);
+                                                    }}
                                                     disabled={submitting}
                                                 >
                                                     <Text style={styles.removePickIconText}>×</Text>
@@ -366,34 +401,14 @@ const PicksScreen = () => {
                                             )}
                                         </View>
                                     ) : (
-                                        <Text style={styles.noPickText}>No pick made yet</Text>
-                                    )}
-
-                                    {!isLocked && !isRaceLockedNow && (
-                                        <View style={styles.driverSelection}>
-                                            <Text style={styles.selectionTitle}>Select Driver for P{position}</Text>
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                {drivers.map((driver) => (
-                                                    <TouchableOpacity
-                                                        key={driver.id}
-                                                        style={[
-                                                            styles.driverOption,
-                                                            selectedDriverId === driver.id && styles.selectedDriverOption
-                                                        ]}
-                                                        onPress={() => makePick(position, driver.id)}
-                                                        disabled={submitting || isRaceLocked()}
-                                                    >
-                                                        <Text style={styles.driverOptionNumber}>#{driver.driverNumber}</Text>
-                                                        <Text style={styles.driverOptionName} numberOfLines={1}>{driver.name}</Text>
-                                                        <Text style={styles.driverOptionTeam} numberOfLines={1}>{driver.team}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </ScrollView>
+                                        <View style={styles.noPickContainer}>
+                                            <Text style={styles.noPickText}>No pick made yet</Text>
+                                            {!isLocked && !isRaceLockedNow && (
+                                                <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                            )}
                                         </View>
                                     )}
-
-
-                                </View>
+                                </TouchableOpacity>
                             );
                         })}
                     </View>
@@ -445,6 +460,19 @@ const PicksScreen = () => {
                     </View>
                 )}
             </ScrollView>
+
+            {/* Driver Selection Modal */}
+            <DriverSelectionModal
+                visible={showDriverModal}
+                onClose={closeDriverModal}
+                position={selectedPosition || 0}
+                drivers={drivers}
+                selectedDriverId={selectedPosition ? getSelectedDriverForPosition(selectedPosition) : undefined}
+                onDriverSelect={handleDriverSelect}
+                disabled={currentRace?.picksLocked || isRaceLocked()}
+                submitting={submitting}
+                userPicks={new Map(selectedPicks.map(pick => [pick.position, pick.driverId]))}
+            />
         </SafeAreaView>
     );
 };
@@ -633,6 +661,10 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    clickablePositionCard: {
+        borderColor: '#007bff',
+        borderWidth: 2,
+    },
     positionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -686,50 +718,17 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         fontStyle: 'italic',
-        marginBottom: 10,
+        marginBottom: 4,
     },
-    driverSelection: {
-        marginBottom: 10,
-    },
-    selectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
-    },
-    driverOption: {
-        backgroundColor: 'white',
-        borderRadius: 6,
-        padding: 12,
-        marginRight: 10,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        minWidth: 120,
-        maxWidth: 140,
+    noPickContainer: {
         alignItems: 'center',
     },
-    selectedDriverOption: {
-        backgroundColor: '#e3f2fd',
-        borderColor: '#2196f3',
+    tapToSelectText: {
+        fontSize: 12,
+        color: '#007bff',
+        fontWeight: '600',
     },
-    driverOptionNumber: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#666',
-        marginBottom: 2,
-    },
-    driverOptionName: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 2,
-        textAlign: 'center',
-    },
-    driverOptionTeam: {
-        fontSize: 9,
-        color: '#666',
-        textAlign: 'center',
-    },
+
     removePickIcon: {
         position: 'absolute',
         top: 8,

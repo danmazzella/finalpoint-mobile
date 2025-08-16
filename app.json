@@ -92,15 +92,7 @@
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
-            "namespace": "com.finalpoint.dev",
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0",
-            "gradleProperties": {
-              "android.suppressUnsupportedCompileSdk": "36",
-              "android.gradlePluginVersion": "8.6.0",
-              "android.gradleVersion": "8.6"
-            }
+            "namespace": "com.finalpoint.dev"
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"

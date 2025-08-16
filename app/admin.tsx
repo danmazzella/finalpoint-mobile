@@ -12,6 +12,7 @@ import {
 import { adminAPI } from '../src/services/apiService';
 import { AdminStats } from '../src/types';
 import { router } from 'expo-router';
+import Colors from '../constants/Colors';
 
 const AdminScreen = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -201,71 +202,71 @@ const AdminScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
     },
     errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
         padding: 20,
     },
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#e91e63',
+        color: Colors.light.error,
         marginBottom: 10,
     },
     errorMessage: {
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
         textAlign: 'center',
         marginBottom: 20,
     },
     retryButton: {
-        backgroundColor: '#e91e63',
+        backgroundColor: Colors.light.primary,
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 8,
     },
     retryButtonText: {
-        color: 'white',
+        color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: '600',
     },
     header: {
-        backgroundColor: 'white',
+        backgroundColor: Colors.light.cardBackground,
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: Colors.light.borderLight,
     },
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: Colors.light.textPrimary,
         marginBottom: 4,
     },
     headerSubtitle: {
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
     },
     section: {
-        backgroundColor: 'white',
+        backgroundColor: Colors.light.cardBackground,
         margin: 10,
         padding: 20,
         borderRadius: 12,
-        shadowColor: '#000',
+        shadowColor: Colors.light.cardShadow,
         shadowOffset: {
             width: 0,
             height: 2,
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: Colors.light.textPrimary,
         marginBottom: 16,
     },
     statsGrid: {
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     statCard: {
-        backgroundColor: '#f8f9fa',
+        backgroundColor: Colors.light.backgroundTertiary,
         borderRadius: 8,
         padding: 15,
         alignItems: 'center',

@@ -128,6 +128,9 @@ function AppContent() {
             header: () => null,
             gestureEnabled: false,
             animation: 'slide_from_right',
+            contentStyle: {
+              backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+            },
           }}
         >
           {user ? (
@@ -259,8 +262,6 @@ export default function RootLayout() {
 
   const [providersReady, setProvidersReady] = useState(false);
 
-
-
   useEffect(() => {
     // Small delay to ensure providers are initialized
     const timer = setTimeout(() => {
@@ -278,7 +279,7 @@ export default function RootLayout() {
 
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: '#f9fafb' }}>
       <AuthProvider>
         <SimpleToastProvider>
           {shouldEnableNotifications() ? (

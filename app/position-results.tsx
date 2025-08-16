@@ -390,7 +390,7 @@ const PositionResultsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.background,
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     scrollView: {
         flex: 1,
@@ -399,6 +399,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     loadingText: {
         marginTop: spacing.md,

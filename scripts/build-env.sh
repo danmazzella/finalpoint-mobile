@@ -250,15 +250,21 @@ update_app_config() {
             ;;
         "production"|"prod")
             # Update for production
-            jq --arg androidVersionCode "$androidVersionCode" \
+            jq --arg name "FinalPoint" \
+               --arg scheme "finalpoint" \
+               --arg androidPackage "com.finalpoint.mobile" \
+               --arg androidVersionCode "$androidVersionCode" \
                --arg iosBuildNumber "$iosBuildNumber" \
-               '.expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
+               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber) | .expo.ios.buildNumber = $iosBuildNumber' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
         "production_apk")
             # Update for production APK (Android only)
-            jq --arg androidVersionCode "$androidVersionCode" \
-               '.expo.android.versionCode = ($androidVersionCode | tonumber)' \
+            jq --arg name "FinalPoint" \
+               --arg scheme "finalpoint" \
+               --arg androidPackage "com.finalpoint.mobile" \
+               --arg androidVersionCode "$androidVersionCode" \
+               '.expo.name = $name | .expo.scheme = $scheme | .expo.android.package = $androidPackage | .expo.android.versionCode = ($androidVersionCode | tonumber)' \
                app.json > app.json.tmp && mv app.json.tmp app.json
             ;;
     esac

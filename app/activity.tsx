@@ -264,25 +264,25 @@ const ActivityScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
         paddingTop: Platform.OS === 'android' ? 0 : 0,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
+        color: Colors.light.textSecondary,
     },
     errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: Colors.light.backgroundPrimary,
         padding: 20,
     },
     errorTitle: {

@@ -17,6 +17,7 @@ import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
+import { contactConfig } from '../config/environment';
 
 const DeleteAccountScreen = () => {
     const { user, deleteAccount } = useAuth();
@@ -82,7 +83,7 @@ const DeleteAccountScreen = () => {
 
     const handleContactSupport = async () => {
         try {
-            const emailUrl = 'mailto:dan@mazzella.me?subject=FinalPoint%20Account%20Help';
+            const emailUrl = `mailto:${contactConfig.email}?subject=FinalPoint%20Account%20Help`;
             const supported = await Linking.canOpenURL(emailUrl);
             if (supported) {
                 await Linking.openURL(emailUrl);

@@ -20,6 +20,7 @@ import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius } from '../../utils/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { contactConfig } from '../../config/environment';
 
 const ProfileScreen = () => {
     const { user, logout, refreshUser } = useAuth();
@@ -143,7 +144,7 @@ const ProfileScreen = () => {
 
     const handleHelpAndSupport = async () => {
         try {
-            const emailUrl = 'mailto:dan@mazzella.me?subject=FinalPoint%20Support%20Request';
+            const emailUrl = `mailto:${contactConfig.email}?subject=FinalPoint%20Support%20Request`;
             const supported = await Linking.canOpenURL(emailUrl);
             if (supported) {
                 await Linking.openURL(emailUrl);

@@ -18,6 +18,9 @@ interface EnvironmentConfig {
         env: string;
         showGoogleSignIn: boolean;
     };
+    contact: {
+        email: string;
+    };
 }
 
 
@@ -38,6 +41,9 @@ const PROD_CONFIG: EnvironmentConfig = {
     app: {
         env: process.env.EXPO_PUBLIC_APP_ENV || 'production',
         showGoogleSignIn: process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'true' || false
+    },
+    contact: {
+        email: process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'finalpointapp@gmail.com'
     }
 };
 
@@ -58,6 +64,9 @@ const DEV_CONFIG: EnvironmentConfig = {
     app: {
         env: process.env.EXPO_PUBLIC_APP_ENV || 'development',
         showGoogleSignIn: process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'true' || true
+    },
+    contact: {
+        email: process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'finalpointapp@gmail.com'
     }
 };
 
@@ -89,6 +98,7 @@ export const firebaseConfig = environment.firebase;
 // Export other configs for convenience
 export const apiConfig = environment.api;
 export const appConfig = environment.app;
+export const contactConfig = environment.contact;
 
 // Helper function to validate configuration
 export const validateConfig = (): { isValid: boolean; errors: string[] } => {

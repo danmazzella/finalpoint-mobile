@@ -42,6 +42,8 @@ const LeagueDetailScreen = () => {
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [leaving, setLeaving] = useState(false);
+    const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
+    const [loadingStats, setLoadingStats] = useState(false);
 
     useEffect(() => {
         loadLeagueData();
@@ -68,14 +70,12 @@ const LeagueDetailScreen = () => {
             setLoading(true);
             setError(null);
 
-
-            const [leagueResponse, currentRaceResponse, activityResponse] = await Promise.all([
+            const [leagueResponse, currentRaceResponse, activityResponse, statsResponse] = await Promise.all([
                 leaguesAPI.getLeague(leagueId),
                 f1racesAPI.getCurrentRace(),
-                activityAPI.getRecentActivity(leagueId, 5)
+                activityAPI.getRecentActivity(leagueId, 5),
+                leaguesAPI.getLeagueStats(leagueId)
             ]);
-
-
 
             if (leagueResponse?.data?.success) {
                 setLeague(leagueResponse.data.data);
@@ -90,6 +90,12 @@ const LeagueDetailScreen = () => {
 
             if (activityResponse?.data?.success) {
                 setActivities(activityResponse.data.data);
+            }
+
+            if (statsResponse?.data?.success) {
+                setLeagueStats(statsResponse.data.data);
+            } else {
+                console.error('Stats response not successful:', statsResponse);
             }
         } catch (error: any) {
             console.error('Error loading league data:', error);
@@ -395,22 +401,31 @@ const LeagueDetailScreen = () => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>League Stats</Text>
                     <View style={styles.infoContainer}>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Total Picks</Text>
-                            <Text style={styles.infoValue}>143</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Correct Picks</Text>
-                            <Text style={styles.infoValue}>9</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Accuracy</Text>
-                            <Text style={styles.infoValue}>6.3%</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Average Points</Text>
-                            <Text style={styles.infoValue}>0.63</Text>
-                        </View>
+                        {loadingStats || !leagueStats ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator size="small" color={Colors.light.primary} />
+                                <Text style={styles.loadingText}>Loading stats...</Text>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Total Picks</Text>
+                                    <Text style={styles.infoValue}>{leagueStats.totalPicks}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Correct Picks</Text>
+                                    <Text style={styles.infoValue}>{leagueStats.correctPicks}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Accuracy</Text>
+                                    <Text style={styles.infoValue}>{leagueStats.accuracy || 0}%</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Average Points</Text>
+                                    <Text style={styles.infoValue}>{leagueStats.averagePoints}</Text>
+                                </View>
+                            </>
+                        )}
                     </View>
                 </View>
 
@@ -1321,6 +1336,15 @@ const styles = StyleSheet.create({
     },
     visibilityDescriptionContainer: {
         marginTop: spacing.xs,
+    },
+    loadingContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.lg,
+    },
+    loadingText: {
+        marginTop: spacing.sm,
+        color: Colors.light.textSecondary,
     },
 });
 

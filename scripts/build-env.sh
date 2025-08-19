@@ -82,7 +82,7 @@ manage_versions() {
             print_status "📋 Auto-incrementing build numbers for $environment environment"
             ;;
         "production"|"prod"|"production_apk"|"production_ipa")
-            should_increment_build_numbers=false
+            should_increment_build_numbers=true
             print_status "📋 Using fixed build numbers for $environment environment"
             ;;
     esac

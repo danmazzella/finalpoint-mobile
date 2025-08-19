@@ -150,7 +150,7 @@ export const adminAPI = {
 
 export const leaguesAPI = {
     getLeagues: () => apiService.get('/leagues/get'),
-    getPublicLeagues: () => apiService.get('/leagues/public'),
+    getPublicLeagues: () => apiService.get('/leagues/public'), // Get only public leagues user is not a member of
     createLeague: (name: string, positions: number[] = [], isPublic: boolean = false) =>
         apiService.post('/leagues/create', { name, positions, isPublic }),
     getLeague: (leagueId: number) => apiService.get(`/leagues/get/${leagueId}`),

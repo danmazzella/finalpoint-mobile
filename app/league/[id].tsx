@@ -12,17 +12,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { leaguesAPI, picksAPI, f1racesAPI, activityAPI } from '../../src/services/apiService';
-import { League, LeagueMember, LeagueStanding, LeagueStats, F1Race, Activity } from '../../src/types';
+import { leaguesAPI, picksAPI, activityAPI } from '../../src/services/apiService';
+import { League, LeagueMember, LeagueStanding, LeagueStats, Activity } from '../../src/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
+import { useAuth } from '../../src/context/AuthContext';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
     const leagueId = Number(id);
     const { showToast } = useSimpleToast();
+    const { user } = useAuth();
 
 
 
@@ -32,8 +34,6 @@ const LeagueDetailScreen = () => {
     const [error, setError] = useState<string | null>(null);
     const [showMembers, setShowMembers] = useState(false);
     const [loadingMembers, setLoadingMembers] = useState(false);
-    const [loadingCurrentRace, setLoadingCurrentRace] = useState(false);
-    const [currentRace, setCurrentRace] = useState<F1Race | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [showSettings, setShowSettings] = useState(false);
     const [updating, setUpdating] = useState(false);
@@ -70,36 +70,38 @@ const LeagueDetailScreen = () => {
             setLoading(true);
             setError(null);
 
-            const [leagueResponse, currentRaceResponse, activityResponse, statsResponse] = await Promise.all([
-                leaguesAPI.getLeague(leagueId),
-                f1racesAPI.getCurrentRace(),
-                activityAPI.getRecentActivity(leagueId, 5),
-                leaguesAPI.getLeagueStats(leagueId)
-            ]);
+            // Always load basic league data (public)
+            const leagueResponse = await leaguesAPI.getLeague(leagueId);
 
             if (leagueResponse?.data?.success) {
                 setLeague(leagueResponse.data.data);
             } else {
                 console.error('League response not successful:', leagueResponse);
                 setError('Failed to load league data. Please try again.');
+                return;
             }
 
-            if (currentRaceResponse?.data?.success) {
-                setCurrentRace(currentRaceResponse.data.data);
-            }
-
-            if (activityResponse?.data?.success) {
-                setActivities(activityResponse.data.data);
-            }
-
+            // Load league stats for all users (public data)
+            const statsResponse = await leaguesAPI.getLeagueStats(leagueId);
             if (statsResponse?.data?.success) {
                 setLeagueStats(statsResponse.data.data);
             } else {
                 console.error('Stats response not successful:', statsResponse);
             }
+
+            // Only load authenticated data if user is logged in
+            if (user) {
+                const activityResponse = await activityAPI.getRecentActivity(leagueId, 5);
+
+                if (activityResponse?.data?.success) {
+                    setActivities(activityResponse.data.data);
+                }
+            } else {
+                // For unauthenticated users, set empty/default values
+                setActivities([]);
+            }
         } catch (error: any) {
             console.error('Error loading league data:', error);
-
 
             // Handle 429 rate limiting error with retry
             if (error.response?.status === 429 && retryCount < 3) {
@@ -243,15 +245,11 @@ const LeagueDetailScreen = () => {
     };
 
     const navigateToResults = () => {
-        if (currentRace) {
-            router.push(`/race-results?leagueId=${leagueId}&weekNumber=${currentRace.weekNumber}` as any);
-        } else {
-            router.push(`/race-results?leagueId=${leagueId}&weekNumber=1` as any);
-        }
+        router.push(`/race-results?leagueId=${leagueId}&weekNumber=1` as any);
     };
 
     const navigateToPicks = () => {
-        router.push('/(tabs)/picks' as any);
+        router.push(`/(tabs)/picks?leagueId=${leagueId}`);
     };
 
     const getActivityIcon = (activityType: string) => {
@@ -366,36 +364,68 @@ const LeagueDetailScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Quick Actions */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
-                    <View style={styles.actionButtons}>
-                        <TouchableOpacity
-                            style={styles.primaryButton}
-                            onPress={navigateToPicks}
-                        >
-                            <Text style={styles.primaryButtonText}>Make Picks</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.secondaryButton}
-                            onPress={() => router.push(`/league/${leagueId}/standings`)}
-                        >
-                            <Text style={styles.secondaryButtonText}>
-                                View Standings
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.secondaryButton}
-                            onPress={navigateToResults}
-                        >
-                            <Text style={styles.secondaryButtonText}>
-                                {loadingCurrentRace ? 'Loading...' : 'View Results'}
-                            </Text>
-                        </TouchableOpacity>
+                {/* Quick Actions for Unauthenticated Users */}
+                {!user && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Quick Actions</Text>
+                        <Text style={styles.sectionSubtitle}>
+                            Log in to make picks and join this league
+                        </Text>
+                        <View style={styles.actionButtons}>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={() => router.push('/login')}
+                            >
+                                <Text style={styles.primaryButtonText}>Log In</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push('/signup')}
+                            >
+                                <Text style={styles.secondaryButtonText}>Sign Up</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/league/${leagueId}/standings`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>View Standings</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/race-results?leagueId=${leagueId}`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>View Results</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                )}
+
+                {/* Quick Actions for Authenticated Users */}
+                {user && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Quick Actions</Text>
+                        <View style={styles.actionButtons}>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={() => router.push(`/(tabs)/picks?leagueId=${leagueId}`)}
+                            >
+                                <Text style={styles.primaryButtonText}>Make Picks</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/league/${leagueId}/standings`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>View Standings</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/race-results?leagueId=${leagueId}`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>View Results</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {/* League Stats */}
                 <View style={styles.section}>
@@ -433,9 +463,11 @@ const LeagueDetailScreen = () => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>League Information</Text>
-                        <TouchableOpacity style={styles.shareIconButton} onPress={shareLeague}>
-                            <Ionicons name="share-outline" size={20} color={Colors.light.textSecondary} />
-                        </TouchableOpacity>
+                        {user && (
+                            <TouchableOpacity style={styles.shareIconButton} onPress={shareLeague}>
+                                <Ionicons name="share-outline" size={20} color={Colors.light.textSecondary} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                     <View style={styles.infoContainer}>
                         <View style={styles.infoRow}>
@@ -448,17 +480,26 @@ const LeagueDetailScreen = () => {
                                 {league.memberCount || 1} member{league.memberCount !== 1 ? 's' : ''}
                             </Text>
                         </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Your Role</Text>
-                            <Text style={styles.infoValue}>{league.userRole}</Text>
-                        </View>
+                        {user ? (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>Your Role</Text>
+                                <Text style={styles.infoValue}>{league.userRole}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>Your Status</Text>
+                                <View style={styles.guestBadge}>
+                                    <Text style={styles.guestBadgeText}>Guest Viewer</Text>
+                                </View>
+                            </View>
+                        )}
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Status</Text>
                             <View style={styles.statusBadge}>
                                 <Text style={styles.statusText}>Active</Text>
                             </View>
                         </View>
-                        {league.joinCode && (
+                        {league.joinCode && user && (
                             <View style={styles.infoRow}>
                                 <Text style={styles.infoLabel}>Join Code</Text>
                                 <View style={styles.codeBadge}>
@@ -473,37 +514,55 @@ const LeagueDetailScreen = () => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Recent Activity</Text>
-                        <TouchableOpacity onPress={() => {
-                            router.push(`/activity?leagueId=${leagueId}&leagueName=${league?.name || 'League'}` as any);
-                        }}>
-                            <Text style={styles.viewAllLink}>View All Activity →</Text>
-                        </TouchableOpacity>
+                        {user && (
+                            <TouchableOpacity onPress={() => {
+                                router.push(`/activity?leagueId=${leagueId}&leagueName=${league?.name || 'League'}` as any);
+                            }}>
+                                <Text style={styles.viewAllLink}>View All Activity →</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                     <View style={styles.activityContainer}>
-                        <Text style={styles.activityCount}>
-                            Found {activities.length} activit{activities.length !== 1 ? 'ies' : 'y'}
-                        </Text>
-                        {activities.length > 0 ? (
-                            activities.map((activity, index) => (
-                                <View key={activity.id || index} style={styles.activityItem}>
-                                    <Ionicons
-                                        name={getActivityIcon(activity.activityType) as any}
-                                        size={20}
-                                        color={Colors.light.primary}
-                                    />
-                                    <View style={styles.activityContent}>
-                                        <Text style={styles.activityUser}>
-                                            {activity.userName || 'Unknown User'}
-                                        </Text>
-                                        <Text style={styles.activityMessage}>
-                                            {getActivityMessage(activity)}
+                        {!user ? (
+                            // Unauthenticated user view
+                            <View style={styles.unauthenticatedContent}>
+                                <Text style={styles.unauthenticatedText}>
+                                    Log in to see recent activity and member interactions
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.primaryButton}
+                                    onPress={() => router.push('/login')}
+                                >
+                                    <Text style={styles.primaryButtonText}>Log In</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : activities.length > 0 ? (
+                            // Authenticated user with activities
+                            <>
+                                <Text style={styles.activityCount}>
+                                    Found {activities.length} activit{activities.length !== 1 ? 'ies' : 'y'}
+                                </Text>
+                                {activities.map((activity, index) => (
+                                    <View key={activity.id || index} style={styles.activityItem}>
+                                        <Ionicons
+                                            name={getActivityIcon(activity.activityType) as any}
+                                            size={20}
+                                            color={Colors.light.primary}
+                                        />
+                                        <View style={styles.activityContent}>
+                                            <Text style={styles.activityUser}>
+                                                {activity.userName || 'Unknown User'}
+                                            </Text>
+                                            <Text style={styles.activityMessage}>
+                                                {getActivityMessage(activity)}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.activityDate}>
+                                            {new Date(activity.createdAt).toLocaleDateString()}
                                         </Text>
                                     </View>
-                                    <Text style={styles.activityDate}>
-                                        {new Date(activity.createdAt).toLocaleDateString()}
-                                    </Text>
-                                </View>
-                            ))
+                                ))}
+                            </>
                         ) : (
                             <Text style={styles.emptyActivityText}>No recent activity</Text>
                         )}
@@ -1065,10 +1124,10 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     emptyText: {
-        textAlign: 'center',
-        color: '#666',
         fontSize: 16,
-        marginTop: 20,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -1163,10 +1222,10 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
     },
     emptyActivityText: {
-        textAlign: 'center',
+        fontSize: 16,
         color: Colors.light.textSecondary,
-        fontSize: 14,
-        marginTop: spacing.sm,
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
     settingsButton: {
         paddingLeft: spacing.sm,
@@ -1337,14 +1396,36 @@ const styles = StyleSheet.create({
     visibilityDescriptionContainer: {
         marginTop: spacing.xs,
     },
-    loadingContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing.lg,
-    },
     loadingText: {
         marginTop: spacing.sm,
         color: Colors.light.textSecondary,
+    },
+    unauthenticatedContent: {
+        alignItems: 'center',
+        paddingVertical: spacing.lg,
+    },
+    unauthenticatedText: {
+        fontSize: 16,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    guestBadge: {
+        backgroundColor: Colors.light.warningLight,
+        borderRadius: borderRadius.sm,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.sm,
+    },
+    guestBadgeText: {
+        color: Colors.light.warning,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    sectionSubtitle: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.md,
     },
 });
 

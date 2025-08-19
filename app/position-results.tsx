@@ -217,7 +217,7 @@ const PositionResultsScreen = () => {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.back()}
+                        onPress={() => router.push(`/race-results?leagueId=${leagueId}&weekNumber=${weekNumber}`)}
                     >
                         <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
                     </TouchableOpacity>

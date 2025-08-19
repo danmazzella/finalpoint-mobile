@@ -15,7 +15,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { leaguesAPI, authAPI, getBaseUrl } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius, shadows, cardStyles, textStyles } from '../../utils/styles';
 
@@ -55,6 +55,15 @@ const HomeScreen = () => {
       loadLeagues();
     }
   }, [authLoading, user]);
+
+  // Reload data when the tab comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!authLoading && user) {
+        loadLeagues();
+      }
+    }, [authLoading, user])
+  );
 
   const loadLeagues = async (retryCount = 0) => {
     try {
@@ -148,6 +157,131 @@ const HomeScreen = () => {
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show unauthenticated view for users who are not logged in
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Page Title */}
+          <View style={styles.pageTitle}>
+            <Text style={styles.pageTitleText}>Dashboard</Text>
+            <Text style={styles.pageSubtitle}>
+              Welcome to F1 prediction game - Explore without signing up
+            </Text>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={styles.scoringButton} onPress={handleScoringPress}>
+              <Ionicons name="bar-chart" size={16} color="#6b7280" />
+              <Text style={styles.scoringButtonText}>How Scoring Works</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Your Leagues Section */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Your Leagues</Text>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => router.push('/(tabs)/leagues')}
+              >
+                <Text style={styles.primaryButtonText}>View Public Leagues</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.emptyState}>
+              <Ionicons name="people" size={48} color="#9ca3af" />
+              <Text style={styles.emptyStateTitle}>Log in to see your leagues</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Sign up or log in to create and manage your own leagues.
+              </Text>
+              <View style={styles.authButtons}>
+                <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/login')}>
+                  <Text style={styles.secondaryButtonText}>Log In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/signup')}>
+                  <Text style={styles.primaryButtonText}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Your Statistics Section */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Your Statistics</Text>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateSubtitle}>Log in to see your personal statistics</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Total Picks</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Correct Picks</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Total Points</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Accuracy</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Platform Statistics Section */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Platform Statistics</Text>
+
+            {/* Lifetime Performance */}
+            <View style={styles.statsSubsection}>
+              <Text style={styles.subsectionTitle}>Lifetime Performance</Text>
+              <View style={styles.platformStatsGrid}>
+                <View style={styles.platformStatCard}>
+                  <Text style={styles.lifetimeStatNumber}>0%</Text>
+                  <Text style={styles.platformStatLabel}>Global Accuracy</Text>
+                </View>
+                <View style={styles.platformStatCard}>
+                  <Text style={styles.lifetimeStatNumber}>0</Text>
+                  <Text style={styles.platformStatLabel}>Avg Distance from Correct</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.divider} />
+
+            {/* Past Week Performance */}
+            <View style={styles.statsSubsection}>
+              <Text style={styles.subsectionTitle}>Past Week Performance</Text>
+              <View style={styles.platformStatsGrid}>
+                <View style={styles.platformStatCard}>
+                  <Text style={styles.weekStatNumber}>0%</Text>
+                  <Text style={styles.platformStatLabel}>Global Accuracy</Text>
+                </View>
+                <View style={styles.platformStatCard}>
+                  <Text style={styles.weekStatNumber}>0</Text>
+                  <Text style={styles.platformStatLabel}>Avg Distance from Correct</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Bottom spacing for mobile to account for fixed bottom navigation */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -478,9 +612,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
   emptyStateActions: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
   emptyStateButton: {
     backgroundColor: Colors.light.cardBackground,
@@ -566,6 +707,123 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 100, // Account for fixed bottom navigation
+  },
+  // New styles for unauthenticated view
+  pageTitle: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  pageTitleText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.light.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  pageSubtitle: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+  },
+  scoringButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadows.sm,
+  },
+  scoringButtonText: {
+    marginLeft: spacing.sm,
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+  },
+  card: {
+    backgroundColor: Colors.light.cardBackground,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.textPrimary,
+  },
+  primaryButton: {
+    backgroundColor: Colors.light.buttonPrimary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  primaryButtonText: {
+    color: Colors.light.textInverse,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  secondaryButton: {
+    backgroundColor: Colors.light.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  secondaryButtonText: {
+    color: Colors.light.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  authButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  statPlaceholder: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  statsSubsection: {
+    marginBottom: spacing.lg,
+  },
+  platformStatsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  platformStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  lifetimeStatNumber: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.buttonPrimary,
+    marginBottom: spacing.xs,
+  },
+  platformStatLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+  },
+  weekStatNumber: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.buttonPrimary,
+    marginBottom: spacing.xs,
   },
 });
 

@@ -1,297 +1,337 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
+    StyleSheet,
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSimpleToast } from '../../../src/context/SimpleToastContext';
-import Colors from '../../../constants/Colors';
-import { spacing, borderRadius, shadows } from '../../../utils/styles';
 import { leaguesAPI } from '../../../src/services/apiService';
+import { League, LeagueStanding, LeagueStats } from '../../../src/types';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '../../../src/context/AuthContext';
 import Avatar from '../../../src/components/Avatar';
 
-interface DetailedStanding {
-    id: number;
-    name: string;
-    isOwner: number;
-    totalPicks: number;
-    correctPicks: number;
-    totalPoints: number;
-    averagePoints: number;
-    accuracy: number;
-    racesParticipated: number;
-    averageDistanceFromCorrect: number;
-    perfectPicks: number;
-    averagePointsPerRace: number;
-    avatar: string;
-}
-
-interface League {
-    id: number;
-    name: string;
-    seasonYear: number;
-    memberCount: number;
-    isMember: boolean;
-    userRole: string;
-}
-
-// Types for potential future sorting functionality
-
-export default function StandingsPage() {
-    const params = useLocalSearchParams();
-    const router = useRouter();
-    const { showToast } = useSimpleToast();
-    const leagueId = params.id as string;
+const LeagueStandingsScreen = () => {
+    const { id } = useLocalSearchParams();
+    const leagueId = Number(id);
+    const { user } = useAuth();
+    const insets = useSafeAreaInsets();
 
     const [league, setLeague] = useState<League | null>(null);
-    const [standings, setStandings] = useState<DetailedStanding[]>([]);
+    const [standings, setStandings] = useState<LeagueStanding[]>([]);
+    const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const loadData = useCallback(async () => {
+    useEffect(() => {
+        if (leagueId && !isNaN(leagueId)) {
+            loadStandingsData();
+        }
+    }, [leagueId]);
+
+    const loadStandingsData = async () => {
         try {
             setLoading(true);
-            const [leagueResponse, standingsResponse] = await Promise.all([
-                leaguesAPI.getLeague(parseInt(leagueId)),
-                leaguesAPI.getDetailedLeagueStandings(parseInt(leagueId))
-            ]);
+            setError(null);
 
-            const leagueData = leagueResponse.data;
-            const standingsData = standingsResponse.data;
-
-            if (leagueData.success) {
-                setLeague(leagueData.data);
+            // Load detailed league standings to get real average distance data
+            const standingsResponse = await leaguesAPI.getDetailedLeagueStandings(leagueId);
+            if (standingsResponse?.data?.success) {
+                setStandings(standingsResponse.data.data);
+            } else {
+                console.error('Standings response not successful:', standingsResponse);
+                setError('Failed to load standings data. Please try again.');
+                return;
             }
 
-            if (standingsData.success) {
-                setStandings(standingsData.data);
+            // Load league data
+            const leagueResponse = await leaguesAPI.getLeague(leagueId);
+            if (leagueResponse?.data?.success) {
+                setLeague(leagueResponse.data.data);
+            } else {
+                console.error('League response not successful:', leagueResponse);
+                setError('Failed to load league data. Please try again.');
+                return;
             }
-        } catch (error) {
-            console.error('Error loading data:', error);
-            showToast('Failed to load standings data', 'error');
+
+            // Load league stats
+            const statsResponse = await leaguesAPI.getLeagueStats(leagueId);
+            if (statsResponse?.data?.success) {
+                setLeagueStats(statsResponse.data.data);
+            } else {
+                console.error('Stats response not successful:', statsResponse);
+            }
+        } catch (error: any) {
+            console.error('Error loading standings data:', error);
+            setError('Failed to load standings data. Please try again.');
         } finally {
             setLoading(false);
         }
-    }, [leagueId, showToast]);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    // Sort standings by total points descending (default leaderboard order)
-    const sortedStandings = [...standings].sort((a, b) => b.totalPoints - a.totalPoints);
-
-    const getPositionColor = (index: number) => {
-        if (index === 0) return { backgroundColor: '#fef3c7', color: '#92400e' };
-        if (index === 1) return { backgroundColor: '#f3f4f6', color: '#374151' };
-        if (index === 2) return { backgroundColor: '#fed7aa', color: '#ea580c' };
-        return { backgroundColor: '#f9fafb', color: '#4b5563' };
     };
 
-    const getAccuracyColor = (accuracy: number) => {
-        if (accuracy >= 80) return '#059669';
-        if (accuracy >= 60) return '#d97706';
-        if (accuracy >= 40) return '#ea580c';
-        return '#dc2626';
+    const handleRetry = () => {
+        loadStandingsData();
     };
 
-    const getDistanceColor = (distance: number) => {
-        if (distance <= 2) return '#059669';
-        if (distance <= 5) return '#d97706';
-        return '#dc2626';
-    };
-
-    const cleanName = (name: string | null | undefined): string => {
-        if (!name) return 'Unknown User';
-        return name.trim() || 'Unknown User';
-    };
+    if (!leagueId || isNaN(leagueId)) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Invalid League</Text>
+                    <Text style={styles.errorMessage}>The league ID is invalid. Please try again.</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+                        <Text style={styles.retryButtonText}>Go Back</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <View style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <ActivityIndicator size="large" color="#2563eb" />
                     <Text style={styles.loadingText}>Loading standings...</Text>
                 </View>
-            </SafeAreaView>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <Ionicons name="cloud-offline" size={48} color="#dc2626" />
+                    <Text style={styles.errorTitle}>Connection Error</Text>
+                    <Text style={styles.errorMessage}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    if (!league) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>League not found</Text>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: insets.top }
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color="#6b7280" />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
-                        <Text style={styles.title}>Standings</Text>
-                    </View>
-                </View>
-
-                <Text style={styles.description}>
-                    {league?.name} • {standings.length} member{standings.length !== 1 ? 's' : ''}
-                </Text>
-                <Text style={styles.seasonInfo}>
-                    Season {league?.seasonYear}
-                </Text>
-
-                {/* Stats Overview */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="trending-up" size={20} color={Colors.light.primary} />
-                            <Text style={styles.statLabel}>Total Points</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.reduce((sum, s) => sum + s.totalPoints, 0)}
-                        </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="checkmark-circle" size={20} color="#059669" />
-                            <Text style={styles.statLabel}>Perfect Picks</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.reduce((sum, s) => sum + s.perfectPicks, 0)}
-                        </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="time" size={20} color={Colors.light.primary} />
-                            <Text style={styles.statLabel}>Avg Accuracy</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.length > 0
-                                ? Math.round(standings.reduce((sum, s) => sum + s.accuracy, 0) / standings.length)
-                                : 0}%
-                        </Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Ionicons name="people" size={20} color="#7c3aed" />
-                            <Text style={styles.statLabel}>Active Members</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {standings.filter(s => s.racesParticipated > 0).length}
+                        <Text style={styles.title}>{league.name} - Standings</Text>
+                        <Text style={styles.subtitle}>
+                            {league.memberCount || 1} member{league.memberCount !== 1 ? 's' : ''} • Season {league.seasonYear}
                         </Text>
                     </View>
                 </View>
 
-                {/* Standings List */}
-                <View style={styles.standingsContainer}>
-                    {sortedStandings.map((member, index) => (
-                        <View key={member.id} style={styles.memberCard}>
-                            <View style={styles.memberHeader}>
-                                <View style={styles.avatarContainer}>
-                                    <Avatar
-                                        src={member.avatar}
-                                        size="md"
-                                        fallback={cleanName(member.name)?.charAt(0).toUpperCase() || 'U'}
-                                        style={styles.memberAvatar}
-                                    />
-                                    <View style={[styles.positionBadge, getPositionColor(index)]}>
-                                        <Text style={[styles.positionBadgeText, { color: getPositionColor(index).color }]}>
-                                            {index + 1}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View style={styles.memberInfo}>
-                                    <View style={styles.memberNameRow}>
-                                        <Text style={styles.memberName}>
-                                            {cleanName(member.name)}
-                                        </Text>
-                                        {member.isOwner ? (
-                                            <View style={styles.ownerBadge}>
-                                                <Ionicons name="shield-checkmark" size={12} color="#7c3aed" />
-                                                <Text style={styles.ownerText}>Owner</Text>
+                {/* Summary Statistics (2x2 Grid): */}
+                <View style={styles.summarySection}>
+                    <View style={styles.summaryGrid}>
+                        {/* Total Points */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryIcon}>
+                                <Ionicons name="trending-up" size={24} color="#2563eb" />
+                            </View>
+                            <View style={styles.summaryTextContainer}>
+                                <Text style={styles.summaryLabel}>TOTAL POINTS</Text>
+                                <Text style={styles.summaryValue}>
+                                    {standings.reduce((sum, s) => sum + (s.totalPoints || 0), 0)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Perfect Picks */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryIcon}>
+                                <Ionicons name="checkmark-circle" size={24} color="#059669" />
+                            </View>
+                            <View style={styles.summaryTextContainer}>
+                                <Text style={styles.summaryLabel}>PERFECT PICKS</Text>
+                                <Text style={styles.summaryValue}>
+                                    {standings.reduce((sum, s) => sum + (s.correctPicks || 0), 0)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Average Accuracy */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryIcon}>
+                                <Ionicons name="time" size={24} color="#2563eb" />
+                            </View>
+                            <View style={styles.summaryTextContainer}>
+                                <Text style={styles.summaryLabel}>AVG ACCURACY</Text>
+                                <Text style={styles.summaryValue}>
+                                    {(() => {
+                                        const activeUsers = standings.filter(s => s.totalPicks > 0);
+                                        if (activeUsers.length === 0) return 0;
+                                        const totalAccuracy = activeUsers.reduce((sum, s) => sum + (s.accuracy || 0), 0);
+                                        return Math.round(totalAccuracy / activeUsers.length);
+                                    })()}%
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Active Members */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryIcon}>
+                                <Ionicons name="people" size={24} color="#7c3aed" />
+                            </View>
+                            <View style={styles.summaryTextContainer}>
+                                <Text style={styles.summaryLabel}>ACTIVE MEMBERS</Text>
+                                <Text style={styles.summaryValue}>
+                                    {standings.filter(s => s.totalPicks > 0).length}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* User Standings */}
+                <View style={styles.standingsSection}>
+                    <Text style={styles.sectionTitle}>User Standings</Text>
+                    {standings.length > 0 ? (
+                        standings.map((standing, index) => {
+                            return (
+                                <View key={standing.id} style={styles.standingCard}>
+                                    {/* Header */}
+                                    <View style={styles.standingHeader}>
+                                        <View style={styles.userInfo}>
+                                            <View style={styles.avatarContainer}>
+                                                <Avatar
+                                                    src={standing.avatar}
+                                                    size="sm"
+                                                    fallback={standing.name?.charAt(0).toUpperCase() || 'U'}
+                                                />
+                                                <View style={[
+                                                    styles.rankBadge,
+                                                    index === 0 ? styles.rankBadgeFirst : styles.rankBadgeOther
+                                                ]}>
+                                                    <Text style={styles.rankText}>{index + 1}</Text>
+                                                </View>
                                             </View>
-                                        ) : null}
+                                            <View style={styles.userDetails}>
+                                                <Text style={styles.userName}>{standing.name}</Text>
+                                                <Text style={styles.userSubtitle}>
+                                                    {standing.totalPicks} picks • {standing.correctPicks} correct
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                    <Text style={styles.memberStats}>
-                                        {member.totalPicks} picks • {member.correctPicks} correct
-                                    </Text>
-                                </View>
-                            </View>
 
-                            <View style={styles.memberStatsGrid}>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Points</Text>
-                                    <Text style={styles.statItemValue}>{member.totalPoints}</Text>
-                                    <Text style={styles.statItemSubtext}>{member.averagePointsPerRace} avg/race</Text>
+                                    {/* Statistics Grid */}
+                                    <View style={styles.statsGrid}>
+                                        {/* Points */}
+                                        <View style={styles.statCard}>
+                                            <Text style={styles.statLabel}>POINTS</Text>
+                                            <Text style={styles.statValue}>{standing.totalPoints || 0}</Text>
+                                            <Text style={styles.statSubtext}>
+                                                {(() => {
+                                                    const races = Math.ceil((standing.totalPicks || 0) / 2);
+                                                    if (races === 0) return '0.00 avg/race';
+                                                    return `${((standing.totalPoints || 0) / races).toFixed(2)} avg/race`;
+                                                })()}
+                                            </Text>
+                                        </View>
+
+                                        {/* Accuracy */}
+                                        <View style={styles.statCard}>
+                                            <Text style={styles.statLabel}>ACCURACY</Text>
+                                            <Text style={[
+                                                styles.statValue,
+                                                { color: (standing.accuracy || 0) < 10 ? '#dc2626' : '#111827' }
+                                            ]}>
+                                                {(standing.accuracy || 0).toFixed(1)}%
+                                            </Text>
+                                            <Text style={styles.statSubtext}>
+                                                {standing.correctPicks || 0} perfect
+                                            </Text>
+                                        </View>
+
+                                        {/* Average Distance */}
+                                        <View style={styles.statCard}>
+                                            <Text style={styles.statLabel}>AVG DISTANCE</Text>
+                                            <Text style={[
+                                                styles.statValue,
+                                                { color: '#dc2626' }
+                                            ]}>
+                                                {standing.averageDistanceFromCorrect || 0} positions
+                                            </Text>
+                                            <Text style={styles.statSubtext}>from target</Text>
+                                        </View>
+
+                                        {/* Races */}
+                                        <View style={styles.statCard}>
+                                            <Text style={styles.statLabel}>RACES</Text>
+                                            <Text style={styles.statValue}>
+                                                {standing.racesParticipated || Math.ceil((standing.totalPicks || 0) / 2)}
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Accuracy</Text>
-                                    <Text style={[styles.statItemValue, { color: getAccuracyColor(member.accuracy) }]}>
-                                        {member.accuracy}%
-                                    </Text>
-                                    <Text style={styles.statItemSubtext}>{member.perfectPicks} perfect</Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Avg Distance</Text>
-                                    <Text style={[styles.statItemValue, { color: getDistanceColor(member.averageDistanceFromCorrect) }]}>
-                                        {member.averageDistanceFromCorrect || 0} positions
-                                    </Text>
-                                    <Text style={styles.statItemSubtext}>from target</Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Text style={styles.statItemLabel}>Races</Text>
-                                    <Text style={styles.statItemValue}>{member.racesParticipated}</Text>
-                                </View>
-                            </View>
+                            );
+                        })
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>No standings data available</Text>
                         </View>
-                    ))}
+                    )}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
+        backgroundColor: '#f9fafb',
     },
     scrollView: {
         flex: 1,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: spacing.md,
-        fontSize: 16,
-        color: Colors.light.textSecondary,
+    scrollContent: {
+        paddingBottom: 100,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.sm,
+        padding: 8,
+        marginRight: 12,
     },
     headerContent: {
         flex: 1,
@@ -299,188 +339,232 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
+        color: '#111827',
+        marginBottom: 4,
     },
     subtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
+        fontSize: 16,
+        color: '#6b7280',
     },
-    description: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.lg,
-        marginTop: spacing.md,
+    summarySection: {
+        marginBottom: 24,
+        paddingHorizontal: 24,
     },
-    seasonInfo: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.md,
-        textAlign: 'center',
-        opacity: 0.8,
-    },
-    statsGrid: {
+    summaryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        marginBottom: spacing.lg,
-        gap: spacing.sm,
+        gap: 12,
     },
-    statCard: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    summaryCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 12,
         width: '48%',
-        minHeight: 80,
-        ...shadows.md,
-    },
-    statHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.xs,
-        flex: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
     },
-    statIcon: {
+    summaryIcon: {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: Colors.light.backgroundTertiary,
+        backgroundColor: '#f3f4f6',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.xs,
+        marginRight: 12,
     },
-    statContent: {
+    summaryTextContainer: {
         flex: 1,
+        justifyContent: 'center',
     },
-    statLabel: {
+    summaryLabel: {
         fontSize: 11,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
-        textTransform: 'uppercase',
+        fontWeight: '600',
+        color: '#6b7280',
+        marginBottom: 2,
         letterSpacing: 0.5,
-        marginLeft: spacing.sm,
-        flex: 1,
-        flexWrap: 'wrap',
-        textAlign: 'left',
-        lineHeight: 14,
     },
-    statValue: {
+    summaryValue: {
         fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-        marginTop: spacing.xs,
+        fontWeight: '700',
+        color: '#111827',
     },
-    standingsContainer: {
-        paddingHorizontal: spacing.md,
-        paddingBottom: spacing.xl,
+    standingsSection: {
+        paddingHorizontal: 16,
     },
-    memberCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        marginBottom: spacing.md,
-        ...shadows.sm,
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: 16,
     },
-    memberHeader: {
+    standingCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    standingHeader: {
+        marginBottom: 16,
+    },
+    userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.md,
     },
     avatarContainer: {
         position: 'relative',
-        marginRight: spacing.md,
+        marginRight: 12,
     },
-    positionBadge: {
+    rankBadge: {
         position: 'absolute',
-        bottom: -4,
+        top: -4,
         right: -4,
         width: 24,
         height: 24,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: Colors.light.cardBackground,
-        shadowColor: Colors.light.cardShadow,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
     },
-    positionBadgeText: {
+    rankBadgeFirst: {
+        backgroundColor: '#fbbf24',
+    },
+    rankBadgeOther: {
+        backgroundColor: '#9ca3af',
+    },
+    rankText: {
+        color: '#ffffff',
         fontSize: 12,
         fontWeight: 'bold',
-        lineHeight: 14,
     },
-    memberInfo: {
+    userDetails: {
         flex: 1,
     },
-    memberAvatar: {
-        // Avatar styling handled by component
-    },
-    memberNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    memberName: {
-        fontSize: 16,
+    userName: {
+        fontSize: 18,
         fontWeight: '600',
-        color: Colors.light.textPrimary,
-        flex: 1,
+        color: '#111827',
+        marginBottom: 4,
+    },
+    userSubtitle: {
+        fontSize: 14,
+        color: '#6b7280',
+        marginBottom: 4,
     },
     ownerBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f3e8ff',
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 2,
-        borderRadius: borderRadius.sm,
+        backgroundColor: '#7c3aed',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        alignSelf: 'flex-start',
     },
-    ownerText: {
+    ownerBadgeText: {
+        color: '#ffffff',
         fontSize: 10,
-        fontWeight: '500',
-        color: '#7c3aed',
-        marginLeft: 2,
+        fontWeight: '600',
+        textTransform: 'uppercase',
     },
-    memberStats: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    memberStatsGrid: {
+    statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        backgroundColor: Colors.light.backgroundTertiary,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
+        justifyContent: 'space-between',
     },
-    statItem: {
-        width: '50%',
+    statCard: {
+        width: '48%',
+        marginBottom: 12,
         alignItems: 'center',
-        paddingVertical: spacing.sm,
     },
-    statItemLabel: {
+    statLabel: {
         fontSize: 10,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
+        fontWeight: '600',
+        color: '#6b7280',
+        textAlign: 'center',
+        marginBottom: 4,
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: spacing.xs,
     },
-    statItemValue: {
+    statValue: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
+        color: '#111827',
+        textAlign: 'center',
+        marginBottom: 2,
     },
-    statItemSubtext: {
+    statSubtext: {
         fontSize: 10,
-        color: Colors.light.textSecondary,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f9fafb',
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6b7280',
+        marginTop: 12,
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#f9fafb',
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#dc2626',
+        marginBottom: 10,
+    },
+    errorMessage: {
+        fontSize: 16,
+        color: '#6b7280',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        padding: 12,
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    retryButtonText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    errorText: {
+        fontSize: 18,
+        color: '#111827',
+        textAlign: 'center',
+        marginTop: 50,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingVertical: 32,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#6b7280',
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
 });
+
+export default LeagueStandingsScreen;

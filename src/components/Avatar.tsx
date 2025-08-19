@@ -44,10 +44,10 @@ const Avatar: React.FC<AvatarProps> = ({
     const [imageError, setImageError] = useState(false);
 
     const sizeStyles = {
-        sm: { width: 32, height: 32, fontSize: 12 },
-        md: { width: 48, height: 48, fontSize: 16 },
-        lg: { width: 64, height: 64, fontSize: 24 },
-        xl: { width: 96, height: 96, fontSize: 32 }
+        sm: { width: 36, height: 36, fontSize: 20 },
+        md: { width: 48, height: 48, fontSize: 24 },
+        lg: { width: 64, height: 64, fontSize: 32 },
+        xl: { width: 96, height: 96, fontSize: 40 }
     };
 
     const avatarUrl = getAvatarUrl(src);
@@ -67,13 +67,6 @@ const Avatar: React.FC<AvatarProps> = ({
                 <Text style={[styles.fallbackText, { fontSize: sizeStyles[size].fontSize }]}>
                     {fallback}
                 </Text>
-                {/* Debug info */}
-                {__DEV__ && (
-                    <Text style={styles.debugText}>
-                        Debug: {src ? `src: ${src}` : 'no src'}
-                        {'\n'}URL: {avatarUrl ? avatarUrl : 'no URL'}
-                    </Text>
-                )}
             </View>
         );
     }

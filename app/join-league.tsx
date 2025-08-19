@@ -79,7 +79,6 @@ const JoinLeagueScreen = () => {
                             autoCorrect={false}
                             autoFocus
                             textAlign="left"
-                            selection={{ start: 0, end: 0 }}
                             placeholderTextColor="#999"
                         />
                     </View>
@@ -178,10 +177,12 @@ const styles = StyleSheet.create({
         padding: 12,
         fontSize: 16,
         backgroundColor: 'white',
-        textAlign: 'center',
+        textAlign: 'left',
         letterSpacing: 2,
         fontWeight: 'bold',
         color: '#333',
+        writingDirection: 'ltr',
+        textAlignVertical: 'center',
     },
     joinButton: {
         backgroundColor: '#007bff',

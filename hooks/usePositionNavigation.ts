@@ -23,7 +23,7 @@ export const usePositionNavigation = ({ leagueId, weekNumber, leagueName }: Posi
         isNavigating.current = true;
         lastPosition.current = newPosition;
 
-        // Use a custom navigation approach that works better on both platforms
+        // Use replace to avoid building up navigation stack
         const currentParams = {
             leagueId: leagueId.toString(),
             weekNumber: weekNumber.toString(),
@@ -37,25 +37,11 @@ export const usePositionNavigation = ({ leagueId, weekNumber, leagueName }: Posi
                 position: newPosition.toString(),
             });
         } else {
-            // For Android, use a custom approach that avoids both loading and white screens
-            // We'll use push but with a strategy that minimizes the loading experience
-            if (direction === 'backward') {
-                // For previous navigation, use a different approach
-                router.push({
-                    pathname: '/position-results',
-                    params: {
-                        ...currentParams,
-                        _direction: 'backward',
-                        _timestamp: Date.now().toString(),
-                    },
-                });
-            } else {
-                // For forward navigation, use standard push
-                router.push({
-                    pathname: '/position-results',
-                    params: currentParams,
-                });
-            }
+            // For Android, use replace to avoid navigation stack buildup
+            router.replace({
+                pathname: '/position-results',
+                params: currentParams,
+            });
         }
 
         // Reset navigation flag after animation completes

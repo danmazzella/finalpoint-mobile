@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { picksAPI, f1racesAPI, leaguesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
+import { useAuth } from '../src/context/AuthContext';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
@@ -58,6 +59,7 @@ const RaceResultsScreen = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { showToast } = useSimpleToast();
+    const { user } = useAuth();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
 
@@ -65,7 +67,7 @@ const RaceResultsScreen = () => {
     const [loading, setLoading] = useState(true);
     const [weekLoading, setWeekLoading] = useState(false);
     const [races, setRaces] = useState<Race[]>([]);
-    const [selectedWeek, setSelectedWeek] = useState(weekNumber);
+    const [selectedWeek, setSelectedWeek] = useState(weekNumber || 0);
     const [showWeekSelector, setShowWeekSelector] = useState(false);
     const [league, setLeague] = useState<League | null>(null);
     const [requiredPositions, setRequiredPositions] = useState<number[]>([10]);
@@ -74,6 +76,21 @@ const RaceResultsScreen = () => {
     useEffect(() => {
         loadData();
     }, [leagueId, selectedWeek]);
+
+    // Function to find the current week (most recent race with results or current date)
+    const findCurrentWeek = (races: Race[]): number => {
+        if (!races || races.length === 0) return 1;
+
+        // Find the most recent race that has happened (status !== 'upcoming')
+        const completedRaces = races.filter(race => race.status !== 'upcoming');
+        if (completedRaces.length > 0) {
+            // Return the most recent completed race
+            return Math.max(...completedRaces.map(race => race.weekNumber));
+        }
+
+        // If no completed races, return the first race
+        return races[0]?.weekNumber || 1;
+    };
 
     const loadData = async () => {
         try {
@@ -97,7 +114,14 @@ const RaceResultsScreen = () => {
             }
 
             if (racesResponse.data.success) {
-                setRaces(racesResponse.data.data);
+                const racesData = racesResponse.data.data;
+                setRaces(racesData);
+
+                // If no week was specified in URL, set to current week
+                if (!weekNumber || isNaN(weekNumber)) {
+                    const currentWeek = findCurrentWeek(racesData);
+                    setSelectedWeek(currentWeek);
+                }
             }
 
             if (resultsResponse.data.success) {
@@ -118,10 +142,22 @@ const RaceResultsScreen = () => {
     };
 
     const handleWeekChange = (week: number) => {
+        // Prevent rapid changes that could cause fontsize errors
+        if (weekLoading || week === selectedWeek) {
+            return;
+        }
+
+        // Set loading state to prevent rapid updates
+        setWeekLoading(true);
+
         // Optimistically update the week immediately
         setSelectedWeek(week);
         setShowWeekSelector(false);
-        router.replace(`/race-results?leagueId=${leagueId}&weekNumber=${week}` as any);
+
+        // Use a small delay to prevent rapid style changes
+        setTimeout(() => {
+            router.replace(`/race-results?leagueId=${leagueId}&weekNumber=${week}` as any);
+        }, 100);
     };
 
     const getCurrentRace = () => {
@@ -341,19 +377,35 @@ const RaceResultsScreen = () => {
                         <Text style={[styles.navButtonText, (!canGoPrevious || weekLoading) && styles.navButtonTextDisabled]}>Prev</Text>
                     </TouchableOpacity>
 
+                    {/* Week Selector Button */}
                     <TouchableOpacity
-                        style={styles.weekSelector}
-                        onPress={() => setShowWeekSelector(!showWeekSelector)}
+                        style={styles.weekSelectorButton}
+                        onPress={() => {
+                            // Prevent rapid dropdown toggles that could cause fontsize errors
+                            if (weekLoading) return;
+
+                            // Use a small delay to prevent rapid state changes
+                            setTimeout(() => {
+                                setShowWeekSelector(!showWeekSelector);
+                            }, 50);
+                        }}
                         disabled={weekLoading}
+                        activeOpacity={0.7}
                     >
-                        <Text style={styles.weekNumber}>Week {selectedWeek}</Text>
-                        <Text style={styles.raceName} numberOfLines={1}>
-                            {currentRace?.raceName || 'Unknown Race'}
-                        </Text>
+                        <View style={styles.weekSelectorContent}>
+                            <Text style={styles.weekNumber}>Week {selectedWeek}</Text>
+                            <Text style={styles.raceName} numberOfLines={1}>
+                                {currentRace?.raceName || 'Unknown Race'}
+                            </Text>
+                        </View>
                         {weekLoading ? (
                             <ActivityIndicator size="small" color={Colors.light.primary} />
                         ) : (
-                            <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                            <Ionicons
+                                name={showWeekSelector ? "chevron-up" : "chevron-down"}
+                                size={16}
+                                color={Colors.light.textSecondary}
+                            />
                         )}
                     </TouchableOpacity>
 
@@ -368,23 +420,35 @@ const RaceResultsScreen = () => {
                 </View>
 
                 {/* Week Selector Dropdown */}
-                {showWeekSelector && (
+                {showWeekSelector && races.length > 0 && (
                     <View style={styles.weekDropdown}>
                         {races.map((race) => (
                             <TouchableOpacity
                                 key={race.weekNumber}
-                                style={[styles.weekOption, race.weekNumber === selectedWeek && styles.weekOptionSelected]}
+                                style={[
+                                    styles.weekOption,
+                                    race.weekNumber === selectedWeek && styles.weekOptionSelected
+                                ]}
                                 onPress={() => handleWeekChange(race.weekNumber)}
                                 disabled={weekLoading}
+                                activeOpacity={0.7}
                             >
-                                <Text style={[styles.weekOptionText, race.weekNumber === selectedWeek && styles.weekOptionTextSelected]}>
-                                    Week {race.weekNumber}
-                                </Text>
-                                <Text style={[styles.weekOptionSubtext, race.weekNumber === selectedWeek && styles.weekOptionSubtextSelected]}>
-                                    {race.raceName}
-                                </Text>
+                                <View style={styles.weekOptionContent}>
+                                    <Text style={[
+                                        styles.weekOptionText,
+                                        race.weekNumber === selectedWeek && styles.weekOptionTextSelected
+                                    ]}>
+                                        Week {race.weekNumber}
+                                    </Text>
+                                    <Text style={[
+                                        styles.weekOptionSubtext,
+                                        race.weekNumber === selectedWeek && styles.weekOptionSubtextSelected
+                                    ]}>
+                                        {race.raceName}
+                                    </Text>
+                                </View>
                                 {race.weekNumber === selectedWeek && (
-                                    <Ionicons name="checkmark" size="16" color={Colors.light.primary} />
+                                    <Ionicons name="checkmark" size={16} color={Colors.light.primary} />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -535,58 +599,128 @@ const RaceResultsScreen = () => {
                     </Text>
                     <View style={styles.memberResultsGrid}>
                         {results.map((result, index) => (
-                            <TouchableOpacity
+                            <View
                                 key={`${result.userId}-${index}`}
-                                style={styles.memberCard}
-                                onPress={() => navigateToMemberPicks(result.userId, result.userName, index)}
+                                style={[
+                                    styles.memberCard,
+                                    !user && styles.memberCardGuest
+                                ]}
                             >
-                                <View style={styles.memberHeader}>
-                                    <View style={styles.avatarContainer}>
-                                        <Avatar
-                                            src={result.userAvatar}
-                                            size="sm"
-                                            fallback={result.userName?.charAt(0).toUpperCase() || 'U'}
-                                        />
+                                {user ? (
+                                    <View style={styles.memberContent}>
+                                        <View style={styles.memberHeader}>
+                                            <View style={styles.avatarContainer}>
+                                                <Avatar
+                                                    src={result.userAvatar}
+                                                    size="sm"
+                                                    fallback={result.userName?.charAt(0).toUpperCase() || 'U'}
+                                                />
+                                                {hasScoredResults && (
+                                                    <View style={[
+                                                        styles.rankOverlay,
+                                                        index === 0 && styles.firstPlace,
+                                                        index === 1 && styles.secondPlace,
+                                                        index === 2 && styles.thirdPlace
+                                                    ]}>
+                                                        <Text style={styles.rankOverlayText}>{index + 1}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={styles.memberInfo}>
+                                                <Text style={styles.memberName}>{result.userName}</Text>
+                                                <View style={styles.memberStatus}>
+                                                    <Ionicons name="checkmark-circle" size={16} color={Colors.light.success} />
+                                                    <Text style={styles.memberStats}>
+                                                        All {result.picks.filter(p => p.driverName).length} picks made
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
                                         {hasScoredResults && (
-                                            <View style={[
-                                                styles.rankOverlay,
-                                                index === 0 && styles.firstPlace,
-                                                index === 1 && styles.secondPlace,
-                                                index === 2 && styles.thirdPlace
-                                            ]}>
-                                                <Text style={styles.rankOverlayText}>{index + 1}</Text>
+                                            <View style={styles.memberScoreRow}>
+                                                <View style={styles.scoreItem}>
+                                                    <Text style={styles.scoreLabel}>CORRECT PICKS</Text>
+                                                    <Text style={styles.scoreValue}>{result.totalCorrect}</Text>
+                                                </View>
+                                                <View style={styles.scoreItem}>
+                                                    <Text style={styles.scoreLabel}>POINTS</Text>
+                                                    <Text style={styles.scoreValue}>{result.totalPoints}</Text>
+                                                </View>
                                             </View>
                                         )}
-                                    </View>
-                                    <View style={styles.memberInfo}>
-                                        <Text style={styles.memberName}>{result.userName}</Text>
-                                        <View style={styles.memberStatus}>
-                                            <Ionicons name="checkmark-circle" size={16} color={Colors.light.success} />
-                                            <Text style={styles.memberStats}>
-                                                All {result.picks.filter(p => p.driverName).length} picks made
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
 
-                                {hasScoredResults && (
-                                    <View style={styles.memberScoreRow}>
-                                        <View style={styles.scoreItem}>
-                                            <Text style={styles.scoreLabel}>CORRECT PICKS</Text>
-                                            <Text style={styles.scoreValue}>{result.totalCorrect}</Text>
-                                        </View>
-                                        <View style={styles.scoreItem}>
-                                            <Text style={styles.scoreLabel}>POINTS</Text>
-                                            <Text style={styles.scoreValue}>{result.totalPoints}</Text>
+                                        {/* View Picks Button for Authenticated Users */}
+                                        <View style={styles.viewPicksButtonContainer}>
+                                            <TouchableOpacity
+                                                style={styles.viewPicksButton}
+                                                onPress={() => navigateToMemberPicks(result.userId, result.userName, index)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.viewPicksButtonText}>View Picks</Text>
+                                                <Ionicons name="chevron-forward" size={16} color={Colors.light.primary} />
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
+                                ) : (
+                                    <>
+                                        <View style={styles.memberHeader}>
+                                            <View style={styles.avatarContainer}>
+                                                <Avatar
+                                                    src={result.userAvatar}
+                                                    size="sm"
+                                                    fallback={result.userName?.charAt(0).toUpperCase() || 'U'}
+                                                />
+                                                {hasScoredResults && (
+                                                    <View style={[
+                                                        styles.rankOverlay,
+                                                        index === 0 && styles.firstPlace,
+                                                        index === 1 && styles.secondPlace,
+                                                        index === 2 && styles.thirdPlace
+                                                    ]}>
+                                                        <Text style={styles.rankOverlayText}>{index + 1}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={styles.memberInfo}>
+                                                <Text style={styles.memberName}>{result.userName}</Text>
+                                                <View style={styles.memberStatus}>
+                                                    <Ionicons name="alert-circle" size={16} color={Colors.light.warning} />
+                                                    <Text style={styles.memberStats}>
+                                                        {result.picks.filter(p => p.driverName).length} of {result.picks.length} picks made
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        {hasScoredResults && (
+                                            <View style={styles.memberScoreRow}>
+                                                <View style={styles.scoreItem}>
+                                                    <Text style={styles.scoreLabel}>CORRECT PICKS</Text>
+                                                    <Text style={styles.scoreValue}>{result.totalCorrect}</Text>
+                                                </View>
+                                                <View style={styles.scoreItem}>
+                                                    <Text style={styles.scoreLabel}>POINTS</Text>
+                                                    <Text style={styles.scoreValue}>{result.totalPoints}</Text>
+                                                </View>
+                                            </View>
+                                        )}
+
+                                        <View style={styles.guestPrompt}>
+                                            <TouchableOpacity
+                                                style={styles.loginButton}
+                                                onPress={() => {
+                                                    console.log('Login button pressed'); // Debug log
+                                                    router.push('/login');
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.loginButtonText}>Login to View Picks</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
                                 )}
-
-                                <View style={styles.viewPicksButton}>
-                                    <Text style={styles.viewPicksText}>View All Picks</Text>
-                                    <Ionicons name="chevron-forward" size={16} color={Colors.light.primary} />
-                                </View>
-                            </TouchableOpacity>
+                            </View>
                         ))}
                     </View>
                 </View>
@@ -715,15 +849,34 @@ const styles = StyleSheet.create({
         borderColor: Colors.light.borderLight,
     },
     weekNumber: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.primary,
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
+        marginRight: spacing.sm,
     },
     raceName: {
         fontSize: 14,
         color: Colors.light.textSecondary,
         flex: 1,
         marginHorizontal: spacing.sm,
+    },
+    weekSelectorButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: Colors.light.backgroundSecondary,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        marginHorizontal: spacing.sm,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    weekSelectorContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
     },
     weekDropdown: {
         backgroundColor: Colors.light.backgroundSecondary,
@@ -744,23 +897,36 @@ const styles = StyleSheet.create({
     weekOptionSelected: {
         backgroundColor: Colors.light.primaryLight,
     },
+    weekOptionContent: {
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+    },
     weekOptionText: {
         fontSize: 16,
         fontWeight: '500',
         color: Colors.light.textPrimary,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
     weekOptionTextSelected: {
         color: Colors.light.primary,
         fontWeight: '600',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
     weekOptionSubtext: {
         fontSize: 14,
         color: Colors.light.textSecondary,
         flex: 1,
         marginLeft: spacing.sm,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
     weekOptionSubtextSelected: {
         color: Colors.light.primary,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
     summaryContainer: {
         flexDirection: 'row',
@@ -921,6 +1087,15 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
         ...shadows.sm,
     },
+
+    memberCardGuest: {
+        // This style is for the non-interactive part of the member card
+        opacity: 0.7,
+        pointerEvents: 'none', // Disable touch events for guests
+    },
+    memberContent: {
+        // Container for authenticated user member card content
+    },
     memberHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -949,20 +1124,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.light.textPrimary,
         textAlign: 'center',
-    },
-    viewPicksButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingTop: spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: Colors.light.borderLight,
-    },
-    viewPicksText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.light.primary,
-        marginRight: spacing.xs,
     },
     memberInfo: {
         flex: 1,
@@ -1297,6 +1458,60 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         gap: spacing.sm,
+    },
+    guestPrompt: {
+        backgroundColor: 'transparent',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        borderWidth: 0,
+        marginHorizontal: 0,
+    },
+    guestPromptText: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'right',
+        marginBottom: spacing.sm,
+        lineHeight: 20,
+        alignSelf: 'flex-end',
+    },
+    loginButton: {
+        backgroundColor: '#f9fafb',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        minWidth: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        alignSelf: 'flex-end',
+        marginTop: spacing.sm,
+    },
+    loginButtonText: {
+        color: '#6b7280',
+        fontSize: 14,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    viewPicksButtonContainer: {
+        marginTop: spacing.sm,
+        alignSelf: 'flex-end',
+    },
+    viewPicksButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.light.backgroundSecondary,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    viewPicksButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: Colors.light.textSecondary,
+        marginRight: spacing.xs,
     },
 
 });

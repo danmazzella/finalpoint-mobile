@@ -9,18 +9,19 @@ import {
     RefreshControl,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { picksAPI, driversAPI, leaguesAPI, f1racesAPI } from '../../src/services/apiService';
 import { Driver, League, UserPickV2, PickV2, F1Race } from '../../src/types';
-import Colors from '../../constants/Colors';
-import { spacing } from '../../utils/styles';
 import DriverSelectionModal from '../../components/DriverSelectionModal';
+import { useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useSimpleToast();
+    const { leagueId: urlLeagueId } = useLocalSearchParams();
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState<number | null>(null);
@@ -35,6 +36,7 @@ const PicksScreen = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
     const [showDriverModal, setShowDriverModal] = useState(false);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         // Only load data when auth is complete and user is authenticated
@@ -49,6 +51,17 @@ const PicksScreen = () => {
             loadLeaguePositions();
         }
     }, [selectedLeague, currentWeek]);
+
+    // Handle URL parameter changes for league selection
+    useEffect(() => {
+        if (urlLeagueId && leagues.length > 0) {
+            const urlLeagueIdNum = Number(urlLeagueId);
+            const urlLeague = leagues.find((league: League) => league.id === urlLeagueIdNum);
+            if (urlLeague && urlLeague.id !== selectedLeague) {
+                setSelectedLeague(urlLeague.id);
+            }
+        }
+    }, [urlLeagueId, leagues, selectedLeague]);
 
     const loadData = async () => {
         try {
@@ -66,8 +79,18 @@ const PicksScreen = () => {
 
             if (leaguesResponse.data.success) {
                 setLeagues(leaguesResponse.data.data);
-                // If no league is selected and we have leagues, select the first one
-                if (!selectedLeague && leaguesResponse.data.data.length > 0) {
+                // If we have a leagueId from URL, select that league
+                if (urlLeagueId && leaguesResponse.data.data.length > 0) {
+                    const urlLeagueIdNum = Number(urlLeagueId);
+                    const urlLeague = leaguesResponse.data.data.find((league: League) => league.id === urlLeagueIdNum);
+                    if (urlLeague) {
+                        setSelectedLeague(urlLeague.id);
+                    } else if (!selectedLeague) {
+                        // Fallback to first league if URL league not found
+                        setSelectedLeague(leaguesResponse.data.data[0].id);
+                    }
+                } else if (!selectedLeague && leaguesResponse.data.data.length > 0) {
+                    // If no league is selected and we have leagues, select the first one
                     setSelectedLeague(leaguesResponse.data.data[0].id);
                 }
             }
@@ -245,219 +268,311 @@ const PicksScreen = () => {
 
     if (authLoading || loading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color="#007bff" />
-            </SafeAreaView>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#2563eb" />
+            </View>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
+            <View style={styles.errorContainer}>
                 <Text style={styles.errorTitle}>Connection Error</Text>
                 <Text style={styles.errorMessage}>{error}</Text>
                 <TouchableOpacity style={styles.retryButton} onPress={loadData}>
                     <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: insets.top }
+                ]}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
+                showsVerticalScrollIndicator={false}
             >
-                <View style={styles.header}>
-                    <Text style={styles.title}>Make Your Picks</Text>
-                </View>
+                {/* Show unauthenticated view for users who are not logged in */}
+                {!user ? (
+                    <>
+                        {/* Picks Page Preview Section */}
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="calendar" size={24} color="#6b7280" />
+                                <Text style={styles.cardTitle}>Picks Page Preview</Text>
+                            </View>
+                            <Text style={styles.cardSubtitle}>
+                                This is what the picks page looks like. Log in to make your own picks!
+                            </Text>
+                            <View style={styles.authButtons}>
+                                <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/login')}>
+                                    <Text style={styles.secondaryButtonText}>Log In</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/signup')}>
+                                    <Text style={styles.primaryButtonText}>Sign Up</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
 
-                <Text style={styles.description}>Week {currentWeek} - 2025 F1 Season</Text>
+                        {/* Current Race Section */}
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="flag" size={24} color="#6b7280" />
+                                <Text style={styles.cardTitle}>Current Race</Text>
+                            </View>
+                            <View style={[styles.raceCard, { marginTop: 0 }]}>
+                                <Text style={styles.raceName}>Dutch Grand Prix</Text>
+                                <Text style={styles.raceDate}>Circuit Zandvoort, Netherlands</Text>
+                                <Text style={styles.raceWeek}>Week 15 • 8/31/2025</Text>
+                                <View style={styles.upcomingBadge}>
+                                    <Text style={styles.upcomingBadgeText}>upcoming</Text>
+                                </View>
+                            </View>
+                        </View>
 
-                {/* League Selection */}
-                <View style={styles.leagueSection}>
-                    <Text style={styles.sectionTitle}>Select League</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueScroll}>
-                        {leagues.map((league) => (
-                            <TouchableOpacity
-                                key={league.id}
-                                style={[
-                                    styles.leagueCard,
-                                    selectedLeague === league.id && styles.selectedLeagueCard
-                                ]}
-                                onPress={() => setSelectedLeague(league.id)}
-                            >
-                                <View style={styles.leagueCardContent}>
-                                    <View style={styles.leagueNameContainer}>
-                                        <Text style={[
-                                            styles.leagueName,
-                                            selectedLeague === league.id && styles.selectedLeagueName
-                                        ]}>
-                                            {league.name}
-                                        </Text>
+                        {/* League Selection Section */}
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="people" size={24} color="#6b7280" />
+                                <Text style={styles.cardTitle}>League Selection</Text>
+                            </View>
+                            <Text style={styles.cardSubtitle}>
+                                Log in to see your leagues and make picks.
+                            </Text>
+                            <View style={styles.leagueSelectionPlaceholder}>
+                                <Ionicons name="people" size={48} color="#9ca3af" />
+                                <Text style={styles.leagueSelectionTitle}>League Selection</Text>
+                                <Text style={styles.leagueSelectionDescription}>
+                                    Choose from your leagues to make position predictions.
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Position Selection Preview Section */}
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="grid" size={24} color="#6b7280" />
+                                <Text style={styles.cardTitle}>Position Selection Preview</Text>
+                            </View>
+                            <Text style={styles.cardSubtitle}>
+                                See how position predictions work.
+                            </Text>
+                            <View style={styles.positionPreviewGrid}>
+                                <View style={styles.positionPreviewCard}>
+                                    <Text style={styles.positionPreviewNumber}>P1</Text>
+                                    <Text style={styles.positionPreviewLabel}>Position 1</Text>
+                                    <Text style={styles.positionPreviewAction}>Select driver</Text>
+                                </View>
+                                <View style={styles.positionPreviewCard}>
+                                    <Text style={styles.positionPreviewNumber}>P3</Text>
+                                    <Text style={styles.positionPreviewLabel}>Position 3</Text>
+                                    <Text style={styles.positionPreviewAction}>Select driver</Text>
+                                </View>
+                                <View style={styles.positionPreviewCard}>
+                                    <Text style={styles.positionPreviewNumber}>P10</Text>
+                                    <Text style={styles.positionPreviewLabel}>Position 10</Text>
+                                    <Text style={styles.positionPreviewAction}>Select driver</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Make Your Picks</Text>
+                        </View>
+
+                        <Text style={styles.description}>Week {currentWeek} - 2025 F1 Season</Text>
+
+                        {/* League Selection */}
+                        <View style={styles.leagueSection}>
+                            <Text style={styles.sectionTitle}>Select League</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueScroll}>
+                                {leagues.map((league) => (
+                                    <TouchableOpacity
+                                        key={league.id}
+                                        style={[
+                                            styles.leagueCard,
+                                            selectedLeague === league.id && styles.selectedLeagueCard
+                                        ]}
+                                        onPress={() => setSelectedLeague(league.id)}
+                                    >
+                                        <View style={styles.leagueCardContent}>
+                                            <View style={styles.leagueNameContainer}>
+                                                <Text style={[
+                                                    styles.leagueName,
+                                                    selectedLeague === league.id && styles.selectedLeagueName
+                                                ]}>
+                                                    {league.name}
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.leagueDetails}>
+                                                {league.memberCount || 1} member{league.memberCount !== 1 ? 's' : ''}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        {/* Current Race Info */}
+                        {currentRace && (
+                            <View style={styles.raceInfoSection}>
+                                <Text style={styles.sectionTitle}>Current Race</Text>
+
+                                {/* Pick Locking Status Banner */}
+                                {currentRace.picksLocked && (
+                                    <View style={styles.lockedBanner}>
+                                        <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
                                     </View>
-                                    <Text style={styles.leagueDetails}>
-                                        {league.memberCount || 1} member{league.memberCount !== 1 ? 's' : ''}
+                                )}
+
+                                {/* Pick Locking Countdown */}
+                                {!currentRace.picksLocked && currentRace.showCountdown && (
+                                    <View style={styles.countdownBanner}>
+                                        <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
+                                        <Text style={styles.countdownBannerMessage}>{currentRace.lockMessage}</Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.raceCard}>
+                                    <Text style={styles.raceName}>{currentRace.raceName}</Text>
+                                    <Text style={styles.raceDate}>
+                                        {new Date(currentRace.raceDate).toLocaleDateString()}
+                                    </Text>
+                                    {currentRace.qualifyingDate && (
+                                        <Text style={styles.qualifyingDate}>
+                                            Qualifying: {new Date(currentRace.qualifyingDate).toLocaleDateString()}
+                                        </Text>
+                                    )}
+                                    <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
+                                        Status: {isRaceLocked() ? 'Locked' : currentRace.status}
                                     </Text>
                                 </View>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Current Race Info */}
-                {currentRace && (
-                    <View style={styles.raceInfoSection}>
-                        <Text style={styles.sectionTitle}>Current Race</Text>
-
-                        {/* Pick Locking Status Banner */}
-                        {currentRace.picksLocked && (
-                            <View style={styles.lockedBanner}>
-                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
                             </View>
                         )}
 
-                        {/* Pick Locking Countdown */}
-                        {!currentRace.picksLocked && currentRace.showCountdown && (
-                            <View style={styles.countdownBanner}>
-                                <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
-                                <Text style={styles.countdownBannerMessage}>{currentRace.lockMessage}</Text>
-                            </View>
-                        )}
-
-                        <View style={styles.raceCard}>
-                            <Text style={styles.raceName}>{currentRace.raceName}</Text>
-                            <Text style={styles.raceDate}>
-                                {new Date(currentRace.raceDate).toLocaleDateString()}
-                            </Text>
-                            {currentRace.qualifyingDate && (
-                                <Text style={styles.qualifyingDate}>
-                                    Qualifying: {new Date(currentRace.qualifyingDate).toLocaleDateString()}
+                        {/* League Positions */}
+                        {selectedLeague && leaguePositions.length > 0 && (
+                            <View style={styles.positionsSection}>
+                                <Text style={styles.sectionTitle}>League Positions</Text>
+                                <Text style={styles.positionsSubtitle}>
+                                    This league requires picks for positions: {leaguePositions.map(p => `P${p}`).join(', ')}
                                 </Text>
-                            )}
-                            <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
-                                Status: {isRaceLocked() ? 'Locked' : currentRace.status}
-                            </Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* League Positions */}
-                {selectedLeague && leaguePositions.length > 0 && (
-                    <View style={styles.positionsSection}>
-                        <Text style={styles.sectionTitle}>League Positions</Text>
-                        <Text style={styles.positionsSubtitle}>
-                            This league requires picks for positions: {leaguePositions.map(p => `P${p}`).join(', ')}
-                        </Text>
-                    </View>
-                )}
-
-                {/* Position Picks */}
-                {selectedLeague && leaguePositions.length > 0 && (
-                    <View style={styles.picksSection}>
-                        <Text style={styles.sectionTitle}>Your Picks</Text>
-                        {leaguePositions.map((position) => {
-                            const currentPick = getCurrentPickForPosition(position);
-                            const selectedDriverId = getSelectedDriverForPosition(position);
-                            const isLocked = isPositionLocked(position);
-                            const isRaceLockedNow = isRaceLocked();
-
-                            return (
-                                <TouchableOpacity
-                                    key={position}
-                                    style={[
-                                        styles.positionCard,
-                                        !isLocked && !isRaceLockedNow && styles.clickablePositionCard
-                                    ]}
-                                    onPress={() => handlePositionPress(position)}
-                                    disabled={isLocked || isRaceLockedNow || submitting}
-                                    activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
-                                >
-                                    <View style={styles.positionHeader}>
-                                        <Text style={styles.positionTitle}>P{position}</Text>
-                                        {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
-                                    </View>
-
-                                    {currentPick ? (
-                                        <View style={styles.currentPickCard}>
-                                            <Text style={styles.currentPickDriver}>{currentPick.driverName}</Text>
-                                            <Text style={styles.currentPickTeam}>{currentPick.driverTeam}</Text>
-                                            {!isLocked && !isRaceLockedNow && (
-                                                <TouchableOpacity
-                                                    style={styles.removePickIcon}
-                                                    onPress={(e) => {
-                                                        e.stopPropagation();
-                                                        removePick(position);
-                                                    }}
-                                                    disabled={submitting}
-                                                >
-                                                    <Text style={styles.removePickIconText}>×</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
-                                    ) : (
-                                        <View style={styles.noPickContainer}>
-                                            <Text style={styles.noPickText}>No pick made yet</Text>
-                                            {!isLocked && !isRaceLockedNow && (
-                                                <Text style={styles.tapToSelectText}>Tap to select driver</Text>
-                                            )}
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                )}
-
-                {/* Legacy Single Pick Support */}
-                {selectedLeague && leaguePositions.length === 0 && (
-                    <View style={styles.legacySection}>
-                        <Text style={styles.sectionTitle}>Make Your P10 Pick</Text>
-                        <Text style={styles.legacySubtitle}>
-                            This league uses the legacy single-pick system
-                        </Text>
-
-                        {/* Show pick locking message for legacy picks */}
-                        {currentRace?.picksLocked && (
-                            <View style={styles.lockedBanner}>
-                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
                             </View>
                         )}
 
-                        <ScrollView style={styles.driversList}>
-                            {drivers.map((driver) => (
-                                <TouchableOpacity
-                                    key={driver.id}
-                                    style={[
-                                        styles.driverCard,
-                                        getSelectedDriverForPosition(10) === driver.id && styles.selectedDriverCard
-                                    ]}
-                                    onPress={() => makePick(10, driver.id)}
-                                    disabled={submitting || isRaceLocked() || currentRace?.picksLocked}
-                                >
-                                    <View style={styles.driverInfo}>
-                                        <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
-                                        <View style={styles.driverDetails}>
-                                            <Text style={styles.driverName}>{driver.name}</Text>
-                                            <Text style={styles.driverTeam}>{driver.team}</Text>
-                                            <Text style={styles.driverCountry}>{driver.country}</Text>
-                                        </View>
+                        {/* Position Picks */}
+                        {selectedLeague && leaguePositions.length > 0 && (
+                            <View style={styles.picksSection}>
+                                <Text style={styles.sectionTitle}>Your Picks</Text>
+                                {leaguePositions.map((position) => {
+                                    const currentPick = getCurrentPickForPosition(position);
+                                    const selectedDriverId = getSelectedDriverForPosition(position);
+                                    const isLocked = isPositionLocked(position);
+                                    const isRaceLockedNow = isRaceLocked();
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={position}
+                                            style={[
+                                                styles.positionCard,
+                                                !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                            ]}
+                                            onPress={() => handlePositionPress(position)}
+                                            disabled={isLocked || isRaceLockedNow || submitting}
+                                            activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
+                                        >
+                                            <View style={styles.positionHeader}>
+                                                <Text style={styles.positionTitle}>P{position}</Text>
+                                                {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
+                                            </View>
+
+                                            {currentPick ? (
+                                                <View style={styles.currentPickCard}>
+                                                    <Text style={styles.currentPickDriver}>{currentPick.driverName}</Text>
+                                                    <Text style={styles.currentPickTeam}>{currentPick.driverTeam}</Text>
+                                                    {!isLocked && !isRaceLockedNow && (
+                                                        <TouchableOpacity
+                                                            style={styles.removePickIcon}
+                                                            onPress={(e) => {
+                                                                e.stopPropagation();
+                                                                removePick(position);
+                                                            }}
+                                                            disabled={submitting}
+                                                        >
+                                                            <Text style={styles.removePickIconText}>×</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+                                            ) : (
+                                                <View style={styles.noPickContainer}>
+                                                    <Text style={styles.noPickText}>No pick made yet</Text>
+                                                    {!isLocked && !isRaceLockedNow && (
+                                                        <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                                    )}
+                                                </View>
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        )}
+
+                        {/* Legacy Single Pick Support */}
+                        {selectedLeague && leaguePositions.length === 0 && (
+                            <View style={styles.legacySection}>
+                                <Text style={styles.sectionTitle}>Make Your P10 Pick</Text>
+                                <Text style={styles.legacySubtitle}>
+                                    This league uses the legacy single-pick system
+                                </Text>
+
+                                {/* Show pick locking message for legacy picks */}
+                                {currentRace?.picksLocked && (
+                                    <View style={styles.lockedBanner}>
+                                        <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
                                     </View>
-                                    {getSelectedDriverForPosition(10) === driver.id && (
-                                        <View style={styles.selectedIndicator}>
-                                            <Text style={styles.selectedIndicatorText}>✓</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
+                                )}
+
+                                <ScrollView style={styles.driversList}>
+                                    {drivers.map((driver) => (
+                                        <TouchableOpacity
+                                            key={driver.id}
+                                            style={[
+                                                styles.driverCard,
+                                                getSelectedDriverForPosition(10) === driver.id && styles.selectedDriverCard
+                                            ]}
+                                            onPress={() => makePick(10, driver.id)}
+                                            disabled={submitting || isRaceLocked() || currentRace?.picksLocked}
+                                        >
+                                            <View style={styles.driverInfo}>
+                                                <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
+                                                <View style={styles.driverDetails}>
+                                                    <Text style={styles.driverName}>{driver.name}</Text>
+                                                    <Text style={styles.driverTeam}>{driver.team}</Text>
+                                                    <Text style={styles.driverCountry}>{driver.country}</Text>
+                                                </View>
+                                            </View>
+                                            {getSelectedDriverForPosition(10) === driver.id && (
+                                                <View style={styles.selectedIndicator}>
+                                                    <Text style={styles.selectedIndicatorText}>✓</Text>
+                                                </View>
+                                            )}
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+                    </>
                 )}
             </ScrollView>
 
@@ -473,108 +588,115 @@ const PicksScreen = () => {
                 submitting={submitting}
                 userPicks={new Map(selectedPicks.map(pick => [pick.position, pick.driverId]))}
             />
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: Platform.OS === 'android' ? 0 : 0,
+        backgroundColor: '#f9fafb',
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         paddingBottom: 100,
+        paddingHorizontal: 16,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f9fafb',
     },
     errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f9fafb',
     },
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#dc3545',
+        color: '#dc2626',
         marginBottom: 10,
     },
     errorMessage: {
         fontSize: 16,
-        color: '#666',
+        color: '#6b7280',
         textAlign: 'center',
         marginBottom: 20,
     },
     retryButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
         padding: 12,
         paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
     retryButtonText: {
-        color: 'white',
+        color: '#ffffff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     header: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
         minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
+        borderBottomColor: '#e5e7eb',
         justifyContent: 'center',
+        marginBottom: 16,
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 4,
     },
     description: {
         fontSize: 16,
-        color: '#666',
-        marginBottom: spacing.lg,
-        marginTop: spacing.md,
+        color: '#6b7280',
+        marginBottom: 24,
+        marginTop: 8,
         textAlign: 'center',
     },
     leagueSection: {
-        padding: 15,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 8,
     },
     leagueScroll: {
         paddingVertical: 5,
     },
     leagueCard: {
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        padding: 10,
-        marginRight: 10,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 8,
+        padding: 12,
+        marginRight: 12,
         width: 150,
         height: 80,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: '#d1d5db',
     },
     selectedLeagueCard: {
-        backgroundColor: '#e0e0e0',
-        borderColor: '#ccc',
+        backgroundColor: '#dbeafe',
+        borderColor: '#2563eb',
     },
     leagueCardContent: {
         flex: 1,
@@ -588,73 +710,81 @@ const styles = StyleSheet.create({
     leagueName: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         textAlign: 'center',
     },
     selectedLeagueName: {
-        color: '#007bff',
+        color: '#2563eb',
     },
     leagueDetails: {
         fontSize: 12,
-        color: '#666',
+        color: '#6b7280',
         textAlign: 'center',
     },
     raceInfoSection: {
-        padding: 15,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     raceCard: {
-        backgroundColor: '#f8f8f8',
+        backgroundColor: '#f8fafc',
         borderRadius: 8,
-        padding: 15,
-        marginTop: 10,
+        padding: 16,
+        marginTop: 12,
         borderLeftWidth: 4,
-        borderLeftColor: '#007bff',
+        borderLeftColor: '#2563eb',
     },
     raceName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 4,
     },
     raceDate: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
+        color: '#6b7280',
+        marginBottom: 5,
+    },
+    raceWeek: {
+        fontSize: 14,
+        color: '#6b7280',
+        marginBottom: 5,
     },
     raceStatus: {
         fontSize: 14,
-        color: '#007bff',
+        color: '#2563eb',
     },
     lockedStatus: {
-        color: '#ff4444',
+        color: '#dc2626',
     },
     positionsSection: {
-        padding: 15,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     positionsSubtitle: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         marginTop: 4,
     },
     picksSection: {
-        padding: 15,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     positionCard: {
-        backgroundColor: 'white',
-        borderRadius: 12,
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#e9ecef',
+        borderColor: '#e5e7eb',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -662,7 +792,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     clickablePositionCard: {
-        borderColor: '#007bff',
+        borderColor: '#2563eb',
         borderWidth: 2,
     },
     positionHeader: {
@@ -674,11 +804,11 @@ const styles = StyleSheet.create({
     positionTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
     },
     lockedBadge: {
-        backgroundColor: '#ff4444',
-        color: 'white',
+        backgroundColor: '#dc2626',
+        color: '#ffffff',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -686,12 +816,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     currentPickCard: {
-        backgroundColor: '#f0f8ff',
+        backgroundColor: '#eff6ff',
         borderRadius: 8,
         padding: 12,
         marginBottom: 12,
         borderLeftWidth: 4,
-        borderLeftColor: '#007bff',
+        borderLeftColor: '#2563eb',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
@@ -701,22 +831,22 @@ const styles = StyleSheet.create({
     currentPickDriver: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 4,
     },
     currentPickTeam: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         marginBottom: 4,
     },
     currentPickPoints: {
         fontSize: 12,
-        color: '#666',
+        color: '#6b7280',
         fontWeight: 'bold',
     },
     noPickText: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         fontStyle: 'italic',
         marginBottom: 4,
     },
@@ -725,7 +855,7 @@ const styles = StyleSheet.create({
     },
     tapToSelectText: {
         fontSize: 12,
-        color: '#007bff',
+        color: '#2563eb',
         fontWeight: '600',
     },
 
@@ -733,32 +863,28 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 8,
         right: 8,
-        backgroundColor: '#dc3545',
+        backgroundColor: '#dc2626',
         borderRadius: 12,
         width: 24,
         height: 24,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1,
-        // Ensure perfect centering on mobile
         paddingTop: 0,
         paddingBottom: 0,
         paddingLeft: 0,
         paddingRight: 0,
-        // Alternative centering approach
         overflow: 'hidden',
-        // Use flexbox for better centering
         display: 'flex',
     },
     removePickIconText: {
-        color: 'white',
+        color: '#ffffff',
         fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
         textAlignVertical: 'center',
         includeFontPadding: false,
         lineHeight: 24,
-        // Ensure perfect centering on mobile
         marginTop: 0,
         marginBottom: 0,
         marginLeft: 0,
@@ -767,25 +893,25 @@ const styles = StyleSheet.create({
         paddingBottom: 0,
         paddingLeft: 0,
         paddingRight: 0,
-        // Use flexbox for better centering
         flex: 1,
     },
     legacySection: {
-        padding: 15,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e5e7eb',
+        marginBottom: 16,
     },
     legacySubtitle: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         marginBottom: 15,
     },
     driversList: {
         maxHeight: 400,
     },
     driverCard: {
-        backgroundColor: 'white',
+        backgroundColor: '#ffffff',
         borderRadius: 8,
         padding: 15,
         marginBottom: 10,
@@ -796,7 +922,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     selectedDriverCard: {
-        backgroundColor: '#e3f2fd',
+        backgroundColor: '#eff6ff',
     },
     driverInfo: {
         flexDirection: 'row',
@@ -809,83 +935,225 @@ const styles = StyleSheet.create({
     driverNumber: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#666',
+        color: '#6b7280',
         marginRight: 10,
     },
     driverName: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#111827',
         marginBottom: 2,
     },
     driverTeam: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         marginBottom: 2,
     },
     driverCountry: {
         fontSize: 12,
-        color: '#999',
+        color: '#9ca3af',
     },
     selectedIndicator: {
         position: 'absolute',
         top: 10,
         right: 10,
-        backgroundColor: '#4caf50',
+        backgroundColor: '#059669',
         borderRadius: 10,
         width: 20,
         height: 20,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'white',
+        borderColor: '#ffffff',
     },
     selectedIndicatorText: {
-        color: 'white',
+        color: '#ffffff',
         fontSize: 14,
         fontWeight: 'bold',
     },
     lockedBanner: {
-        backgroundColor: '#ff4444',
-        padding: 10,
+        backgroundColor: '#dc2626',
+        padding: 12,
         borderRadius: 8,
-        marginBottom: 10,
+        marginBottom: 12,
         alignItems: 'center',
     },
     lockedBannerTitle: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#ffffff',
         marginBottom: 4,
     },
     lockedBannerMessage: {
         fontSize: 12,
-        color: 'white',
+        color: '#ffffff',
         textAlign: 'center',
     },
     countdownBanner: {
-        backgroundColor: '#ff9800',
-        padding: 10,
+        backgroundColor: '#d97706',
+        padding: 12,
         borderRadius: 8,
-        marginBottom: 10,
+        marginBottom: 12,
         alignItems: 'center',
     },
     countdownBannerTitle: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#ffffff',
         marginBottom: 4,
     },
     countdownBannerMessage: {
         fontSize: 12,
-        color: 'white',
+        color: '#ffffff',
         textAlign: 'center',
     },
     qualifyingDate: {
         fontSize: 14,
-        color: '#666',
+        color: '#6b7280',
         marginTop: 4,
+    },
+    // New styles for unauthenticated view
+    card: {
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        marginBottom: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+        overflow: 'hidden',
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 4,
+        marginBottom: 8,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827',
+        marginLeft: 8,
+    },
+    cardSubtitle: {
+        fontSize: 14,
+        color: '#6b7280',
+        marginBottom: 16,
+        paddingHorizontal: 24,
+        lineHeight: 20,
+    },
+    authButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 10,
+        paddingHorizontal: 24,
+        paddingBottom: 24,
+    },
+    primaryButton: {
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        padding: 12,
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    primaryButtonText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButton: {
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 6,
+        padding: 12,
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    secondaryButtonText: {
+        color: '#374151',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    leagueSelectionPlaceholder: {
+        alignItems: 'center',
+        padding: 32,
+        paddingHorizontal: 24,
+    },
+    leagueSelectionIcon: {
+        fontSize: 40,
+        marginBottom: 10,
+    },
+    leagueSelectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 5,
+    },
+    leagueSelectionDescription: {
+        fontSize: 14,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
+    positionPreviewGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 16,
+        paddingHorizontal: 24,
+        paddingBottom: 24,
+    },
+    positionPreviewCard: {
+        backgroundColor: '#f9fafb',
+        borderRadius: 8,
+        padding: 16,
+        width: '30%',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        opacity: 0.7,
+    },
+    positionPreviewNumber: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#9ca3af',
+        marginBottom: 5,
+    },
+    positionPreviewLabel: {
+        fontSize: 14,
+        color: '#9ca3af',
+        marginBottom: 5,
+    },
+    positionPreviewAction: {
+        fontSize: 12,
+        color: '#9ca3af',
+        fontWeight: '400',
+        fontStyle: 'italic',
+    },
+    upcomingBadge: {
+        backgroundColor: '#059669',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginTop: 10,
+        alignSelf: 'flex-start',
+    },
+    upcomingBadgeText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
 });
 
 export default PicksScreen;
+

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,10 +8,49 @@ import { HapticTab } from '../../components/HapticTab';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  // Debug logging to see what's happening with user state
+  console.log('🔍 TabLayout render:', { user: !!user, userType: typeof user, userValue: user });
+
+  // Define tab screens - always show these three
+  const tabScreens = useMemo(() => [
+    {
+      name: "index",
+      options: {
+        title: 'Home',
+        tabBarIcon: ({ color }: { color: string }) => <Ionicons name="home" size={24} color={color} />,
+      }
+    },
+    {
+      name: "leagues",
+      options: {
+        title: 'Leagues',
+        tabBarIcon: ({ color }: { color: string }) => <Ionicons name="trophy" size={24} color={color} />,
+      }
+    },
+    {
+      name: "picks",
+      options: {
+        title: 'Picks',
+        tabBarIcon: ({ color }: { color: string }) => <Ionicons name="checkmark-circle" size={24} color={color} />,
+      }
+    },
+    {
+      name: "profile",
+      options: {
+        title: 'Profile',
+        tabBarIcon: ({ color }: { color: string }) => <Ionicons name="person" size={24} color={color} />,
+        // Hide the profile tab for unauthenticated users
+        href: user ? undefined : null,
+      }
+    }
+  ], [user]);
 
   return (
     <Tabs
@@ -63,34 +102,9 @@ export default function TabLayout() {
           },
         }),
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="leagues"
-        options={{
-          title: 'Leagues',
-          tabBarIcon: ({ color }) => <Ionicons name="trophy" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="picks"
-        options={{
-          title: 'Picks',
-          tabBarIcon: ({ color }) => <Ionicons name="checkmark-circle" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
-        }}
-      />
+      {tabScreens.map((screen) => (
+        <Tabs.Screen key={screen.name} {...screen} />
+      ))}
     </Tabs>
   );
 }

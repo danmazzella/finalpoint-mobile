@@ -177,13 +177,11 @@ function AppContent() {
       return;
     }
 
-    if (user) {
-      return;
-    }
-
-    // If we get here, we need to redirect to login
+    // Allow unauthenticated users to access main app routes
+    // This enables the unauthenticated views we want
     if (!user) {
-      router.replace('/login');
+      // Don't redirect to login - let them explore the app
+      return;
     }
   }, [user, isLoading, isAuthenticating, pathname]);
 
@@ -197,140 +195,133 @@ function AppContent() {
         <Stack
           screenOptions={getScreenOptions(colorScheme)}
         >
-          {user ? (
-            // Authenticated user - show main app
-            <>
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen name="+not-found" />
-              <Stack.Screen
-                name="activity"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="admin"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="notifications"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="race-results"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="position-results"
-                options={({ route }) => ({
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                  // Dynamic animation based on navigation direction
-                  animation: (route.params as any)?._direction === 'backward' ? 'slide_from_left' : 'slide_from_right',
-                  animationDuration: 300,
-                  // Fix for Android white screen issue
-                  contentStyle: {
-                    backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
-                  },
-                })}
-              />
-              <Stack.Screen
-                name="member-picks"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="league"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="join-league"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="change-password"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="edit-profile"
-                options={{
-                  headerShown: false,
-                  presentation: 'card',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
+          {/* Main app routes - accessible to both authenticated and unauthenticated users */}
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen name="+not-found" />
+          <Stack.Screen
+            name="activity"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="admin"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="notifications"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="race-results"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="position-results"
+            options={({ route }) => ({
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              // Dynamic animation based on navigation direction
+              animation: (route.params as any)?._direction === 'backward' ? 'slide_from_left' : 'slide_from_right',
+              animationDuration: 300,
+              // Fix for Android white screen issue
+              contentStyle: {
+                backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+              },
+            })}
+          />
+          <Stack.Screen
+            name="member-picks"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="league"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="join-league"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="change-password"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="edit-profile"
+            options={{
+              headerShown: false,
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
 
-            </>
-          ) : (
-            // Not authenticated - show auth screens
-            <>
-              <Stack.Screen
-                name="login"
-                options={{
-                  headerShown: false,
-                  header: () => null,
-                  presentation: 'modal',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-              <Stack.Screen
-                name="signup"
-                options={{
-                  headerShown: false,
-                  header: () => null,
-                  presentation: 'modal',
-                  gestureEnabled: true,
-                  gestureDirection: 'horizontal',
-                }}
-              />
-            </>
-          )}
+          {/* Auth screens - always accessible */}
+          <Stack.Screen
+            name="login"
+            options={{
+              headerShown: false,
+              header: () => null,
+              presentation: 'modal',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
+          <Stack.Screen
+            name="signup"
+            options={{
+              headerShown: false,
+              header: () => null,
+              presentation: 'modal',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
         </Stack>
       </StatusBarWrapper>
 

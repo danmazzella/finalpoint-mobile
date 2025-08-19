@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,12 +9,13 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Colors from '../constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
@@ -29,15 +30,28 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, isLoading, isAuthenticating } = useAuth();
     const { showToast } = useSimpleToast();
+    const params = useLocalSearchParams();
+    const redirectTo = params.redirect ? decodeURIComponent(params.redirect as string) : '/(tabs)';
 
     const scrollViewRef = useRef<ScrollView>(null);
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
 
-    // Function to ensure footer is visible
-    const ensureFooterVisible = () => {
-        if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
+
+
+    // Function to open finalpoint.app website
+    const handleLearnMore = async () => {
+        try {
+            const url = 'https://finalpoint.app';
+            const supported = await Linking.canOpenURL(url);
+
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                showToast('Unable to open website', 'error');
+            }
+        } catch (error) {
+            showToast('Error opening website', 'error');
         }
     };
 
@@ -50,7 +64,13 @@ const LoginScreen = () => {
         const result = await login(email, password);
         if (result.success && 'message' in result && result.message) {
             showToast(result.message, 'success');
-            router.replace('/(tabs)');
+            // Redirect to the intended destination or default to tabs
+            // Validate redirect path to prevent navigation errors
+            if (redirectTo && redirectTo.startsWith('/') && redirectTo !== '/login' && redirectTo !== '/signup') {
+                router.replace(redirectTo as any);
+            } else {
+                router.replace('/(tabs)');
+            }
         } else if (!result.success && 'error' in result && result.error) {
             showToast(result.error, 'error');
         } else {
@@ -212,18 +232,12 @@ const LoginScreen = () => {
 
                         <TouchableOpacity
                             style={styles.learnMoreButton}
-                            onPress={() => showToast('Learn more about FinalPoint', 'info')}
+                            onPress={handleLearnMore}
                         >
                             <Text style={styles.learnMoreText}>Learn more about FinalPoint</Text>
                         </TouchableOpacity>
 
-                        {/* Scroll to bottom hint for smaller screens */}
-                        <TouchableOpacity
-                            style={styles.scrollHintButton}
-                            onPress={ensureFooterVisible}
-                        >
-                            <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
-                        </TouchableOpacity>
+
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -409,12 +423,7 @@ const styles = StyleSheet.create({
         color: Colors.light.textSecondary,
         fontWeight: '500',
     },
-    scrollHintButton: {
-        marginTop: spacing.md,
-        padding: spacing.sm,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+
 
 });
 

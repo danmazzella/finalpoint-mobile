@@ -90,7 +90,11 @@ const ProfileScreen = () => {
                 {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: logout,
+                    onPress: () => {
+                        logout();
+                        // Redirect to dashboard after logout
+                        router.replace('/(tabs)');
+                    },
                 },
             ]
         );

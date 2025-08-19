@@ -292,14 +292,17 @@ export interface LeagueMember {
 
 // League standings types
 export interface LeagueStanding {
-    userId: number;
-    userName: string;
-    userAvatar?: string;
+    id: string;
+    name: string;
+    avatar?: string | null;
     totalPoints: number;
     correctPicks: number;
     totalPicks: number;
-    accuracy: number;
-    rank: number;
+    accuracy: number | null;
+    averagePoints: number;
+    averageDistanceFromCorrect?: number;
+    racesParticipated?: number;
+    averagePointsPerRace?: number;
 }
 
 // League stats types

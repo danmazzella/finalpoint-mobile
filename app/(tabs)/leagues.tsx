@@ -9,13 +9,15 @@ import {
     ActivityIndicator,
     Modal,
     Platform,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { leaguesAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { spacing, borderRadius } from '../../utils/styles';
 
@@ -30,29 +32,52 @@ const LeaguesScreen = () => {
     const [selectedPositions, setSelectedPositions] = useState<number[]>([10]);
     const [isPublic, setIsPublic] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
+    // Load data when auth state changes
     useEffect(() => {
-        // Only load data when auth is complete and user is authenticated
-        if (!authLoading && user) {
+        if (!authLoading) {
             loadLeagues();
         }
     }, [authLoading, user]);
+
+    // Reload data when the tab comes into focus
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!authLoading) {
+                loadLeagues();
+            }
+        }, [authLoading, user])
+    );
 
     const loadLeagues = async () => {
         try {
             setLoading(true);
             setError(null);
-            const [myLeaguesResponse, publicLeaguesResponse] = await Promise.all([
-                leaguesAPI.getLeagues(),
-                leaguesAPI.getPublicLeagues()
-            ]);
 
-            if (myLeaguesResponse.data.success) {
-                setMyLeagues(myLeaguesResponse.data.data);
-            }
+            if (user) {
+                // Authenticated user - load both their leagues and public leagues
+                const [myLeaguesResponse, publicLeaguesResponse] = await Promise.all([
+                    leaguesAPI.getLeagues(),
+                    leaguesAPI.getPublicLeagues()
+                ]);
 
-            if (publicLeaguesResponse.data.success) {
-                setPublicLeagues(publicLeaguesResponse.data.data);
+                if (myLeaguesResponse.data.success) {
+                    setMyLeagues(myLeaguesResponse.data.data);
+                }
+
+                if (publicLeaguesResponse.data.success) {
+                    // Backend now returns only public leagues user is not a member of
+                    setPublicLeagues(publicLeaguesResponse.data.data);
+                }
+            } else {
+                // Unauthenticated user - load only public leagues
+                const publicLeaguesResponse = await leaguesAPI.getLeagues();
+
+                if (publicLeaguesResponse.data.success) {
+                    setMyLeagues([]); // No personal leagues for unauthenticated users
+                    setPublicLeagues(publicLeaguesResponse.data.data);
+                }
             }
         } catch (error: any) {
             console.error('Error loading leagues:', error);
@@ -64,6 +89,12 @@ const LeaguesScreen = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadLeagues();
+        setRefreshing(false);
     };
 
     const hasPickForPosition = (league: League, position: number): boolean => {
@@ -183,10 +214,16 @@ const LeaguesScreen = () => {
                     <TouchableOpacity
                         style={styles.joinButton}
                         onPress={() => {
-                            router.push(`/joinleague/${league.joinCode}` as any);
+                            if (user) {
+                                router.push(`/joinleague/${league.joinCode}` as any);
+                            } else {
+                                router.push(`/league/${league.id}` as any);
+                            }
                         }}
                     >
-                        <Text style={styles.joinButtonText}>Join League</Text>
+                        <Text style={styles.joinButtonText}>
+                            {user ? 'Join League' : 'Preview League'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -262,12 +299,87 @@ const LeaguesScreen = () => {
         );
     }
 
+    // Show unauthenticated view for users who are not logged in
+    if (!user) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Leagues</Text>
+                        <Text style={styles.subtitle}>Manage your F1 prediction game</Text>
+                        <View style={styles.headerButtons}>
+                            <Text style={styles.loginPrompt}>Login to Join</Text>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={() => router.push('/signup')}
+                            >
+                                <Text style={styles.primaryButtonText}>Sign Up to Create</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* My Leagues Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>My Leagues</Text>
+                        <View style={styles.emptyState}>
+                            <Ionicons name="people" size={48} color="#9ca3af" />
+                            <Text style={styles.emptyStateTitle}>Log in to see your leagues</Text>
+                            <Text style={styles.emptyStateSubtitle}>
+                                Sign up or log in to create and manage your own leagues.
+                            </Text>
+                            <View style={styles.authButtons}>
+                                <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/login')}>
+                                    <Text style={styles.secondaryButtonText}>Log In</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/signup')}>
+                                    <Text style={styles.primaryButtonText}>Sign Up</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Public Leagues Section */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Public Leagues</Text>
+                            <Text style={styles.sectionSubtitle}>
+                                Browse and preview public leagues
+                            </Text>
+                        </View>
+                        {publicLeagues.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <Text style={styles.emptyStateText}>
+                                    No public leagues available to preview.
+                                </Text>
+                            </View>
+                        ) : (
+                            <View style={styles.leaguesGrid}>
+                                {publicLeagues.map(league => renderLeagueCard(league, true))}
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
             >
                 {/* Header */}
                 <View style={styles.header}>
@@ -825,6 +937,32 @@ const styles = StyleSheet.create({
     positionBadgeUnpicked: {
         backgroundColor: '#ffeaea', // Softer red background
         borderColor: '#f5c6c6', // Softer red border
+    },
+    loginPrompt: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        marginRight: spacing.md,
+        alignSelf: 'center',
+    },
+    emptyStateTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.light.textPrimary,
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
+        textAlign: 'center',
+    },
+    emptyStateSubtitle: {
+        fontSize: 14,
+        color: Colors.light.textSecondary,
+        textAlign: 'center',
+        marginBottom: spacing.lg,
+        paddingHorizontal: spacing.md,
+        lineHeight: 20,
+    },
+    authButtons: {
+        flexDirection: 'row',
+        gap: spacing.md,
     },
 });
 

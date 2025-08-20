@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Platform, AppState } from 'react-native';
+import { Platform, AppState, View } from 'react-native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SimpleToastProvider, useSimpleToast } from '../src/context/SimpleToastContext';
-import { useColorScheme } from '../hooks/useColorScheme';
+import { ThemeProvider as AppThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+
 import { NotificationProvider } from '../components/NotificationProvider';
 
 import SimpleToast from '../components/SimpleToast';
@@ -16,7 +18,7 @@ import StatusBarWrapper from '../components/StatusBarWrapper';
 import { shouldEnableNotifications, logEnvironmentInfo } from '../utils/environment';
 
 // Custom screen transition configuration for Android
-const getScreenOptions = (colorScheme: string | null | undefined) => ({
+const getScreenOptions = (theme: string) => ({
   headerShown: false,
   header: () => null,
   gestureEnabled: true,
@@ -24,12 +26,31 @@ const getScreenOptions = (colorScheme: string | null | undefined) => ({
   animation: 'slide_from_right' as const,
   animationDuration: Platform.OS === 'android' ? 300 : 250,
   contentStyle: {
-    backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+    backgroundColor: theme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary,
   },
   // iOS-specific gesture handling
   fullScreenGestureEnabled: true,
   // Use card presentation for better Android compatibility
   presentation: 'card' as const,
+  // Prevent white flash during transitions
+  cardStyle: {
+    backgroundColor: theme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary,
+  },
+});
+
+// Helper function to get screen options with proper background
+const getScreenOptionsWithBackground = (theme: string, additionalOptions: any = {}) => ({
+  headerShown: false,
+  presentation: 'card',
+  gestureEnabled: true,
+  gestureDirection: 'horizontal',
+  contentStyle: {
+    backgroundColor: theme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary,
+  },
+  cardStyle: {
+    backgroundColor: theme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary,
+  },
+  ...additionalOptions,
 });
 
 // Conditionally initialize Firebase configuration
@@ -46,7 +67,7 @@ logEnvironmentInfo();
 function AppContent() {
   const { user, isLoading, isAuthenticating } = useAuth();
   const { toast, hideToast } = useSimpleToast();
-  const colorScheme = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
 
   // Notification handlers (only active when notifications are enabled)
@@ -186,143 +207,114 @@ function AppContent() {
   }, [user, isLoading, isAuthenticating, pathname]);
 
   if (isLoading) {
-    return null; // Show loading screen
+    return (
+      <View style={{
+        flex: 1,
+        backgroundColor: resolvedTheme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary
+      }}>
+        {/* Loading screen */}
+      </View>
+    );
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={resolvedTheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBarWrapper style="dark">
-        <Stack
-          screenOptions={getScreenOptions(colorScheme)}
-        >
-          {/* Main app routes - accessible to both authenticated and unauthenticated users */}
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen name="+not-found" />
-          <Stack.Screen
-            name="activity"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="admin"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="notifications"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="race-results"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="position-results"
-            options={({ route }) => ({
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-              // Dynamic animation based on navigation direction
-              animation: (route.params as any)?._direction === 'backward' ? 'slide_from_left' : 'slide_from_right',
-              animationDuration: 300,
-              // Fix for Android white screen issue
+        <View style={{
+          flex: 1,
+          backgroundColor: resolvedTheme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary
+        }}>
+          <Stack
+            screenOptions={{
+              ...getScreenOptions(resolvedTheme),
+              // Global background to prevent any white flashes
               contentStyle: {
-                backgroundColor: colorScheme === 'dark' ? '#0a0a0a' : '#f9fafb',
+                backgroundColor: resolvedTheme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary,
               },
-            })}
-          />
-          <Stack.Screen
-            name="member-picks"
-            options={{
-              headerShown: false,
+              // Smooth transitions
+              animation: 'slide_from_right',
+              animationDuration: Platform.OS === 'android' ? 300 : 250,
+              // Prevent white flash during transitions
               presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
             }}
-          />
-          <Stack.Screen
-            name="league"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="join-league"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="change-password"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="edit-profile"
-            options={{
-              headerShown: false,
-              presentation: 'card',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
+          >
+            {/* Main app routes - accessible to both authenticated and unauthenticated users */}
+            <Stack.Screen
+              name="(tabs)"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="+not-found"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="activity"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="admin"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="notifications"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="race-results"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="position-results"
+              options={({ route }) => getScreenOptionsWithBackground(resolvedTheme, {
+                // Dynamic animation based on navigation direction
+                animation: (route.params as any)?._direction === 'backward' ? 'slide_from_left' : 'slide_from_right',
+                animationDuration: 300,
+              })}
+            />
+            <Stack.Screen
+              name="member-picks"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="league"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="join-league"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="change-password"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="edit-profile"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="delete-account"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
+              name="forgot-password"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
 
-          {/* Auth screens - always accessible */}
-          <Stack.Screen
-            name="login"
-            options={{
-              headerShown: false,
-              header: () => null,
-              presentation: 'modal',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-          <Stack.Screen
-            name="signup"
-            options={{
-              headerShown: false,
-              header: () => null,
-              presentation: 'modal',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-            }}
-          />
-        </Stack>
+            {/* Auth screens - always accessible */}
+            <Stack.Screen
+              name="login"
+              options={getScreenOptionsWithBackground(resolvedTheme, {
+                presentation: 'modal',
+              })}
+            />
+            <Stack.Screen
+              name="signup"
+              options={getScreenOptionsWithBackground(resolvedTheme, {
+                presentation: 'modal',
+              })}
+            />
+          </Stack>
+        </View>
       </StatusBarWrapper>
 
       {/* Toast Component - rendered outside StatusBarWrapper to avoid layout warnings */}
@@ -359,30 +351,31 @@ export default function RootLayout() {
 
   if (!loaded || !providersReady) {
     // Async font loading only occurs in development.
-
     return null;
   }
 
 
   return (
-    <SafeAreaProvider style={{ backgroundColor: '#f9fafb' }}>
+    <SafeAreaProvider>
       <AuthProvider>
         <SimpleToastProvider>
-          {shouldEnableNotifications() ? (
-            <NotificationProvider
-              autoRegister={false}
-              onNotificationReceived={(notification) => {
-                // console.log('Notification received globally:', notification);
-              }}
-              onNotificationResponse={(response) => {
-                // console.log('Notification response globally:', response);
-              }}
-            >
+          <AppThemeProvider>
+            {shouldEnableNotifications() ? (
+              <NotificationProvider
+                autoRegister={false}
+                onNotificationReceived={(notification) => {
+                  // console.log('Notification received globally:', notification);
+                }}
+                onNotificationResponse={(response) => {
+                  // console.log('Notification response globally:', response);
+                }}
+              >
+                <RootLayoutNav />
+              </NotificationProvider>
+            ) : (
               <RootLayoutNav />
-            </NotificationProvider>
-          ) : (
-            <RootLayoutNav />
-          )}
+            )}
+          </AppThemeProvider>
         </SimpleToastProvider>
       </AuthProvider>
     </SafeAreaProvider>

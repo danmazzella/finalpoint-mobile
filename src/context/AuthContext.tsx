@@ -45,6 +45,8 @@ export const useAuth = () => {
                 updateProfile: async () => false,
                 forgotPassword: async () => ({ success: false, error: 'Context not available' }),
                 resetPassword: async () => ({ success: false, error: 'Context not available' }),
+                deleteAccount: async () => false,
+                registerPushToken: async () => false,
             };
         }
         return context;
@@ -66,6 +68,8 @@ export const useAuth = () => {
             updateProfile: async () => false,
             forgotPassword: async () => ({ success: false, error: 'Context not available' }),
             resetPassword: async () => ({ success: false, error: 'Context not available' }),
+            deleteAccount: async () => false,
+            registerPushToken: async () => false,
         };
     }
 };

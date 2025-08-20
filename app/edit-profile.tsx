@@ -13,15 +13,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
 
 const EditProfileScreen = () => {
     const { user, updateProfile } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const [name, setName] = useState(user?.name || '');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
 
     const handleUpdateProfile = async () => {
         if (!name.trim()) {
@@ -65,16 +74,85 @@ const EditProfileScreen = () => {
         }
     };
 
+    const styles = StyleSheet.create({
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+            minHeight: 64,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.sm,
+            paddingVertical: spacing.sm,
+        },
+        headerTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        placeholder: {
+            width: 40,
+        },
+        form: {
+            padding: spacing.lg,
+        },
+        inputGroup: {
+            marginBottom: spacing.lg,
+        },
+        label: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        input: {
+            fontSize: 16,
+            color: currentColors.textPrimary,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.md,
+            backgroundColor: currentColors.cardBackground,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            borderRadius: borderRadius.md,
+        },
+        hint: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        submitButton: {
+            backgroundColor: currentColors.primary,
+            paddingVertical: spacing.md,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+            marginTop: spacing.lg,
+        },
+        submitButtonDisabled: {
+            backgroundColor: currentColors.borderMedium,
+        },
+        submitButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+    });
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView}>
+        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+            <ScrollView style={universalStyles.scrollView}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Edit Profile</Text>
                     <View style={styles.placeholder} />
@@ -90,7 +168,7 @@ const EditProfileScreen = () => {
                             value={name}
                             onChangeText={setName}
                             placeholder="Enter your name"
-                            placeholderTextColor={Colors.light.textSecondary}
+                            placeholderTextColor={currentColors.textSecondary}
                             autoCapitalize="words"
                             autoCorrect={false}
                             maxLength={50}
@@ -108,7 +186,7 @@ const EditProfileScreen = () => {
                         disabled={!name.trim() || name.trim().length < 2 || isLoading}
                     >
                         {isLoading ? (
-                            <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                            <ActivityIndicator size="small" color={currentColors.textInverse} />
                         ) : (
                             <Text style={styles.submitButtonText}>Update Profile</Text>
                         )}
@@ -118,81 +196,5 @@ const EditProfileScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundSecondary, // White background
-    },
-    scrollView: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        minHeight: 64,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    placeholder: {
-        width: 40,
-    },
-    form: {
-        padding: spacing.lg,
-    },
-    inputGroup: {
-        marginBottom: spacing.lg,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    input: {
-        fontSize: 16,
-        color: Colors.light.textPrimary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.md,
-        backgroundColor: Colors.light.cardBackground,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
-    },
-    hint: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    submitButton: {
-        backgroundColor: Colors.light.primary,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-        marginTop: spacing.lg,
-    },
-    submitButtonDisabled: {
-        backgroundColor: Colors.light.gray400,
-    },
-    submitButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});
 
 export default EditProfileScreen;

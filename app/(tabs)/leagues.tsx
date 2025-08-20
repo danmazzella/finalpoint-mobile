@@ -17,13 +17,409 @@ import { leaguesAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
+import { useTheme } from '../../src/context/ThemeContext';
 import { router, useFocusEffect } from 'expo-router';
-import Colors from '../../constants/Colors';
-import { spacing, borderRadius } from '../../utils/styles';
+import { lightColors, darkColors } from '../../src/constants/Colors';
+import { createThemeStyles } from '../../src/styles/universalStyles';
 
 const LeaguesScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
+
+    // Create leagues-specific styles with current theme colors
+    const styles = StyleSheet.create({
+        scrollContent: {
+            paddingBottom: 120, // Account for tab bar height (iOS: 88+20, Android: 70+8+insets)
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingText: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginTop: 12,
+        },
+        header: {
+            padding: 16,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        title: {
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 4,
+        },
+        subtitle: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginBottom: 16,
+        },
+        headerButtons: {
+            flexDirection: 'row',
+            gap: 12,
+        },
+        primaryButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+            flex: 1,
+            alignItems: 'center',
+        },
+        primaryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        secondaryButton: {
+            backgroundColor: currentColors.cardBackground,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+            flex: 1,
+            alignItems: 'center',
+        },
+        secondaryButtonText: {
+            color: currentColors.textSecondary,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        section: {
+            padding: 16,
+        },
+        sectionTitle: {
+            fontSize: 20,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: 12,
+        },
+        sectionSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: 4,
+        },
+        sectionHeader: {
+            marginBottom: 12,
+        },
+        leaguesGrid: {
+            gap: 12,
+        },
+        leagueCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: 12,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        leagueCardHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        leagueName: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            flex: 1,
+            marginRight: 8,
+        },
+        visibilityBadge: {
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+        },
+        visibilityText: {
+            fontSize: 12,
+            fontWeight: '500',
+            color: currentColors.textInverse,
+        },
+        leagueStats: {
+            gap: 8,
+        },
+        statRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        statLabel: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        statValue: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: currentColors.textPrimary,
+        },
+        activityText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontStyle: 'italic',
+        },
+        positionsContainer: {
+            flexDirection: 'row',
+            gap: 4,
+        },
+        positionBadge: {
+            paddingHorizontal: 6,
+            paddingVertical: 2,
+            borderRadius: 8,
+            backgroundColor: currentColors.secondary,
+        },
+        positionBadgePicked: {
+            backgroundColor: currentColors.success,
+        },
+        positionBadgeUnpicked: {
+            backgroundColor: currentColors.secondary,
+        },
+        positionText: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: currentColors.textInverse,
+        },
+        positionTextPicked: {
+            color: currentColors.textInverse,
+        },
+        positionTextUnpicked: {
+            color: currentColors.textInverse,
+        },
+        joinButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 12,
+        },
+        joinButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 14,
+            fontWeight: '500',
+        },
+        emptyState: {
+            alignItems: 'center',
+            paddingVertical: 32,
+        },
+        emptyStateTitle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginTop: 16,
+            marginBottom: 8,
+        },
+        emptyStateSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 16,
+        },
+        emptyStateText: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 16,
+        },
+        createFirstButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+        },
+        createFirstButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        authButtons: {
+            flexDirection: 'row',
+            gap: 8,
+            marginTop: 16,
+        },
+        loginPrompt: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginBottom: 16,
+            textAlign: 'center',
+        },
+        errorContainer: {
+            backgroundColor: currentColors.errorLight,
+            borderColor: currentColors.error,
+            borderWidth: 1,
+            borderRadius: 8,
+            padding: 16,
+            margin: 16,
+            alignItems: 'center',
+        },
+        errorText: {
+            color: currentColors.error,
+            fontSize: 14,
+            textAlign: 'center',
+            marginBottom: 12,
+        },
+        retryButton: {
+            backgroundColor: currentColors.error,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        modalOverlay: {
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        modalContent: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: 16,
+            padding: 24,
+            width: '90%',
+            maxHeight: '80%',
+        },
+        modalTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 20,
+            textAlign: 'center',
+        },
+        inputContainer: {
+            marginBottom: 20,
+        },
+        inputLabel: {
+            fontSize: 16,
+            fontWeight: '500',
+            color: currentColors.textPrimary,
+            marginBottom: 8,
+        },
+        textInput: {
+            borderWidth: 1,
+            borderColor: currentColors.borderMedium,
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 16,
+            color: currentColors.textPrimary,
+            backgroundColor: currentColors.cardBackground,
+        },
+        visibilityOptions: {
+            flexDirection: 'row',
+            gap: 8,
+            marginBottom: 8,
+        },
+        visibilityOption: {
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            alignItems: 'center',
+        },
+        visibilityOptionSelected: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+        },
+        visibilityOptionText: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+        },
+        visibilityOptionTextSelected: {
+            color: currentColors.textInverse,
+        },
+        visibilityHelpText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontStyle: 'italic',
+        },
+        positionsGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 8,
+        },
+        positionButton: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            backgroundColor: currentColors.cardBackground,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        positionButtonSelected: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+        },
+        positionButtonText: {
+            fontSize: 12,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        positionButtonTextSelected: {
+            color: currentColors.textInverse,
+        },
+        positionsHelpText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontStyle: 'italic',
+        },
+        modalActions: {
+            flexDirection: 'row',
+            gap: 12,
+            marginTop: 20,
+        },
+        cancelButton: {
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            backgroundColor: currentColors.cardBackground,
+            alignItems: 'center',
+        },
+        cancelButtonText: {
+            color: currentColors.textSecondary,
+            fontSize: 14,
+            fontWeight: '500',
+        },
+        createButton: {
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            backgroundColor: currentColors.primary,
+            alignItems: 'center',
+        },
+        createButtonDisabled: {
+            opacity: 0.5,
+        },
+        createButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 14,
+            fontWeight: '500',
+        },
+    });
+
     const [myLeagues, setMyLeagues] = useState<League[]>([]);
     const [publicLeagues, setPublicLeagues] = useState<League[]>([]);
     const [loading, setLoading] = useState(false);
@@ -165,7 +561,7 @@ const LeaguesScreen = () => {
                         </Text>
                         <View style={[
                             styles.visibilityBadge,
-                            { backgroundColor: Colors.light.success }
+                            { backgroundColor: currentColors.success }
                         ]}>
                             <Text style={styles.visibilityText}>
                                 Public
@@ -200,8 +596,8 @@ const LeaguesScreen = () => {
                             <Text style={[
                                 styles.statValue,
                                 {
-                                    color: (league.lastTwoRaceWeeksActivity || 0) > 15 ? Colors.light.success :
-                                        (league.lastTwoRaceWeeksActivity || 0) > 8 ? Colors.light.warning : Colors.light.textSecondary
+                                    color: (league.lastTwoRaceWeeksActivity || 0) > 15 ? currentColors.success :
+                                        (league.lastTwoRaceWeeksActivity || 0) > 8 ? currentColors.warning : currentColors.textSecondary
                                 }
                             ]}>
                                 {(league.lastTwoRaceWeeksActivity || 0) > 15 ? 'Very Active' :
@@ -242,7 +638,7 @@ const LeaguesScreen = () => {
                         </Text>
                         <View style={[
                             styles.visibilityBadge,
-                            { backgroundColor: league.isPublic ? Colors.light.success : Colors.light.gray500 }
+                            { backgroundColor: league.isPublic ? currentColors.success : currentColors.secondary }
                         ]}>
                             <Text style={styles.visibilityText}>
                                 {league.isPublic ? 'Public' : 'Private'}
@@ -290,9 +686,9 @@ const LeaguesScreen = () => {
 
     if (authLoading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={universalStyles.container}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.light.buttonPrimary} />
+                    <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading...</Text>
                 </View>
             </SafeAreaView>
@@ -302,9 +698,9 @@ const LeaguesScreen = () => {
     // Show unauthenticated view for users who are not logged in
     if (!user) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={universalStyles.container}>
                 <ScrollView
-                    style={styles.scrollView}
+                    style={universalStyles.scrollView}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
                     refreshControl={
@@ -372,9 +768,9 @@ const LeaguesScreen = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={universalStyles.container}>
             <ScrollView
-                style={styles.scrollView}
+                style={universalStyles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={
@@ -475,7 +871,7 @@ const LeaguesScreen = () => {
                                 value={newLeagueName}
                                 onChangeText={setNewLeagueName}
                                 placeholder="Enter league name"
-                                placeholderTextColor={Colors.light.textSecondary}
+                                placeholderTextColor={currentColors.textSecondary}
                             />
                         </View>
 
@@ -572,398 +968,5 @@ const LeaguesScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingBottom: 120, // Account for tab bar height (iOS: 88+20, Android: 70+8+insets)
-    },
-    header: {
-        padding: spacing.lg,
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.lg,
-    },
-    headerButtons: {
-        flexDirection: 'row',
-        gap: spacing.md,
-    },
-    primaryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        flex: 1,
-        alignItems: 'center',
-    },
-    primaryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    secondaryButton: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        flex: 1,
-        alignItems: 'center',
-    },
-    secondaryButtonText: {
-        color: Colors.light.textSecondary,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    section: {
-        padding: spacing.lg,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.md,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    sectionHeader: {
-        marginBottom: spacing.md,
-    },
-    leaguesGrid: {
-        gap: spacing.md,
-    },
-    leagueCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    leagueCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    leagueName: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        flex: 1,
-        marginRight: spacing.sm,
-    },
-    visibilityBadge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-    },
-    visibilityText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: Colors.light.textInverse,
-    },
-    memberCount: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    joinButton: {
-        backgroundColor: Colors.light.buttonSuccess,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignSelf: 'flex-start',
-    },
-    joinButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: spacing.xl,
-    },
-    emptyStateText: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.md,
-    },
-    createFirstButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-    },
-    createFirstButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    errorContainer: {
-        alignItems: 'center',
-        padding: spacing.lg,
-    },
-    errorText: {
-        fontSize: 16,
-        color: Colors.light.error,
-        textAlign: 'center',
-        marginBottom: spacing.md,
-    },
-    retryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-    },
-    retryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: spacing.md,
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        width: '90%',
-        maxHeight: '80%',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.lg,
-        textAlign: 'center',
-    },
-    inputContainer: {
-        marginBottom: spacing.lg,
-    },
-    inputLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    textInput: {
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        fontSize: 16,
-        color: Colors.light.textPrimary,
-    },
-    visibilityOptions: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing.sm,
-    },
-    visibilityOption: {
-        flex: 1,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        alignItems: 'center',
-    },
-    visibilityOptionSelected: {
-        backgroundColor: Colors.light.buttonPrimary,
-        borderColor: Colors.light.buttonPrimary,
-    },
-    visibilityOptionText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textSecondary,
-    },
-    visibilityOptionTextSelected: {
-        color: Colors.light.textInverse,
-    },
-    visibilityHelpText: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        fontStyle: 'italic',
-    },
-    positionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.xs,
-        marginBottom: spacing.sm,
-    },
-    positionButton: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        backgroundColor: Colors.light.backgroundSecondary,
-        minWidth: 50,
-        alignItems: 'center',
-    },
-    positionButtonSelected: {
-        backgroundColor: Colors.light.buttonPrimary,
-        borderColor: Colors.light.buttonPrimary,
-    },
-    positionButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textSecondary,
-    },
-    positionButtonTextSelected: {
-        color: Colors.light.textInverse,
-    },
-    positionsHelpText: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        fontStyle: 'italic',
-    },
-    modalActions: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginTop: spacing.lg,
-    },
-    cancelButton: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    cancelButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textSecondary,
-    },
-    createButton: {
-        flex: 1,
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    createButtonDisabled: {
-        backgroundColor: Colors.light.gray500,
-    },
-    createButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textInverse,
-    },
-    leagueStats: {
-        marginTop: spacing.sm,
-        marginBottom: spacing.sm,
-    },
-    statRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    statLabel: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    statValue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-    },
-    positionsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.xs,
-    },
-    positionBadge: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    positionText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: Colors.light.textSecondary,
-    },
-    positionTextPicked: {
-        color: Colors.light.success,
-    },
-    positionTextUnpicked: {
-        color: Colors.light.textSecondary,
-    },
-    positionBadgePicked: {
-        backgroundColor: '#e8f5e8', // Softer green background
-        borderColor: '#c3e6c3', // Softer green border
-    },
-    positionBadgeUnpicked: {
-        backgroundColor: '#ffeaea', // Softer red background
-        borderColor: '#f5c6c6', // Softer red border
-    },
-    loginPrompt: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginRight: spacing.md,
-        alignSelf: 'center',
-    },
-    emptyStateTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginTop: spacing.md,
-        marginBottom: spacing.sm,
-        textAlign: 'center',
-    },
-    emptyStateSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
-        paddingHorizontal: spacing.md,
-        lineHeight: 20,
-    },
-    authButtons: {
-        flexDirection: 'row',
-        gap: spacing.md,
-    },
-});
 
 export default LeaguesScreen;

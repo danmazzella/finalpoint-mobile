@@ -13,7 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { picksAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
 
@@ -49,15 +51,389 @@ const UnscoredPositionPicksScreen = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
     const position = Number(params.position);
     const leagueName = params.leagueName as string;
 
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
+
     const [results, setResults] = useState<PositionResultV2 | null>(null);
     const [availablePositions, setAvailablePositions] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        errorCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.xl,
+            alignItems: 'center',
+            width: '100%',
+            ...shadows.md,
+        },
+        errorTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
+        },
+        errorMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.lg,
+        },
+        retryButton: {
+            backgroundColor: currentColors.buttonPrimary,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            borderRadius: borderRadius.md,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            minHeight: 64,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.sm,
+            paddingVertical: spacing.sm,
+            marginRight: spacing.md,
+        },
+        headerContent: {
+            flex: 1,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        description: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+        },
+        positionContext: {
+            flexDirection: 'column',
+            alignItems: 'center',
+            flex: 1,
+            paddingHorizontal: spacing.sm,
+        },
+        positionBadge: {
+            backgroundColor: currentColors.primary,
+            borderRadius: borderRadius.full,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            marginBottom: spacing.xs,
+        },
+        positionBadgeText: {
+            fontSize: 14,
+            fontWeight: '700',
+            color: currentColors.textInverse,
+        },
+        positionLabel: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+            textAlign: 'center',
+        },
+        positionSection: {
+            paddingHorizontal: spacing.lg,
+            paddingBottom: spacing.md,
+        },
+        navigationContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: spacing.sm,
+        },
+        navigationButton: {
+            backgroundColor: currentColors.backgroundSecondary,
+            padding: spacing.sm,
+            borderRadius: borderRadius.full,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            ...shadows.sm,
+        },
+        navigationButtonDisabled: {
+            backgroundColor: currentColors.borderLight,
+            borderColor: currentColors.borderLight,
+        },
+        section: {
+            backgroundColor: currentColors.cardBackground,
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+            ...shadows.sm,
+        },
+        noticeSection: {
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+        },
+        statusCard: {
+            backgroundColor: currentColors.warningLight,
+            borderRadius: borderRadius.md,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            borderLeftWidth: 3,
+            borderLeftColor: currentColors.warning,
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        statusTitle: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginLeft: spacing.sm,
+        },
+        sectionHeader: {
+            marginBottom: spacing.md,
+        },
+        sectionTitleContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.sm,
+        },
+        summaryContainer: {
+            flexDirection: 'row',
+            paddingHorizontal: spacing.lg,
+            marginBottom: spacing.md,
+            gap: spacing.sm,
+        },
+        summaryCard: {
+            flex: 1,
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        summaryLabel: {
+            fontSize: 12,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+            textTransform: 'uppercase',
+            letterSpacing: 0.3,
+            marginBottom: spacing.xs,
+            textAlign: 'center',
+        },
+        summaryValue: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        sectionTitle: {
+            fontSize: 19,
+            fontWeight: '700',
+            color: currentColors.textPrimary,
+            marginLeft: spacing.sm,
+        },
+        sectionSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.md,
+        },
+        picksGrid: {
+            gap: spacing.sm,
+        },
+        pickCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            ...shadows.sm,
+            ...Platform.select({
+                ios: {
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                },
+                android: {
+                    elevation: 2,
+                },
+            }),
+        },
+        pickCardHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.sm,
+        },
+        avatarContainer: {
+            marginRight: spacing.md,
+        },
+        pickUser: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: currentColors.textPrimary,
+            flex: 1,
+        },
+        pickStatusContainer: {
+            marginLeft: spacing.md,
+        },
+        pickDriverSection: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        pickDriverIcon: {
+            width: 24,
+            height: 24,
+            borderRadius: 4,
+            backgroundColor: currentColors.primary + '20',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: spacing.md,
+        },
+        pickDriverInfo: {
+            flex: 1,
+        },
+        pickDriverName: {
+            fontSize: 15,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        pickDriverTeam: {
+            fontSize: 13,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+        },
+        awaitingBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: currentColors.warning + '15',
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.xs,
+            borderRadius: borderRadius.full,
+            borderWidth: 1,
+            borderColor: currentColors.warning + '30',
+        },
+        pickStatusText: {
+            fontSize: 10,
+            fontWeight: '700',
+            color: currentColors.warning,
+            marginLeft: spacing.xs,
+            textTransform: 'uppercase',
+            letterSpacing: 0.3,
+        },
+        popularPicksGrid: {
+            gap: spacing.sm,
+        },
+        popularPickCard: {
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.lg,
+            padding: spacing.md,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            ...shadows.sm,
+        },
+        popularPickContent: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+        },
+        popularPickRank: {
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: currentColors.primary,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: spacing.md,
+            flexShrink: 0,
+        },
+        popularPickRankText: {
+            fontSize: 12,
+            fontWeight: '800',
+            color: currentColors.textInverse,
+        },
+        popularPickInfo: {
+            flex: 1,
+        },
+        popularPickDriver: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        popularPickStatsRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        popularPickCount: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+        },
+        popularPickPercentage: {
+            fontSize: 12,
+            color: currentColors.primary,
+            fontWeight: '700',
+        },
+        popularPickBar: {
+            width: '100%',
+            height: 4,
+            backgroundColor: currentColors.borderLight,
+            borderRadius: 2,
+            overflow: 'hidden',
+            marginTop: spacing.xs,
+        },
+        popularPickBarFill: {
+            height: '100%',
+            backgroundColor: currentColors.primary,
+            borderRadius: 2,
+        },
+        bottomSpacing: {
+            height: spacing.xl,
+        },
+    });
 
     const loadResults = useCallback(async () => {
         try {
@@ -186,7 +562,7 @@ const UnscoredPositionPicksScreen = () => {
     if (loading) {
         return (
             <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color={Colors.light.primary} />
+                <ActivityIndicator size="large" color={currentColors.primary} />
             </SafeAreaView>
         );
     }
@@ -195,7 +571,7 @@ const UnscoredPositionPicksScreen = () => {
         return (
             <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
                 <View style={styles.errorCard}>
-                    <Ionicons name="alert-circle" size={48} color={Colors.light.error} />
+                    <Ionicons name="alert-circle" size={48} color={currentColors.error} />
                     <Text style={styles.errorTitle}>Error Loading Picks</Text>
                     <Text style={styles.errorMessage}>{error || 'No picks found'}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
@@ -215,7 +591,7 @@ const UnscoredPositionPicksScreen = () => {
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
                         <Text style={styles.title}>Picks By Position</Text>
@@ -241,7 +617,7 @@ const UnscoredPositionPicksScreen = () => {
                             <Ionicons
                                 name="chevron-back"
                                 size={18}
-                                color={canNavigatePrevious() ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={canNavigatePrevious() ? currentColors.textPrimary : currentColors.textSecondary}
                             />
                         </TouchableOpacity>
 
@@ -265,7 +641,7 @@ const UnscoredPositionPicksScreen = () => {
                             <Ionicons
                                 name="chevron-forward"
                                 size={18}
-                                color={canNavigateNext() ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={canNavigateNext() ? currentColors.textPrimary : currentColors.textSecondary}
                             />
                         </TouchableOpacity>
                     </View>
@@ -274,7 +650,7 @@ const UnscoredPositionPicksScreen = () => {
                 {/* Race Not Scored Notice */}
                 <View style={styles.noticeSection}>
                     <View style={styles.statusCard}>
-                        <Ionicons name="time-outline" size={16} color={Colors.light.warning} />
+                        <Ionicons name="time-outline" size={16} color={currentColors.warning} />
                         <Text style={styles.statusTitle}>Race not scored yet</Text>
                     </View>
                 </View>
@@ -295,7 +671,7 @@ const UnscoredPositionPicksScreen = () => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionTitleContainer}>
-                            <Ionicons name="list" size={20} color={Colors.light.primary} />
+                            <Ionicons name="list" size={20} color={currentColors.primary} />
                             <Text style={styles.sectionTitle}>All Picks</Text>
                         </View>
                         <Text style={styles.sectionSubtitle}>
@@ -316,7 +692,7 @@ const UnscoredPositionPicksScreen = () => {
                                     <Text style={styles.pickUser}>{pick.userName}</Text>
                                     <View style={styles.pickStatusContainer}>
                                         <View style={styles.awaitingBadge}>
-                                            <Ionicons name="time-outline" size={10} color={Colors.light.warning} />
+                                            <Ionicons name="time-outline" size={10} color={currentColors.warning} />
                                             <Text style={styles.pickStatusText}>Pending</Text>
                                         </View>
                                     </View>
@@ -324,7 +700,7 @@ const UnscoredPositionPicksScreen = () => {
 
                                 <View style={styles.pickDriverSection}>
                                     <View style={styles.pickDriverIcon}>
-                                        <Ionicons name="flash" size={16} color={Colors.light.primary} />
+                                        <Ionicons name="flash" size={16} color={currentColors.primary} />
                                     </View>
                                     <View style={styles.pickDriverInfo}>
                                         <Text style={styles.pickDriverName}>
@@ -344,7 +720,7 @@ const UnscoredPositionPicksScreen = () => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionTitleContainer}>
-                            <Ionicons name="trending-up" size={20} color={Colors.light.primary} />
+                            <Ionicons name="trending-up" size={20} color={currentColors.primary} />
                             <Text style={styles.sectionTitle}>Popular Picks</Text>
                         </View>
                         <Text style={styles.sectionSubtitle}>
@@ -389,372 +765,5 @@ const UnscoredPositionPicksScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.lg,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    errorCard: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.xl,
-        alignItems: 'center',
-        width: '100%',
-        ...shadows.md,
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginTop: spacing.md,
-        marginBottom: spacing.sm,
-    },
-    errorMessage: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
-    },
-    retryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-    },
-    retryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.md,
-    },
-    headerContent: {
-        flex: 1,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    description: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-    },
-    positionContext: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        flex: 1,
-        paddingHorizontal: spacing.sm,
-    },
-    positionBadge: {
-        backgroundColor: Colors.light.primary,
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        marginBottom: spacing.xs,
-    },
-    positionBadgeText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: Colors.light.textInverse,
-    },
-    positionLabel: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    positionSection: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.md,
-    },
-    navigationContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.sm,
-    },
-    navigationButton: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.sm,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...shadows.sm,
-    },
-    navigationButtonDisabled: {
-        backgroundColor: Colors.light.borderLight,
-        borderColor: Colors.light.borderLight,
-    },
-    section: {
-        backgroundColor: Colors.light.cardBackground,
-        marginHorizontal: spacing.lg,
-        marginBottom: spacing.lg,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        ...shadows.sm,
-    },
-    noticeSection: {
-        marginHorizontal: spacing.lg,
-        marginBottom: spacing.md,
-    },
-    statusCard: {
-        backgroundColor: Colors.light.warningLight,
-        borderRadius: borderRadius.md,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderLeftWidth: 3,
-        borderLeftColor: Colors.light.warning,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    statusTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginLeft: spacing.sm,
-    },
-    sectionHeader: {
-        marginBottom: spacing.md,
-    },
-    sectionTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    summaryContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
-        gap: spacing.sm,
-    },
-    summaryCard: {
-        flex: 1,
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    summaryLabel: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.3,
-        marginBottom: spacing.xs,
-        textAlign: 'center',
-    },
-    summaryValue: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-    },
-    sectionTitle: {
-        fontSize: 19,
-        fontWeight: '700',
-        color: Colors.light.textPrimary,
-        marginLeft: spacing.sm,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.md,
-    },
-    picksGrid: {
-        gap: spacing.sm,
-    },
-    pickCard: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        ...shadows.sm,
-        ...Platform.select({
-            ios: {
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
-    },
-    pickCardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    avatarContainer: {
-        marginRight: spacing.md,
-    },
-    pickUser: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: Colors.light.textPrimary,
-        flex: 1,
-    },
-    pickStatusContainer: {
-        marginLeft: spacing.md,
-    },
-    pickDriverSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    pickDriverIcon: {
-        width: 24,
-        height: 24,
-        borderRadius: 4,
-        backgroundColor: Colors.light.primaryLight,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: spacing.md,
-    },
-    pickDriverInfo: {
-        flex: 1,
-    },
-    pickDriverName: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    pickDriverTeam: {
-        fontSize: 13,
-        color: Colors.light.textSecondary,
-        fontWeight: '500',
-    },
-    awaitingBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.light.warning + '15',
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: Colors.light.warning + '30',
-    },
-    pickStatusText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: Colors.light.warning,
-        marginLeft: spacing.xs,
-        textTransform: 'uppercase',
-        letterSpacing: 0.3,
-    },
-    popularPicksGrid: {
-        gap: spacing.sm,
-    },
-    popularPickCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        ...shadows.sm,
-    },
-    popularPickContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    popularPickRank: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: Colors.light.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: spacing.md,
-        flexShrink: 0,
-    },
-    popularPickRankText: {
-        fontSize: 12,
-        fontWeight: '800',
-        color: Colors.light.textInverse,
-    },
-    popularPickInfo: {
-        flex: 1,
-    },
-    popularPickDriver: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    popularPickStatsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    popularPickCount: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        fontWeight: '500',
-    },
-    popularPickPercentage: {
-        fontSize: 12,
-        color: Colors.light.primary,
-        fontWeight: '700',
-    },
-    popularPickBar: {
-        width: '100%',
-        height: 4,
-        backgroundColor: Colors.light.gray200,
-        borderRadius: 2,
-        overflow: 'hidden',
-        marginTop: spacing.xs,
-    },
-    popularPickBarFill: {
-        height: '100%',
-        backgroundColor: Colors.light.primary,
-        borderRadius: 2,
-    },
-    bottomSpacing: {
-        height: spacing.xl,
-    },
-});
 
 export default UnscoredPositionPicksScreen;

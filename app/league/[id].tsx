@@ -15,7 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { leaguesAPI, picksAPI, activityAPI } from '../../src/services/apiService';
 import { League, LeagueMember, LeagueStanding, LeagueStats, Activity } from '../../src/types';
 import { router, useLocalSearchParams } from 'expo-router';
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightColors, darkColors } from '../../src/constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -25,8 +26,614 @@ const LeagueDetailScreen = () => {
     const leagueId = Number(id);
     const { showToast } = useSimpleToast();
     const { user } = useAuth();
+    const { resolvedTheme } = useTheme();
 
+    // Get current theme colors
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
+    // Create theme-aware styles
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        errorCard: {
+            backgroundColor: currentColors.cardBackground,
+            padding: 20,
+            borderRadius: borderRadius.lg,
+            alignItems: 'center',
+            ...shadows.sm,
+        },
+        errorTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginTop: 16,
+            marginBottom: 8,
+        },
+        errorMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 20,
+        },
+        retryButton: {
+            backgroundColor: currentColors.buttonPrimary,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: borderRadius.md,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        errorText: {
+            fontSize: 18,
+            color: currentColors.textPrimary,
+            textAlign: 'center',
+            marginTop: 50,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        header: {
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            marginBottom: spacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            minHeight: 64,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.sm,
+            paddingVertical: spacing.sm,
+            marginRight: spacing.sm,
+        },
+        headerContent: {
+            flex: 1,
+        },
+        leagueName: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        leagueSubtitle: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+        },
+        section: {
+            backgroundColor: currentColors.cardBackground,
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+            ...shadows.md,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.md,
+        },
+        actionButtons: {
+            gap: spacing.md,
+        },
+        primaryButton: {
+            backgroundColor: currentColors.buttonPrimary,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.sm,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+        },
+        primaryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        secondaryButton: {
+            backgroundColor: currentColors.cardBackground,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.sm,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+        },
+        secondaryButtonText: {
+            color: currentColors.textSecondary,
+            fontSize: 16,
+            fontWeight: '500',
+        },
+        shareButton: {
+            backgroundColor: '#f0f0f0',
+            padding: 15,
+            borderRadius: 8,
+            alignItems: 'center',
+        },
+        shareButtonText: {
+            color: '#333',
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        statsContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: spacing.sm,
+        },
+        statCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+            minWidth: '48%',
+            ...shadows.sm,
+        },
+        statLabel: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.xs,
+        },
+        statValue: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            textAlign: 'center',
+        },
+        infoContainer: {
+            gap: spacing.sm,
+        },
+        infoRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: spacing.sm,
+        },
+        infoLabel: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        infoValue: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: currentColors.textPrimary,
+        },
+        memberCard: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 8,
+            marginBottom: 10,
+        },
+        memberInfo: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+        },
+        memberAvatar: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: '#e91e63',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+        },
+        memberInitial: {
+            color: 'white',
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        memberDetails: {
+            flex: 1,
+        },
+        memberName: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#333',
+        },
+        memberRole: {
+            fontSize: 12,
+            color: '#666',
+            marginTop: 2,
+        },
+        memberDate: {
+            fontSize: 12,
+            color: '#999',
+        },
+        standingCard: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: 15,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 8,
+            marginBottom: 10,
+        },
+        standingInfo: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+        },
+        standingPosition: {
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+        },
+        firstPlace: {
+            backgroundColor: '#FFD700',
+        },
+        secondPlace: {
+            backgroundColor: '#C0C0C0',
+        },
+        thirdPlace: {
+            backgroundColor: '#CD7F32',
+        },
+        otherPlace: {
+            backgroundColor: '#e0e0e0',
+        },
+        standingPositionText: {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: '#333',
+        },
+        standingDetails: {
+            flex: 1,
+        },
+        standingName: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#333',
+        },
+        standingStats: {
+            fontSize: 12,
+            color: '#666',
+            marginTop: 2,
+        },
+        standingPoints: {
+            alignItems: 'flex-end',
+        },
+        standingPointsText: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#333',
+        },
+        standingAccuracy: {
+            fontSize: 12,
+            color: '#666',
+            marginTop: 2,
+        },
+        emptyText: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            fontStyle: 'italic',
+        },
+        sectionHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+        },
+        headerActions: {
+            flexDirection: 'row',
+            gap: spacing.sm,
+        },
+        headerButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundTertiary,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.xs,
+            borderRadius: borderRadius.md,
+        },
+        headerButtonText: {
+            marginLeft: spacing.xs,
+            fontSize: 12,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+        },
+        statusBadge: {
+            backgroundColor: currentColors.successLight,
+            borderRadius: borderRadius.sm,
+            paddingVertical: spacing.xs,
+            paddingHorizontal: spacing.sm,
+        },
+        statusText: {
+            color: currentColors.success,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        codeBadge: {
+            backgroundColor: currentColors.backgroundTertiary,
+            borderRadius: borderRadius.sm,
+            paddingVertical: spacing.xs,
+            paddingHorizontal: spacing.sm,
+        },
+        codeText: {
+            color: currentColors.textSecondary,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        viewAllLink: {
+            color: currentColors.buttonPrimary,
+            fontSize: 14,
+            fontWeight: '500',
+        },
+        activityContainer: {
+            paddingVertical: spacing.md,
+            paddingRight: spacing.md,
+        },
+        activityCount: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.sm,
+        },
+        activityItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: spacing.xs,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        activityContent: {
+            flex: 1,
+            marginLeft: spacing.md,
+        },
+        activityUser: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        activityMessage: {
+            fontSize: 13,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        activityDate: {
+            fontSize: 12,
+            color: currentColors.textTertiary,
+            marginTop: spacing.xs,
+        },
+        bottomSpacing: {
+            height: 100, // Account for fixed bottom navigation
+        },
+        shareIconButton: {
+            padding: spacing.xs,
+        },
+        emptyActivityText: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            fontStyle: 'italic',
+        },
+        settingsButton: {
+            paddingLeft: spacing.sm,
+        },
+        modalOverlay: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+        },
+        settingsModal: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+            width: '90%',
+            maxWidth: 400,
+            maxHeight: '90%',
+            minHeight: 200,
+            ...shadows.lg,
+        },
+        modalHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+        },
+        modalTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        closeButton: {
+            padding: spacing.xs,
+        },
+        modalContent: {
+            minHeight: 150,
+        },
+        modalContentContainer: {
+            paddingBottom: spacing.lg, // Add some padding at the bottom for the close button
+            minHeight: 120,
+        },
+        settingSection: {
+            marginBottom: spacing.md,
+        },
+        settingLabel: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        visibilityOptions: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            backgroundColor: currentColors.backgroundTertiary,
+            borderRadius: borderRadius.md,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.sm,
+            marginBottom: spacing.sm,
+            marginTop: spacing.xs,
+        },
+        visibilityOption: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            borderRadius: borderRadius.md,
+            minWidth: 100,
+            justifyContent: 'center',
+        },
+        visibilityOptionSelected: {
+            backgroundColor: currentColors.buttonPrimary,
+        },
+        visibilityOptionText: {
+            marginLeft: spacing.sm,
+            fontSize: 14,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+        },
+        visibilityOptionTextSelected: {
+            color: currentColors.textInverse,
+        },
+        settingDescription: {
+            fontSize: 13,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        updatingIndicator: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: spacing.md,
+        },
+        updatingText: {
+            marginLeft: spacing.sm,
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        textInput: {
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.md,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            fontSize: 16,
+            color: currentColors.textPrimary,
+        },
+        disabledButton: {
+            opacity: 0.7,
+        },
+        dangerLabel: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.error,
+            marginBottom: spacing.xs,
+        },
+        dangerButton: {
+            backgroundColor: currentColors.errorLight,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.sm,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+        },
+        dangerButtonText: {
+            color: currentColors.error,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        confirmationModal: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+            width: '90%',
+            maxWidth: 400,
+            alignItems: 'center',
+            ...shadows.lg,
+        },
+        confirmationIcon: {
+            marginBottom: spacing.md,
+        },
+        confirmationTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        confirmationMessage: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.md,
+        },
+        confirmationButtons: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            width: '100%',
+        },
+
+        leaveButtonContainer: {
+            marginTop: spacing.md,
+        },
+        visibilityDescriptionContainer: {
+            marginTop: spacing.xs,
+        },
+        loadingText: {
+            marginTop: spacing.sm,
+            color: currentColors.textSecondary,
+        },
+        unauthenticatedContent: {
+            alignItems: 'center',
+            paddingVertical: spacing.lg,
+        },
+        unauthenticatedText: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.md,
+        },
+        guestBadge: {
+            backgroundColor: currentColors.warningLight,
+            borderRadius: borderRadius.sm,
+            paddingVertical: spacing.xs,
+            paddingHorizontal: spacing.sm,
+        },
+        guestBadgeText: {
+            color: currentColors.warning,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        sectionSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.md,
+        },
+    });
 
     const [league, setLeague] = useState<League | null>(null);
     const [members, setMembers] = useState<LeagueMember[]>([]);
@@ -54,7 +661,7 @@ const LeagueDetailScreen = () => {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.errorCard}>
-                    <Ionicons name="alert-circle" size={48} color={Colors.light.error} />
+                    <Ionicons name="alert-circle" size={48} color={currentColors.error} />
                     <Text style={styles.errorTitle}>Invalid League</Text>
                     <Text style={styles.errorMessage}>The league ID is invalid. Please try again.</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
@@ -249,7 +856,7 @@ const LeagueDetailScreen = () => {
     };
 
     const navigateToPicks = () => {
-        router.push(`/(tabs)/picks?leagueId=${leagueId}`);
+        router.replace(`/(tabs)/picks?leagueId=${leagueId}`);
     };
 
     const getActivityIcon = (activityType: string) => {
@@ -312,7 +919,7 @@ const LeagueDetailScreen = () => {
     if (loading) {
         return (
             <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color={Colors.light.primary} />
+                <ActivityIndicator size="large" color={currentColors.primary} />
             </SafeAreaView>
         );
     }
@@ -321,7 +928,7 @@ const LeagueDetailScreen = () => {
         return (
             <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
                 <View style={styles.errorCard}>
-                    <Ionicons name="cloud-offline" size={48} color={Colors.light.error} />
+                    <Ionicons name="cloud-offline" size={48} color={currentColors.error} />
                     <Text style={styles.errorTitle}>Connection Error</Text>
                     <Text style={styles.errorMessage}>{error}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
@@ -349,7 +956,7 @@ const LeagueDetailScreen = () => {
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
                         <Text style={styles.leagueName}>{league.name}</Text>
@@ -360,7 +967,7 @@ const LeagueDetailScreen = () => {
                             setShowSettings(true);
                         }}
                     >
-                        <Ionicons name="settings-outline" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="settings-outline" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                 </View>
 
@@ -407,7 +1014,7 @@ const LeagueDetailScreen = () => {
                         <View style={styles.actionButtons}>
                             <TouchableOpacity
                                 style={styles.primaryButton}
-                                onPress={() => router.push(`/(tabs)/picks?leagueId=${leagueId}`)}
+                                onPress={() => router.replace(`/(tabs)/picks?leagueId=${leagueId}`)}
                             >
                                 <Text style={styles.primaryButtonText}>Make Picks</Text>
                             </TouchableOpacity>
@@ -433,7 +1040,7 @@ const LeagueDetailScreen = () => {
                     <View style={styles.infoContainer}>
                         {loadingStats || !leagueStats ? (
                             <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="small" color={Colors.light.primary} />
+                                <ActivityIndicator size="small" color={currentColors.primary} />
                                 <Text style={styles.loadingText}>Loading stats...</Text>
                             </View>
                         ) : (
@@ -465,7 +1072,7 @@ const LeagueDetailScreen = () => {
                         <Text style={styles.sectionTitle}>League Information</Text>
                         {user && (
                             <TouchableOpacity style={styles.shareIconButton} onPress={shareLeague}>
-                                <Ionicons name="share-outline" size={20} color={Colors.light.textSecondary} />
+                                <Ionicons name="share-outline" size={20} color={currentColors.textSecondary} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -547,7 +1154,7 @@ const LeagueDetailScreen = () => {
                                         <Ionicons
                                             name={getActivityIcon(activity.activityType) as any}
                                             size={20}
-                                            color={Colors.light.primary}
+                                            color={currentColors.primary}
                                         />
                                         <View style={styles.activityContent}>
                                             <Text style={styles.activityUser}>
@@ -618,7 +1225,7 @@ const LeagueDetailScreen = () => {
                                     setEditingName('');
                                 }}
                             >
-                                <Ionicons name="close" size={24} color={Colors.light.textSecondary} />
+                                <Ionicons name="close" size={24} color={currentColors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
@@ -637,7 +1244,7 @@ const LeagueDetailScreen = () => {
                                             value={editingName || league.name}
                                             onChangeText={setEditingName}
                                             placeholder="Enter league name"
-                                            placeholderTextColor={Colors.light.textTertiary}
+                                            placeholderTextColor={currentColors.textTertiary}
                                         />
                                         <TouchableOpacity
                                             style={[
@@ -668,7 +1275,7 @@ const LeagueDetailScreen = () => {
                                                 <Ionicons
                                                     name="lock-closed"
                                                     size={20}
-                                                    color={!league.isPublic ? Colors.light.textInverse : Colors.light.textSecondary}
+                                                    color={!league.isPublic ? currentColors.textInverse : currentColors.textSecondary}
                                                 />
                                                 <Text style={[
                                                     styles.visibilityOptionText,
@@ -688,7 +1295,7 @@ const LeagueDetailScreen = () => {
                                                 <Ionicons
                                                     name="globe"
                                                     size={20}
-                                                    color={league.isPublic ? Colors.light.textInverse : Colors.light.textSecondary}
+                                                    color={league.isPublic ? currentColors.textInverse : currentColors.textSecondary}
                                                 />
                                                 <Text style={[
                                                     styles.visibilityOptionText,
@@ -764,7 +1371,7 @@ const LeagueDetailScreen = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.confirmationModal}>
                         <View style={styles.confirmationIcon}>
-                            <Ionicons name="warning" size={48} color={Colors.light.warning} />
+                            <Ionicons name="warning" size={48} color={currentColors.warning} />
                         </View>
                         <Text style={styles.confirmationTitle}>Delete League</Text>
                         <Text style={styles.confirmationMessage}>
@@ -796,7 +1403,7 @@ const LeagueDetailScreen = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.confirmationModal}>
                         <View style={styles.confirmationIcon}>
-                            <Ionicons name="log-out" size={48} color={Colors.light.warning} />
+                            <Ionicons name="log-out" size={48} color={currentColors.warning} />
                         </View>
                         <Text style={styles.confirmationTitle}>Leave League</Text>
                         <Text style={styles.confirmationMessage}>
@@ -825,608 +1432,5 @@ const LeagueDetailScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    errorCard: {
-        backgroundColor: Colors.light.cardBackground,
-        padding: 20,
-        borderRadius: borderRadius.lg,
-        alignItems: 'center',
-        ...shadows.sm,
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    errorMessage: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    retryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: borderRadius.md,
-    },
-    retryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    errorText: {
-        fontSize: 18,
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-        marginTop: 50,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    header: {
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        marginBottom: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.sm,
-    },
-    headerContent: {
-        flex: 1,
-    },
-    leagueName: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    leagueSubtitle: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-    },
-    section: {
-        backgroundColor: Colors.light.cardBackground,
-        marginHorizontal: spacing.lg,
-        marginBottom: spacing.lg,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        ...shadows.md,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.md,
-    },
-    actionButtons: {
-        gap: spacing.md,
-    },
-    primaryButton: {
-        backgroundColor: Colors.light.buttonPrimary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    primaryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    secondaryButton: {
-        backgroundColor: Colors.light.cardBackground,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    secondaryButtonText: {
-        color: Colors.light.textSecondary,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    shareButton: {
-        backgroundColor: '#f0f0f0',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    shareButtonText: {
-        color: '#333',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-    },
-    statCard: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        minWidth: '48%',
-        ...shadows.sm,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.xs,
-    },
-    statValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-    },
-    infoContainer: {
-        gap: spacing.sm,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: spacing.sm,
-    },
-    infoLabel: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    infoValue: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.light.textPrimary,
-    },
-    memberCard: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 15,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    memberInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    memberAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#e91e63',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    memberInitial: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    memberDetails: {
-        flex: 1,
-    },
-    memberName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    memberRole: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-    memberDate: {
-        fontSize: 12,
-        color: '#999',
-    },
-    standingCard: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 15,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    standingInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    standingPosition: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    firstPlace: {
-        backgroundColor: '#FFD700',
-    },
-    secondPlace: {
-        backgroundColor: '#C0C0C0',
-    },
-    thirdPlace: {
-        backgroundColor: '#CD7F32',
-    },
-    otherPlace: {
-        backgroundColor: '#e0e0e0',
-    },
-    standingPositionText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    standingDetails: {
-        flex: 1,
-    },
-    standingName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    standingStats: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-    standingPoints: {
-        alignItems: 'flex-end',
-    },
-    standingPointsText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    standingAccuracy: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        fontStyle: 'italic',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    headerActions: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    headerButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundTertiary,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.md,
-    },
-    headerButtonText: {
-        marginLeft: spacing.xs,
-        fontSize: 12,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
-    },
-    statusBadge: {
-        backgroundColor: Colors.light.successLight,
-        borderRadius: borderRadius.sm,
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.sm,
-    },
-    statusText: {
-        color: Colors.light.success,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    codeBadge: {
-        backgroundColor: Colors.light.backgroundTertiary,
-        borderRadius: borderRadius.sm,
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.sm,
-    },
-    codeText: {
-        color: Colors.light.textSecondary,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    viewAllLink: {
-        color: Colors.light.buttonPrimary,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    activityContainer: {
-        paddingVertical: spacing.md,
-        paddingRight: spacing.md,
-    },
-    activityCount: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.sm,
-    },
-    activityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: spacing.xs,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    activityContent: {
-        flex: 1,
-        marginLeft: spacing.md,
-    },
-    activityUser: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-    },
-    activityMessage: {
-        fontSize: 13,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    activityDate: {
-        fontSize: 12,
-        color: Colors.light.textTertiary,
-        marginTop: spacing.xs,
-    },
-    bottomSpacing: {
-        height: 100, // Account for fixed bottom navigation
-    },
-    shareIconButton: {
-        padding: spacing.xs,
-    },
-    emptyActivityText: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        fontStyle: 'italic',
-    },
-    settingsButton: {
-        paddingLeft: spacing.sm,
-    },
-    modalOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    settingsModal: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        width: '90%',
-        maxWidth: 400,
-        maxHeight: '90%',
-        minHeight: 200,
-        ...shadows.lg,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    closeButton: {
-        padding: spacing.xs,
-    },
-    modalContent: {
-        minHeight: 150,
-    },
-    modalContentContainer: {
-        paddingBottom: spacing.lg, // Add some padding at the bottom for the close button
-        minHeight: 120,
-    },
-    settingSection: {
-        marginBottom: spacing.md,
-    },
-    settingLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    visibilityOptions: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: Colors.light.backgroundTertiary,
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.sm,
-        marginBottom: spacing.sm,
-        marginTop: spacing.xs,
-    },
-    visibilityOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        minWidth: 100,
-        justifyContent: 'center',
-    },
-    visibilityOptionSelected: {
-        backgroundColor: Colors.light.buttonPrimary,
-    },
-    visibilityOptionText: {
-        marginLeft: spacing.sm,
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.light.textSecondary,
-    },
-    visibilityOptionTextSelected: {
-        color: Colors.light.textInverse,
-    },
-    settingDescription: {
-        fontSize: 13,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    updatingIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: spacing.md,
-    },
-    updatingText: {
-        marginLeft: spacing.sm,
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    textInput: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.md,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        fontSize: 16,
-        color: Colors.light.textPrimary,
-    },
-    disabledButton: {
-        opacity: 0.7,
-    },
-    dangerLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.error,
-        marginBottom: spacing.xs,
-    },
-    dangerButton: {
-        backgroundColor: Colors.light.errorLight,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-    },
-    dangerButtonText: {
-        color: Colors.light.error,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    confirmationModal: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        width: '90%',
-        maxWidth: 400,
-        alignItems: 'center',
-        ...shadows.lg,
-    },
-    confirmationIcon: {
-        marginBottom: spacing.md,
-    },
-    confirmationTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    confirmationMessage: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.md,
-    },
-    confirmationButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '100%',
-    },
-
-    leaveButtonContainer: {
-        marginTop: spacing.md,
-    },
-    visibilityDescriptionContainer: {
-        marginTop: spacing.xs,
-    },
-    loadingText: {
-        marginTop: spacing.sm,
-        color: Colors.light.textSecondary,
-    },
-    unauthenticatedContent: {
-        alignItems: 'center',
-        paddingVertical: spacing.lg,
-    },
-    unauthenticatedText: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.md,
-    },
-    guestBadge: {
-        backgroundColor: Colors.light.warningLight,
-        borderRadius: borderRadius.sm,
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.sm,
-    },
-    guestBadgeText: {
-        color: Colors.light.warning,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.md,
-    },
-});
 
 export default LeagueDetailScreen;

@@ -16,7 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router, useLocalSearchParams } from 'expo-router';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 import { shouldShowGoogleSignIn } from '../config/environment';
@@ -30,6 +32,7 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { login, isLoading, isAuthenticating } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const params = useLocalSearchParams();
     const redirectTo = params.redirect ? decodeURIComponent(params.redirect as string) : '/(tabs)';
 
@@ -37,7 +40,8 @@ const LoginScreen = () => {
     const emailInputRef = useRef<TextInput>(null);
     const passwordInputRef = useRef<TextInput>(null);
 
-
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+    const universalStyles = createThemeStyles(currentColors);
 
     // Function to open finalpoint.app website
     const handleLearnMore = async () => {
@@ -81,23 +85,23 @@ const LoginScreen = () => {
 
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color={Colors.light.primary} />
+            <SafeAreaView style={[styles.loadingContainer, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+                <ActivityIndicator size="large" color={currentColors.primary} />
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right', 'bottom']}>
             <KeyboardAvoidingView
-                style={styles.keyboardAvoidingView}
+                style={universalStyles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
             >
                 <ScrollView
                     ref={scrollViewRef}
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
+                    style={universalStyles.scrollView}
+                    contentContainerStyle={[universalStyles.scrollContent, styles.scrollContent]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
@@ -107,28 +111,33 @@ const LoginScreen = () => {
                     {/* Logo and Branding Section */}
                     <View style={styles.logoSection}>
                         <View style={styles.logoContainer}>
-                            <View style={styles.logo}>
-                                <Text style={styles.logoText}>FP</Text>
-                                <View style={styles.logoAccent} />
+                            <View style={[styles.logo, { backgroundColor: currentColors.primary }]}>
+                                <Text style={[styles.logoText, { color: currentColors.textInverse }]}>FP</Text>
+                                <View style={[styles.logoAccent, { backgroundColor: currentColors.warning }]} />
                             </View>
                         </View>
-                        <Text style={styles.appName}>FinalPoint</Text>
-                        <Text style={styles.tagline}>F1 Prediction Game</Text>
+                        <Text style={[styles.appName, { color: currentColors.textPrimary }]}>FinalPoint</Text>
+                        <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>F1 Prediction Game</Text>
                     </View>
 
                     {/* Form Section */}
                     <View style={styles.formSection}>
                         {/* Email Field */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Email address</Text>
+                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Email address</Text>
                             <TextInput
                                 ref={emailInputRef}
                                 style={[
                                     styles.input,
-                                    emailFocused && styles.inputFocused,
+                                    {
+                                        backgroundColor: currentColors.backgroundSecondary,
+                                        borderColor: currentColors.borderMedium,
+                                        color: currentColors.textPrimary
+                                    },
+                                    emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
                                 ]}
                                 placeholder="Enter your email address"
-                                placeholderTextColor={Colors.light.textSecondary}
+                                placeholderTextColor={currentColors.textSecondary}
                                 value={email}
                                 onChangeText={setEmail}
                                 onFocus={() => {
@@ -147,16 +156,21 @@ const LoginScreen = () => {
 
                         {/* Password Field */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Password</Text>
+                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Password</Text>
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     ref={passwordInputRef}
                                     style={[
                                         styles.passwordInput,
-                                        passwordFocused && styles.inputFocused,
+                                        {
+                                            backgroundColor: currentColors.backgroundSecondary,
+                                            borderColor: currentColors.borderMedium,
+                                            color: currentColors.textPrimary
+                                        },
+                                        passwordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
                                     ]}
                                     placeholder="Enter your password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     value={password}
                                     onChangeText={setPassword}
                                     onFocus={() => {
@@ -177,7 +191,7 @@ const LoginScreen = () => {
                                     <Ionicons
                                         name={showPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.gray500}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -185,15 +199,19 @@ const LoginScreen = () => {
 
                         {/* Sign In Button */}
                         <TouchableOpacity
-                            style={[styles.signInButton, isAuthenticating && { opacity: 0.7 }]}
+                            style={[
+                                styles.signInButton,
+                                { backgroundColor: currentColors.primary },
+                                isAuthenticating && { opacity: 0.7 }
+                            ]}
                             onPress={handleLogin}
                             activeOpacity={0.8}
                             disabled={isAuthenticating}
                         >
                             {isAuthenticating ? (
-                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                <ActivityIndicator size="small" color={currentColors.textInverse} />
                             ) : (
-                                <Text style={styles.signInButtonText}>Sign in</Text>
+                                <Text style={[styles.signInButtonText, { color: currentColors.textInverse }]}>Sign in</Text>
                             )}
                         </TouchableOpacity>
 
@@ -202,9 +220,9 @@ const LoginScreen = () => {
                             <>
                                 {/* Divider */}
                                 <View style={styles.dividerContainer}>
-                                    <View style={styles.dividerLine} />
-                                    <Text style={styles.dividerText}>or</Text>
-                                    <View style={styles.dividerLine} />
+                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
+                                    <Text style={[styles.dividerText, { color: currentColors.textSecondary }]}>or</Text>
+                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
                                 </View>
 
                                 {/* Conditional Google Sign-In Button */}
@@ -217,16 +235,16 @@ const LoginScreen = () => {
                             style={styles.forgotPasswordButton}
                             onPress={() => router.push('/forgot-password')}
                         >
-                            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                            <Text style={[styles.forgotPasswordText, { color: currentColors.primary }]}>Forgot your password?</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Footer Links */}
                     <View style={styles.footerSection}>
                         <View style={styles.footerTextContainer}>
-                            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+                            <Text style={[styles.footerText, { color: currentColors.textSecondary }]}>Don&apos;t have an account? </Text>
                             <TouchableOpacity onPress={() => router.push('/signup')}>
-                                <Text style={styles.footerLink}>Create an account</Text>
+                                <Text style={[styles.footerLink, { color: currentColors.primary }]}>Create an account</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -234,7 +252,7 @@ const LoginScreen = () => {
                             style={styles.learnMoreButton}
                             onPress={handleLearnMore}
                         >
-                            <Text style={styles.learnMoreText}>Learn more about FinalPoint</Text>
+                            <Text style={[styles.learnMoreText, { color: currentColors.textSecondary }]}>Learn more about FinalPoint</Text>
                         </TouchableOpacity>
 
 
@@ -248,13 +266,11 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -264,32 +280,37 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.xl,
-        paddingBottom: spacing.xxl * 2, // Add extra bottom padding
+        paddingHorizontal: 16,
+        paddingVertical: 24,
+        paddingBottom: 48, // Add extra bottom padding
     },
     logoSection: {
         alignItems: 'center',
-        marginTop: spacing.xxl,
-        marginBottom: spacing.xxl,
+        marginTop: 32,
+        marginBottom: 32,
     },
     logoContainer: {
-        marginBottom: spacing.lg,
+        marginBottom: 16,
     },
     logo: {
         width: 80,
         height: 80,
-        backgroundColor: Colors.light.primary,
-        borderRadius: borderRadius.lg,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-        ...shadows.md,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     logoText: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: Colors.light.textInverse,
     },
     logoAccent: {
         position: 'absolute',
@@ -297,134 +318,120 @@ const styles = StyleSheet.create({
         top: 8,
         width: 12,
         height: 12,
-        backgroundColor: Colors.light.warning,
         borderRadius: 2,
     },
     appName: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
+        marginBottom: 4,
     },
     tagline: {
         fontSize: 16,
-        color: Colors.light.textSecondary,
     },
     formSection: {
-        marginBottom: spacing.xxl,
+        marginBottom: 32,
     },
     inputContainer: {
-        marginBottom: spacing.lg,
+        marginBottom: 16,
     },
     inputLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
+        marginBottom: 6,
     },
     input: {
-        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
-        borderColor: Colors.light.borderMedium,
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         fontSize: 16,
-        color: Colors.light.textPrimary,
     },
     inputFocused: {
-        borderColor: Colors.light.primary,
         borderWidth: 2,
     },
     passwordContainer: {
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
-        borderColor: Colors.light.borderMedium,
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         paddingRight: 50,
         fontSize: 16,
-        color: Colors.light.textPrimary,
     },
     eyeButton: {
         position: 'absolute',
-        right: spacing.md,
+        right: 12,
         top: '50%',
         transform: [{ translateY: -10 }],
-        padding: spacing.xs,
+        padding: 4,
     },
     signInButton: {
-        backgroundColor: Colors.light.primary,
-        borderRadius: borderRadius.md,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         alignItems: 'center',
-        marginTop: spacing.lg,
-        ...shadows.sm,
+        marginTop: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.22,
+        shadowRadius: 2.22,
+        elevation: 3,
     },
     signInButtonText: {
-        color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
     },
     forgotPasswordButton: {
         alignItems: 'center',
-        marginTop: spacing.md,
+        marginTop: 12,
     },
     forgotPasswordText: {
         fontSize: 14,
-        color: Colors.light.primary,
         fontWeight: '600',
     },
     footerSection: {
         alignItems: 'center',
-        marginTop: spacing.xl,
-        paddingBottom: spacing.lg,
+        marginTop: 24,
+        paddingBottom: 16,
     },
     footerTextContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing.lg,
+        marginBottom: 16,
     },
     footerText: {
         fontSize: 14,
-        color: Colors.light.textSecondary,
     },
     footerLink: {
         fontSize: 14,
-        color: Colors.light.primary,
         fontWeight: '600',
     },
     learnMoreButton: {
-        paddingVertical: spacing.sm,
+        paddingVertical: 6,
     },
     learnMoreText: {
         fontSize: 14,
-        color: Colors.light.textSecondary,
         textDecorationLine: 'underline',
     },
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: spacing.lg,
+        marginVertical: 16,
     },
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: Colors.light.borderMedium,
     },
     dividerText: {
-        marginHorizontal: spacing.md,
+        marginHorizontal: 12,
         fontSize: 14,
-        color: Colors.light.textSecondary,
         fontWeight: '500',
     },
-
-
 });
 
 export default LoginScreen;

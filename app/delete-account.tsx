@@ -14,17 +14,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { router } from 'expo-router';
-import Colors from '../constants/Colors';
 import { spacing, borderRadius } from '../utils/styles';
 import { contactConfig } from '../config/environment';
 
 const DeleteAccountScreen = () => {
     const { user, deleteAccount } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
 
     // Delete Account Form State
     const [deletePassword, setDeletePassword] = useState('');
@@ -96,16 +105,254 @@ const DeleteAccountScreen = () => {
         }
     };
 
+    const styles = StyleSheet.create({
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: spacing.lg,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+            backgroundColor: currentColors.cardBackground,
+        },
+        backButton: {
+            marginRight: spacing.md,
+        },
+        headerTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        content: {
+            padding: spacing.lg,
+        },
+        description: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.lg,
+            textAlign: 'center',
+        },
+        successContainer: {
+            backgroundColor: currentColors.success + '20',
+            borderWidth: 1,
+            borderColor: currentColors.success,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            marginBottom: spacing.lg,
+        },
+        successText: {
+            color: currentColors.success,
+            textAlign: 'center',
+        },
+        errorContainer: {
+            backgroundColor: currentColors.error + '20',
+            borderWidth: 1,
+            borderColor: currentColors.error,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            marginBottom: spacing.lg,
+        },
+        errorText: {
+            color: currentColors.error,
+            textAlign: 'center',
+        },
+        warningContainer: {
+            backgroundColor: currentColors.error + '10',
+            borderWidth: 1,
+            borderColor: currentColors.error + '30',
+            borderRadius: borderRadius.md,
+            padding: spacing.lg,
+            marginBottom: spacing.lg,
+        },
+        warningHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.md,
+        },
+        warningTitle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.error,
+            marginLeft: spacing.sm,
+        },
+        warningList: {
+            marginLeft: spacing.md,
+        },
+        warningItem: {
+            fontSize: 14,
+            color: currentColors.error,
+            marginBottom: spacing.xs,
+        },
+        accountInfoContainer: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.md,
+            padding: spacing.lg,
+            marginBottom: spacing.lg,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        accountInfoTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.md,
+        },
+        accountInfoContent: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        avatarPlaceholder: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: currentColors.borderLight,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: spacing.md,
+        },
+        avatarText: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textSecondary,
+        },
+        accountDetails: {
+            flex: 1,
+        },
+        accountName: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        accountEmail: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        formContainer: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.md,
+            padding: spacing.lg,
+            marginBottom: spacing.lg,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        formTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        formDescription: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.lg,
+        },
+        inputContainer: {
+            marginBottom: spacing.lg,
+        },
+        inputLabel: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        textInput: {
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            fontSize: 16,
+            color: currentColors.textPrimary,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        inputHint: {
+            fontSize: 12,
+            color: currentColors.textTertiary,
+            marginTop: spacing.xs,
+        },
+        buttonContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: spacing.lg,
+            paddingTop: spacing.lg,
+            borderTopWidth: 1,
+            borderTopColor: currentColors.borderLight,
+        },
+        cancelButton: {
+            flex: 1,
+            backgroundColor: currentColors.borderLight,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: spacing.sm,
+            minHeight: 48,
+        },
+        cancelButtonText: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            textAlignVertical: 'center',
+        },
+        deleteButton: {
+            flex: 1,
+            backgroundColor: currentColors.error,
+            borderRadius: borderRadius.md,
+            padding: spacing.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: spacing.sm,
+            minHeight: 48,
+        },
+        deleteButtonDisabled: {
+            opacity: 0.5,
+        },
+        deleteButtonText: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textInverse,
+            textAlign: 'center',
+            textAlignVertical: 'center',
+        },
+        helpContainer: {
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.md,
+            padding: spacing.lg,
+            marginTop: spacing.lg,
+        },
+        helpTitle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        helpDescription: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.md,
+        },
+        contactButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        contactButtonText: {
+            fontSize: 14,
+            color: currentColors.primary,
+            marginRight: spacing.xs,
+        },
+    });
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <ScrollView style={styles.scrollView}>
+        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+            <ScrollView style={universalStyles.scrollView}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Delete Account</Text>
                 </View>
@@ -130,7 +377,7 @@ const DeleteAccountScreen = () => {
                     {/* Warning Section */}
                     <View style={styles.warningContainer}>
                         <View style={styles.warningHeader}>
-                            <Ionicons name="warning" size={24} color={Colors.light.error} />
+                            <Ionicons name="warning" size={24} color={currentColors.error} />
                             <Text style={styles.warningTitle}>Warning: This action cannot be undone</Text>
                         </View>
                         <View style={styles.warningList}>
@@ -171,7 +418,7 @@ const DeleteAccountScreen = () => {
                                 value={deletePassword}
                                 onChangeText={setDeletePassword}
                                 placeholder="Your current password"
-                                placeholderTextColor={Colors.light.textTertiary}
+                                placeholderTextColor={currentColors.textTertiary}
                                 secureTextEntry
                                 autoCapitalize="none"
                             />
@@ -184,7 +431,7 @@ const DeleteAccountScreen = () => {
                                 value={deleteConfirmation}
                                 onChangeText={setDeleteConfirmation}
                                 placeholder="Type DELETE"
-                                placeholderTextColor={Colors.light.textTertiary}
+                                placeholderTextColor={currentColors.textTertiary}
                                 autoCapitalize="characters"
                             />
                             <Text style={styles.inputHint}>
@@ -208,7 +455,7 @@ const DeleteAccountScreen = () => {
                                 disabled={!deletePassword || deleteConfirmation !== 'DELETE' || isLoading}
                             >
                                 {isLoading ? (
-                                    <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                    <ActivityIndicator size="small" color={currentColors.textInverse} />
                                 ) : (
                                     <Text style={styles.deleteButtonText}>Delete My Account</Text>
                                 )}
@@ -227,7 +474,7 @@ const DeleteAccountScreen = () => {
                             onPress={handleContactSupport}
                         >
                             <Text style={styles.contactButtonText}>Contact Support</Text>
-                            <Ionicons name="mail-outline" size={16} color={Colors.light.primary} />
+                            <Ionicons name="mail-outline" size={16} color={currentColors.primary} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -235,242 +482,5 @@ const DeleteAccountScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        backgroundColor: Colors.light.cardBackground,
-    },
-    backButton: {
-        marginRight: spacing.md,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    content: {
-        padding: spacing.lg,
-    },
-    description: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.lg,
-        textAlign: 'center',
-    },
-    successContainer: {
-        backgroundColor: Colors.light.success + '20',
-        borderWidth: 1,
-        borderColor: Colors.light.success,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        marginBottom: spacing.lg,
-    },
-    successText: {
-        color: Colors.light.success,
-        textAlign: 'center',
-    },
-    errorContainer: {
-        backgroundColor: Colors.light.error + '20',
-        borderWidth: 1,
-        borderColor: Colors.light.error,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        marginBottom: spacing.lg,
-    },
-    errorText: {
-        color: Colors.light.error,
-        textAlign: 'center',
-    },
-    warningContainer: {
-        backgroundColor: Colors.light.error + '10',
-        borderWidth: 1,
-        borderColor: Colors.light.error + '30',
-        borderRadius: borderRadius.md,
-        padding: spacing.lg,
-        marginBottom: spacing.lg,
-    },
-    warningHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    warningTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.error,
-        marginLeft: spacing.sm,
-    },
-    warningList: {
-        marginLeft: spacing.md,
-    },
-    warningItem: {
-        fontSize: 14,
-        color: Colors.light.error,
-        marginBottom: spacing.xs,
-    },
-    accountInfoContainer: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.md,
-        padding: spacing.lg,
-        marginBottom: spacing.lg,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    accountInfoTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.md,
-    },
-    accountInfoContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    avatarPlaceholder: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: Colors.light.borderLight,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: spacing.md,
-    },
-    avatarText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textSecondary,
-    },
-    accountDetails: {
-        flex: 1,
-    },
-    accountName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    accountEmail: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    formContainer: {
-        backgroundColor: Colors.light.cardBackground,
-        borderRadius: borderRadius.md,
-        padding: spacing.lg,
-        marginBottom: spacing.lg,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    formTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    formDescription: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.lg,
-    },
-    inputContainer: {
-        marginBottom: spacing.lg,
-    },
-    inputLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    textInput: {
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        fontSize: 16,
-        color: Colors.light.textPrimary,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    inputHint: {
-        fontSize: 12,
-        color: Colors.light.textTertiary,
-        marginTop: spacing.xs,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: spacing.lg,
-        paddingTop: spacing.lg,
-        borderTopWidth: 1,
-        borderTopColor: Colors.light.borderLight,
-    },
-    cancelButton: {
-        flex: 1,
-        backgroundColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        alignItems: 'center',
-        marginRight: spacing.sm,
-    },
-    cancelButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textSecondary,
-    },
-    deleteButton: {
-        flex: 1,
-        backgroundColor: Colors.light.error,
-        borderRadius: borderRadius.md,
-        padding: spacing.md,
-        alignItems: 'center',
-        marginLeft: spacing.sm,
-    },
-    deleteButtonDisabled: {
-        opacity: 0.5,
-    },
-    deleteButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textInverse,
-    },
-    helpContainer: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderRadius: borderRadius.md,
-        padding: spacing.lg,
-        marginTop: spacing.lg,
-    },
-    helpTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    helpDescription: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.md,
-    },
-    contactButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    contactButtonText: {
-        fontSize: 14,
-        color: Colors.light.primary,
-        marginRight: spacing.xs,
-    },
-});
 
 export default DeleteAccountScreen;

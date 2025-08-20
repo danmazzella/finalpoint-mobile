@@ -15,13 +15,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
 
 const ChangePasswordScreen = () => {
     const { changePassword } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,6 +32,12 @@ const ChangePasswordScreen = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
 
     // Input refs for navigation
     const newPasswordRef = useRef<TextInput>(null);
@@ -46,7 +55,7 @@ const ChangePasswordScreen = () => {
             return;
         }
 
-        if (newPassword.length < 6) {
+        if (newPassword.length < 8) {
             showToast('New password must be at least 8 characters long', 'error');
             return;
         }
@@ -119,16 +128,160 @@ const ChangePasswordScreen = () => {
 
     const passwordValidation = validatePassword(newPassword);
 
+    const styles = StyleSheet.create({
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+            minHeight: 64,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.sm,
+            paddingVertical: spacing.sm,
+        },
+        headerTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        placeholder: {
+            width: 40,
+        },
+        form: {
+            padding: spacing.lg,
+        },
+        inputGroup: {
+            marginBottom: spacing.lg,
+        },
+        label: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.sm,
+        },
+        inputContainer: {
+            position: 'relative',
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        input: {
+            flex: 1,
+            fontSize: 16,
+            color: currentColors.textPrimary,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.md,
+            paddingRight: 50, // Space for eye button
+            backgroundColor: currentColors.cardBackground,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            borderRadius: borderRadius.md,
+        },
+        eyeButton: {
+            position: 'absolute',
+            right: spacing.sm,
+            padding: spacing.xs,
+        },
+        hint: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        submitButton: {
+            backgroundColor: currentColors.primary,
+            paddingVertical: spacing.md,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+            marginTop: spacing.lg,
+        },
+        submitButtonDisabled: {
+            backgroundColor: currentColors.borderMedium,
+        },
+        submitButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        validationContainer: {
+            marginTop: spacing.sm,
+        },
+        validationTitle: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        requirementItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.xs,
+        },
+        requirementText: {
+            fontSize: 12,
+            marginLeft: spacing.xs,
+        },
+        requirementMet: {
+            color: currentColors.success,
+        },
+        requirementUnmet: {
+            color: currentColors.error,
+        },
+        strengthBar: {
+            height: 4,
+            backgroundColor: currentColors.borderLight,
+            borderRadius: 2,
+            marginTop: spacing.xs,
+            overflow: 'hidden',
+        },
+        strengthFill: {
+            height: '100%',
+            borderRadius: 2,
+        },
+        strengthWeak: {
+            backgroundColor: currentColors.error,
+            width: '20%',
+        },
+        strengthFair: {
+            backgroundColor: currentColors.warning,
+            width: '40%',
+        },
+        strengthGood: {
+            backgroundColor: currentColors.warning,
+            width: '60%',
+        },
+        strengthStrong: {
+            backgroundColor: currentColors.success,
+            width: '80%',
+        },
+        strengthVeryStrong: {
+            backgroundColor: currentColors.success,
+            width: '100%',
+        },
+    });
+
+    const getStrengthColor = () => {
+        if (passwordValidation.score <= 1) return styles.strengthWeak;
+        if (passwordValidation.score <= 2) return styles.strengthFair;
+        if (passwordValidation.score <= 3) return styles.strengthGood;
+        if (passwordValidation.score <= 4) return styles.strengthStrong;
+        return styles.strengthVeryStrong;
+    };
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
-                style={styles.keyboardAvoidingView}
+                style={universalStyles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
+                    style={universalStyles.scrollView}
+                    contentContainerStyle={universalStyles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -138,7 +291,7 @@ const ChangePasswordScreen = () => {
                             style={styles.backButton}
                             onPress={() => router.back()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                            <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Change Password</Text>
                         <View style={styles.placeholder} />
@@ -155,7 +308,7 @@ const ChangePasswordScreen = () => {
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
                                     placeholder="Enter your current password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     secureTextEntry={!showCurrentPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -170,7 +323,7 @@ const ChangePasswordScreen = () => {
                                     <Ionicons
                                         name={showCurrentPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.textSecondary}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -186,7 +339,7 @@ const ChangePasswordScreen = () => {
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     placeholder="Enter your new password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     secureTextEntry={!showNewPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -201,61 +354,44 @@ const ChangePasswordScreen = () => {
                                     <Ionicons
                                         name={showNewPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.textSecondary}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
-                        </View>
 
-                        {/* Password Requirements */}
-                        {newPassword.length > 0 && (
-                            <View style={styles.requirementsContainer}>
-                                <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                                {[
-                                    { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
-                                    { test: (p: string) => /[a-z]/.test(p), label: 'Contains lowercase letter' },
-                                    { test: (p: string) => /[A-Z]/.test(p), label: 'Contains uppercase letter' },
-                                    { test: (p: string) => /\d/.test(p), label: 'Contains number' },
-                                    { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Contains special character' }
-                                ].map((req, index) => {
-                                    const isMet = req.test(newPassword);
-                                    return (
+                            {/* Password Validation */}
+                            {newPassword.length > 0 && (
+                                <View style={styles.validationContainer}>
+                                    <Text style={styles.validationTitle}>Password Requirements:</Text>
+                                    {[
+                                        { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
+                                        { test: (p: string) => /[a-z]/.test(p), label: 'Contains lowercase letter' },
+                                        { test: (p: string) => /[A-Z]/.test(p), label: 'Contains uppercase letter' },
+                                        { test: (p: string) => /\d/.test(p), label: 'Contains number' },
+                                        { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Contains special character' }
+                                    ].map((req, index) => (
                                         <View key={index} style={styles.requirementItem}>
                                             <Ionicons
-                                                name={isMet ? 'checkmark-circle' : 'close-circle'}
+                                                name={req.test(newPassword) ? 'checkmark-circle' : 'close-circle'}
                                                 size={16}
-                                                color={isMet ? Colors.light.success : Colors.light.error}
+                                                color={req.test(newPassword) ? currentColors.success : currentColors.error}
                                             />
-                                            <Text style={[styles.requirementText, isMet && styles.requirementMet]}>
+                                            <Text style={[
+                                                styles.requirementText,
+                                                req.test(newPassword) ? styles.requirementMet : styles.requirementUnmet
+                                            ]}>
                                                 {req.label}
                                             </Text>
                                         </View>
-                                    );
-                                })}
-                                {passwordValidation.errors.some(error =>
-                                    error.includes('repeated') ||
-                                    error.includes('sequential') ||
-                                    error.includes('keyboard') ||
-                                    error.includes('common')
-                                ) && (
-                                        <View style={styles.requirementItem}>
-                                            <Ionicons
-                                                name="close-circle"
-                                                size={16}
-                                                color={Colors.light.error}
-                                            />
-                                            <Text style={styles.requirementText}>
-                                                {passwordValidation.errors.find(error =>
-                                                    error.includes('repeated') ||
-                                                    error.includes('sequential') ||
-                                                    error.includes('keyboard') ||
-                                                    error.includes('common')
-                                                )}
-                                            </Text>
-                                        </View>
-                                    )}
-                            </View>
-                        )}
+                                    ))}
+
+                                    {/* Password Strength Bar */}
+                                    <View style={styles.strengthBar}>
+                                        <View style={[styles.strengthFill, getStrengthColor()]} />
+                                    </View>
+                                </View>
+                            )}
+                        </View>
 
                         {/* Confirm Password */}
                         <View style={styles.inputGroup}>
@@ -267,7 +403,7 @@ const ChangePasswordScreen = () => {
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     placeholder="Confirm your new password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     secureTextEntry={!showConfirmPassword}
                                     autoCapitalize="none"
                                     autoCorrect={false}
@@ -281,12 +417,14 @@ const ChangePasswordScreen = () => {
                                     <Ionicons
                                         name={showConfirmPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.textSecondary}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
                             {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                                <Text style={styles.errorText}>Passwords do not match</Text>
+                                <Text style={[styles.hint, { color: currentColors.error }]}>
+                                    Passwords do not match
+                                </Text>
                             )}
                         </View>
 
@@ -294,21 +432,13 @@ const ChangePasswordScreen = () => {
                         <TouchableOpacity
                             style={[
                                 styles.submitButton,
-                                (!currentPassword || !newPassword || !confirmPassword || !passwordValidation.isValid || newPassword !== confirmPassword) &&
-                                styles.submitButtonDisabled
+                                (!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword || !passwordValidation.isValid) && styles.submitButtonDisabled
                             ]}
                             onPress={handleChangePassword}
-                            disabled={
-                                !currentPassword ||
-                                !newPassword ||
-                                !confirmPassword ||
-                                !passwordValidation.isValid ||
-                                newPassword !== confirmPassword ||
-                                isLoading
-                            }
+                            disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword || !passwordValidation.isValid || isLoading}
                         >
                             {isLoading ? (
-                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                <ActivityIndicator size="small" color={currentColors.textInverse} />
                             ) : (
                                 <Text style={styles.submitButtonText}>Change Password</Text>
                             )}
@@ -319,122 +449,5 @@ const ChangePasswordScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundSecondary, // White background
-    },
-    keyboardAvoidingView: {
-        flex: 1,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        minHeight: 64,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    placeholder: {
-        width: 40,
-    },
-    form: {
-        padding: spacing.lg,
-    },
-    inputGroup: {
-        marginBottom: spacing.lg,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.light.cardBackground,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        borderRadius: borderRadius.md,
-        paddingHorizontal: spacing.md,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: Colors.light.textPrimary,
-        paddingVertical: spacing.md,
-    },
-    eyeButton: {
-        padding: spacing.sm,
-    },
-    requirementsContainer: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.lg,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    requirementsTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.sm,
-    },
-    requirementItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    requirementText: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginLeft: spacing.xs,
-    },
-    requirementMet: {
-        color: Colors.light.textPrimary,
-    },
-    errorText: {
-        fontSize: 14,
-        color: Colors.light.error,
-        marginTop: spacing.xs,
-    },
-    submitButton: {
-        backgroundColor: Colors.light.primary,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        alignItems: 'center',
-        marginTop: spacing.lg,
-    },
-    submitButtonDisabled: {
-        backgroundColor: Colors.light.gray400,
-    },
-    submitButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});
 
 export default ChangePasswordScreen;

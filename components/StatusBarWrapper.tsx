@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, StatusBarStyle } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import { useColorScheme } from '../hooks/useColorScheme';
+import { useTheme } from '../src/context/ThemeContext';
 import StatusBarBackground from './StatusBarBackground';
+import { lightColors, darkColors } from '../src/constants/Colors';
 
 interface StatusBarWrapperProps {
     children: React.ReactNode;
-    style?: 'light' | 'dark' | 'auto';
+    style?: StatusBarStyle;
     backgroundColor?: string;
     showBackground?: boolean;
 }
@@ -25,21 +27,21 @@ const StatusBarWrapper: React.FC<StatusBarWrapperProps> = ({
     showBackground = true,
 }) => {
     const colorScheme = useColorScheme();
+    const { resolvedTheme } = useTheme();
 
-    // Determine the status bar style based on theme and platform
+    // Determine the status bar style based on theme
     let statusBarStyle: 'light' | 'dark' | 'auto';
 
-    if (Platform.OS === 'ios') {
-        // On iOS, use dark text (black) for better visibility against light backgrounds
-        // This ensures status bar icons are always visible
-        statusBarStyle = 'dark';
+    if (resolvedTheme === 'dark') {
+        // Dark theme: use light icons (white) for visibility against dark background
+        statusBarStyle = 'light';
     } else {
-        // On Android, use dark text for better contrast with light background
+        // Light theme: use dark icons (black) for visibility against light background
         statusBarStyle = 'dark';
     }
 
     // Use provided background color or theme-based color
-    const statusBarColor = backgroundColor || '#f8fafc'; // light gray-50 for better contrast
+    const statusBarColor = backgroundColor || (resolvedTheme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary);
 
     // Don't show status bar background in Expo Go
     const shouldShowBackground = showBackground && Constants.appOwnership !== 'expo';

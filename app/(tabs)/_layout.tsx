@@ -6,14 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '../../components/HapticTab';
 import { IconSymbol } from '../../components/ui/IconSymbol';
-import Colors from '../../constants/Colors';
-import { useColorScheme } from '../../hooks/useColorScheme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightColors, darkColors } from '../../src/constants/Colors';
 import { useAuth } from '../../src/context/AuthContext';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { resolvedTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+
+  // Get current theme colors
+  const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
   // Debug logging to see what's happening with user state
   console.log('🔍 TabLayout render:', { user: !!user, userType: typeof user, userValue: user });
@@ -55,13 +58,14 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.buttonPrimary,
-        tabBarInactiveTintColor: Colors.light.textSecondary,
+        tabBarActiveTintColor: currentColors.primary,
+        tabBarInactiveTintColor: currentColors.textSecondary,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: Platform.select({
           ios: {
-            borderTopWidth: 0,
+            borderTopWidth: 2,
+            borderColor: currentColors.textTertiary,
             height: 88,
             paddingBottom: 20,
             paddingTop: 8,
@@ -69,16 +73,12 @@ export default function TabLayout() {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: Colors.light.backgroundSecondary, // Use white background for iOS
-            shadowColor: Colors.light.cardShadow,
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
+            backgroundColor: currentColors.backgroundTertiary,
           },
           android: {
-            backgroundColor: Colors.light.backgroundSecondary, // White background for Android
-            borderTopWidth: 1,
-            borderTopColor: Colors.light.borderLight,
+            backgroundColor: currentColors.backgroundTertiary,
+            borderTopWidth: 2,
+            borderColor: currentColors.textTertiary,
             height: 70 + insets.bottom,
             paddingBottom: 8,
             paddingTop: 8,
@@ -86,12 +86,12 @@ export default function TabLayout() {
             bottom: 0,
             left: 0,
             right: 0,
-            elevation: 8,
+            elevation: 20,
           },
           default: {
-            backgroundColor: Colors.light.backgroundSecondary,
-            borderTopWidth: 1,
-            borderTopColor: Colors.light.borderLight,
+            backgroundColor: currentColors.backgroundTertiary,
+            borderTopWidth: 2,
+            borderColor: currentColors.textTertiary,
             height: 70,
             paddingBottom: 8,
             paddingTop: 8,

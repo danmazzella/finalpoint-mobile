@@ -13,12 +13,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { leaguesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
 
 const JoinLeagueScreen = () => {
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const { joinCode: initialJoinCode } = useLocalSearchParams<{ joinCode?: string }>();
     const [joinCode, setJoinCode] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Get current theme colors
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
     // Pre-fill join code if provided in URL
     useEffect(() => {
@@ -50,6 +56,115 @@ const JoinLeagueScreen = () => {
         }
     };
 
+    // Create theme-aware styles
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+            paddingTop: Platform.OS === 'android' ? 0 : 0,
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: 20,
+            minHeight: 96, // 24dp according to Material Design
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        backButton: {
+            padding: 8,
+            marginRight: 12,
+        },
+        headerContent: {
+            flex: 1,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 4,
+        },
+        subtitle: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+        },
+        content: {
+            flex: 1,
+            padding: 20,
+        },
+        description: {
+            fontSize: 16,
+            color: currentColors.textPrimary,
+            marginBottom: 20,
+            textAlign: 'center',
+            fontWeight: '500',
+        },
+        formContainer: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: 16,
+            padding: 24,
+            shadowColor: currentColors.textPrimary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+        },
+        inputContainer: {
+            marginBottom: 24,
+        },
+        inputLabel: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: currentColors.textPrimary,
+            marginBottom: 12,
+            textAlign: 'center',
+        },
+        input: {
+            borderWidth: 2,
+            borderColor: currentColors.primary,
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 16,
+            backgroundColor: currentColors.backgroundSecondary,
+            textAlign: 'center',
+            letterSpacing: 2,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        joinButton: {
+            backgroundColor: currentColors.primary,
+            borderRadius: 8,
+            padding: 16,
+            alignItems: 'center',
+            marginBottom: 24,
+        },
+        joinButtonDisabled: {
+            backgroundColor: currentColors.borderMedium,
+        },
+        joinButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        infoContainer: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            padding: 16,
+            backgroundColor: currentColors.info + '10',
+            borderRadius: 8,
+            borderLeftWidth: 4,
+            borderLeftColor: currentColors.primary,
+        },
+        infoText: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginLeft: 8,
+            flex: 1,
+            lineHeight: 20,
+        },
+    });
+
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
@@ -57,7 +172,7 @@ const JoinLeagueScreen = () => {
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
-                    <Ionicons name="arrow-back" size={24} color="#007bff" />
+                    <Ionicons name="arrow-back" size={24} color={currentColors.primary} />
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
                     <Text style={styles.title}>Join League</Text>
@@ -80,7 +195,7 @@ const JoinLeagueScreen = () => {
                             autoFocus
                             textAlign="left"
                             selection={{ start: 0, end: 0 }}
-                            placeholderTextColor="#999"
+                            placeholderTextColor={currentColors.textTertiary}
                         />
                     </View>
 
@@ -90,14 +205,14 @@ const JoinLeagueScreen = () => {
                         disabled={loading}
                     >
                         {loading ? (
-                            <ActivityIndicator size="small" color="white" />
+                            <ActivityIndicator size="small" color={currentColors.textInverse} />
                         ) : (
                             <Text style={styles.joinButtonText}>Join League</Text>
                         )}
                     </TouchableOpacity>
 
                     <View style={styles.infoContainer}>
-                        <Ionicons name="information-circle" size={20} color="#666" />
+                        <Ionicons name="information-circle" size={20} color={currentColors.textSecondary} />
                         <Text style={styles.infoText}>
                             Ask the league owner for the join code to join their league
                         </Text>
@@ -107,113 +222,5 @@ const JoinLeagueScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: Platform.OS === 'android' ? 0 : 0,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        minHeight: 96, // 24dp according to Material Design
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    backButton: {
-        padding: 8,
-        marginRight: 12,
-    },
-    headerContent: {
-        flex: 1,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-    },
-    content: {
-        flex: 1,
-        padding: 20,
-    },
-    description: {
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 20,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    formContainer: {
-        backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    inputContainer: {
-        marginBottom: 24,
-    },
-    inputLabel: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#333',
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    input: {
-        borderWidth: 2,
-        borderColor: '#007bff',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: 'white',
-        textAlign: 'center',
-        letterSpacing: 2,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    joinButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    joinButtonDisabled: {
-        backgroundColor: '#ccc',
-    },
-    joinButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    infoContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        padding: 16,
-        backgroundColor: '#f0f8ff',
-        borderRadius: 8,
-        borderLeftWidth: 4,
-        borderLeftColor: '#007bff',
-    },
-    infoText: {
-        fontSize: 14,
-        color: '#666',
-        marginLeft: 8,
-        flex: 1,
-        lineHeight: 20,
-    },
-});
 
 export default JoinLeagueScreen;

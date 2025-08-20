@@ -12,7 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { picksAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
 import { usePositionNavigation } from '../hooks/usePositionNavigation';
@@ -48,10 +50,349 @@ interface PositionResultV2 {
 const PositionResultsScreen = () => {
     const params = useLocalSearchParams();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
     const leagueId = Number(params.leagueId);
     const weekNumber = Number(params.weekNumber);
     const position = Number(params.position);
     const leagueName = params.leagueName as string;
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
+
+    // Create styles with current theme colors
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        loadingText: {
+            marginTop: spacing.md,
+            fontSize: 16,
+            color: currentColors.textSecondary,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+        },
+        errorTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginTop: spacing.md,
+            marginBottom: spacing.sm,
+        },
+        errorMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: spacing.lg,
+        },
+        retryButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            borderRadius: borderRadius.md,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            minHeight: 64,
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.sm,
+            paddingVertical: spacing.sm,
+            marginRight: spacing.sm,
+        },
+        headerContent: {
+            flex: 1,
+        },
+        title: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        subtitle: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        weekInfo: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        positionInfo: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        summaryContainer: {
+            flexDirection: 'row',
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            gap: spacing.md,
+        },
+        summaryCard: {
+            flex: 1,
+            backgroundColor: currentColors.cardBackground,
+            padding: spacing.md,
+            borderRadius: borderRadius.lg,
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 60,
+            ...shadows.sm,
+        },
+        summaryLabel: {
+            fontSize: 11,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.xs,
+            textAlign: 'center',
+            fontWeight: '500',
+        },
+        summaryValue: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            textAlign: 'center',
+        },
+        section: {
+            margin: spacing.lg,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.md,
+        },
+        actualResultCard: {
+            backgroundColor: currentColors.successLight,
+            padding: spacing.lg,
+            borderRadius: borderRadius.md,
+            borderWidth: 2,
+            borderColor: currentColors.success,
+        },
+        actualResultLabel: {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: currentColors.success,
+            marginBottom: spacing.xs,
+        },
+        actualResultDriver: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.success,
+        },
+        actualResultTeam: {
+            fontSize: 14,
+            color: currentColors.success,
+            marginTop: spacing.xs,
+        },
+        resultCard: {
+            backgroundColor: currentColors.backgroundSecondary,
+            padding: spacing.md,
+            borderRadius: borderRadius.md,
+            marginBottom: spacing.sm,
+            ...shadows.sm,
+        },
+        resultHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.sm,
+        },
+        avatarContainer: {
+            position: 'relative',
+            marginRight: spacing.md,
+        },
+        positionOverlay: {
+            position: 'absolute',
+            bottom: -2,
+            right: -2,
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            backgroundColor: currentColors.primary,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: currentColors.cardBackground,
+        },
+        firstPlace: {
+            backgroundColor: '#FFD700', // Gold
+        },
+        secondPlace: {
+            backgroundColor: '#C0C0C0', // Silver
+        },
+        thirdPlace: {
+            backgroundColor: '#CD7F32', // Bronze
+        },
+        positionOverlayText: {
+            color: currentColors.textInverse,
+            fontSize: 12,
+            fontWeight: 'bold',
+        },
+        pickStatus: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: spacing.xs,
+        },
+        checkIcon: {
+            color: currentColors.success,
+            fontSize: 14,
+            fontWeight: 'bold',
+            marginRight: spacing.xs,
+        },
+        pickStatusText: {
+            fontSize: 12,
+            color: currentColors.success,
+            flex: 1,
+        },
+        pointsLabel: {
+            fontSize: 10,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.xs,
+            textAlign: 'center',
+            fontWeight: '500',
+        },
+        playerInfo: {
+            flex: 1,
+        },
+        playerName: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        playerPick: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            marginTop: spacing.xs,
+        },
+        scoreInfo: {
+            alignItems: 'center',
+            minWidth: 60,
+        },
+        pointsText: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            textAlign: 'center',
+        },
+        correctText: {
+            fontSize: 12,
+            color: currentColors.success,
+            fontWeight: 'bold',
+        },
+        resultDetails: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: spacing.sm,
+            borderTopWidth: 1,
+            borderTopColor: currentColors.borderLight,
+        },
+        actualResultText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+        },
+        incorrectText: {
+            fontSize: 12,
+            color: currentColors.error,
+            fontWeight: 'bold',
+        },
+        emptyContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.lg,
+        },
+        emptyMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            lineHeight: 24,
+        },
+        description: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginTop: spacing.md,
+            marginBottom: spacing.lg,
+            textAlign: 'center',
+        },
+        positionContext: {
+            flexDirection: 'column',
+            alignItems: 'center',
+            flex: 1,
+            paddingHorizontal: spacing.sm,
+        },
+        positionBadge: {
+            backgroundColor: currentColors.primary,
+            borderRadius: borderRadius.full,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            marginBottom: spacing.xs,
+        },
+        positionBadgeText: {
+            fontSize: 14,
+            fontWeight: '700',
+            color: currentColors.textInverse,
+        },
+        positionLabel: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+            textAlign: 'center',
+        },
+        positionSection: {
+            paddingHorizontal: spacing.lg,
+            paddingBottom: spacing.md,
+        },
+        navigationContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: spacing.sm,
+        },
+        navigationButton: {
+            backgroundColor: currentColors.backgroundSecondary,
+            padding: spacing.sm,
+            borderRadius: borderRadius.full,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            ...shadows.sm,
+        },
+        navigationButtonDisabled: {
+            backgroundColor: currentColors.borderLight,
+            borderColor: currentColors.borderLight,
+        },
+    });
 
     const [results, setResults] = useState<PositionResultV2 | null>(null);
     const [availablePositions, setAvailablePositions] = useState<number[]>([]);
@@ -157,7 +498,7 @@ const PositionResultsScreen = () => {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading position results...</Text>
                 </View>
             </SafeAreaView>
@@ -168,7 +509,7 @@ const PositionResultsScreen = () => {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle" size={48} color={Colors.light.error} />
+                    <Ionicons name="alert-circle" size={48} color={currentColors.error} />
                     <Text style={styles.errorTitle}>Error Loading Results</Text>
                     <Text style={styles.errorMessage}>{error}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={loadResults}>
@@ -188,7 +529,7 @@ const PositionResultsScreen = () => {
                             style={styles.backButton}
                             onPress={() => router.back()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                            <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                         </TouchableOpacity>
                         <View style={styles.headerContent}>
                             <Text style={styles.title}>No Results Available</Text>
@@ -217,9 +558,9 @@ const PositionResultsScreen = () => {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.push(`/race-results?leagueId=${leagueId}&weekNumber=${weekNumber}`)}
+                        onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                        <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
                         <Text style={styles.title}>Picks By Position</Text>
@@ -245,7 +586,7 @@ const PositionResultsScreen = () => {
                             <Ionicons
                                 name="chevron-back"
                                 size={18}
-                                color={(canNavigatePrevious() && canNavigate()) ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={(canNavigatePrevious() && canNavigate()) ? currentColors.textPrimary : currentColors.textSecondary}
                             />
                         </TouchableOpacity>
 
@@ -269,7 +610,7 @@ const PositionResultsScreen = () => {
                             <Ionicons
                                 name="chevron-forward"
                                 size={18}
-                                color={(canNavigateNext() && canNavigate()) ? Colors.light.textPrimary : Colors.light.textSecondary}
+                                color={(canNavigateNext() && canNavigate()) ? currentColors.textPrimary : currentColors.textSecondary}
                             />
                         </TouchableOpacity>
                     </View>
@@ -374,335 +715,6 @@ const PositionResultsScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    loadingText: {
-        marginTop: spacing.md,
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.lg,
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginTop: spacing.md,
-        marginBottom: spacing.sm,
-    },
-    errorMessage: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.lg,
-    },
-    retryButton: {
-        backgroundColor: Colors.light.primary,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-    },
-    retryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-        marginRight: spacing.sm,
-    },
-    headerContent: {
-        flex: 1,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    weekInfo: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    positionInfo: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    summaryContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        gap: spacing.md,
-    },
-    summaryCard: {
-        flex: 1,
-        backgroundColor: Colors.light.cardBackground,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 60,
-        ...shadows.sm,
-    },
-    summaryLabel: {
-        fontSize: 11,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.xs,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    summaryValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-    },
-    section: {
-        margin: spacing.lg,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.md,
-    },
-    actualResultCard: {
-        backgroundColor: Colors.light.successLight,
-        padding: spacing.lg,
-        borderRadius: borderRadius.md,
-        borderWidth: 2,
-        borderColor: Colors.light.success,
-    },
-    actualResultLabel: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: Colors.light.success,
-        marginBottom: spacing.xs,
-    },
-    actualResultDriver: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.success,
-    },
-    actualResultTeam: {
-        fontSize: 14,
-        color: Colors.light.success,
-        marginTop: spacing.xs,
-    },
-    resultCard: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.sm,
-        ...shadows.sm,
-    },
-    resultHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
-    },
-    avatarContainer: {
-        position: 'relative',
-        marginRight: spacing.md,
-    },
-    positionOverlay: {
-        position: 'absolute',
-        bottom: -2,
-        right: -2,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: Colors.light.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: Colors.light.cardBackground,
-    },
-    firstPlace: {
-        backgroundColor: '#FFD700', // Gold
-    },
-    secondPlace: {
-        backgroundColor: '#C0C0C0', // Silver
-    },
-    thirdPlace: {
-        backgroundColor: '#CD7F32', // Bronze
-    },
-    positionOverlayText: {
-        color: Colors.light.textInverse,
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    pickStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: spacing.xs,
-    },
-    checkIcon: {
-        color: Colors.light.success,
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginRight: spacing.xs,
-    },
-    pickStatusText: {
-        fontSize: 12,
-        color: Colors.light.success,
-        flex: 1,
-    },
-    pointsLabel: {
-        fontSize: 10,
-        color: Colors.light.textSecondary,
-        marginBottom: spacing.xs,
-        textAlign: 'center',
-        fontWeight: '500',
-    },
-    playerInfo: {
-        flex: 1,
-    },
-    playerName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    playerPick: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.xs,
-    },
-    scoreInfo: {
-        alignItems: 'center',
-        minWidth: 60,
-    },
-    pointsText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        textAlign: 'center',
-    },
-    correctText: {
-        fontSize: 12,
-        color: Colors.light.success,
-        fontWeight: 'bold',
-    },
-    resultDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: Colors.light.borderLight,
-    },
-    actualResultText: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-    },
-    incorrectText: {
-        fontSize: 12,
-        color: Colors.light.error,
-        fontWeight: 'bold',
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.lg,
-    },
-    emptyMessage: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-    description: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-        marginTop: spacing.md,
-        marginBottom: spacing.lg,
-        textAlign: 'center',
-    },
-    positionContext: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        flex: 1,
-        paddingHorizontal: spacing.sm,
-    },
-    positionBadge: {
-        backgroundColor: Colors.light.primary,
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        marginBottom: spacing.xs,
-    },
-    positionBadgeText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: Colors.light.textInverse,
-    },
-    positionLabel: {
-        fontSize: 12,
-        color: Colors.light.textSecondary,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    positionSection: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.md,
-    },
-    navigationContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.sm,
-    },
-    navigationButton: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        padding: spacing.sm,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...shadows.sm,
-    },
-    navigationButtonDisabled: {
-        backgroundColor: Colors.light.borderLight,
-        borderColor: Colors.light.borderLight,
-    },
-});
+
 
 export default PositionResultsScreen;

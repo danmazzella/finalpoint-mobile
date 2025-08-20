@@ -14,7 +14,9 @@ import { activityAPI } from '../src/services/apiService';
 import { Activity } from '../src/types';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
 
@@ -22,6 +24,13 @@ const ActivityScreen = () => {
     const params = useLocalSearchParams();
     const leagueId = Number(params.leagueId);
     const leagueName = params.leagueName as string;
+    const { resolvedTheme } = useTheme();
+
+    // Get current theme colors from universal palette
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    // Create universal styles with current theme colors
+    const universalStyles = createThemeStyles(currentColors);
 
     const [activities, setActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
@@ -64,6 +73,171 @@ const ActivityScreen = () => {
     const onRefresh = () => {
         loadActivities(true);
     };
+
+    // Create styles with current theme colors
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+            paddingTop: Platform.OS === 'android' ? 0 : 0,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        loadingText: {
+            marginTop: 16,
+            fontSize: 16,
+            color: currentColors.textSecondary,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: currentColors.backgroundPrimary,
+            padding: 20,
+        },
+        errorTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.error,
+            marginBottom: 10,
+        },
+        errorMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 20,
+        },
+        retryButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+            borderRadius: 8,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        header: {
+            backgroundColor: currentColors.cardBackground,
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.md,
+            minHeight: 64,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        headerContent: {
+            flex: 1,
+        },
+        headerTitle: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        headerSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        backButton: {
+            paddingLeft: spacing.md,
+            paddingRight: spacing.lg,
+            paddingVertical: spacing.sm,
+        },
+        content: {
+            flex: 1,
+            backgroundColor: currentColors.cardBackground,
+            margin: spacing.md,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+        },
+        description: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.lg,
+            marginTop: spacing.md,
+            textAlign: 'center',
+        },
+        sectionHeader: {
+            marginBottom: spacing.md,
+        },
+        sectionTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        sectionSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
+        list: {
+            flex: 1,
+        },
+        activityItem: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+        },
+        activityAvatar: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: currentColors.backgroundSecondary,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+        },
+        avatarText: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textSecondary,
+        },
+        activityContent: {
+            flex: 1,
+        },
+        activityTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: 4,
+        },
+        activityDetails: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: 4,
+        },
+        activityTime: {
+            fontSize: 12,
+            color: currentColors.textTertiary,
+        },
+        emptyContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 40,
+        },
+        emptyTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 8,
+        },
+        emptyMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            lineHeight: 24,
+        },
+    });
 
     const getActivityIcon = (activityType: string) => {
         switch (activityType) {
@@ -192,7 +366,7 @@ const ActivityScreen = () => {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007bff" />
+                <ActivityIndicator size="large" color={currentColors.primary} />
                 <Text style={styles.loadingText}>Loading activities...</Text>
             </View>
         );
@@ -220,7 +394,7 @@ const ActivityScreen = () => {
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
-                    <Ionicons name="arrow-back" size={24} color={Colors.light.textPrimary} />
+                    <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
                     <Text style={styles.headerTitle}>Activity</Text>
@@ -243,8 +417,8 @@ const ActivityScreen = () => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={['#007bff']}
-                            tintColor="#007bff"
+                            colors={[currentColors.primary]}
+                            tintColor={currentColors.primary}
                         />
                     }
                     ListEmptyComponent={
@@ -260,170 +434,6 @@ const ActivityScreen = () => {
         </SafeAreaView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-        paddingTop: Platform.OS === 'android' ? 0 : 0,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-        padding: 20,
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#dc3545',
-        marginBottom: 10,
-    },
-    errorMessage: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    retryButton: {
-        backgroundColor: '#007bff',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 8,
-    },
-    retryButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    header: {
-        backgroundColor: Colors.light.cardBackground,
-        paddingRight: spacing.lg,
-        paddingVertical: spacing.md,
-        minHeight: 64,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    headerContent: {
-        flex: 1,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-    },
-    headerSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    backButton: {
-        paddingLeft: spacing.md,
-        paddingRight: spacing.sm,
-        paddingVertical: spacing.sm,
-    },
-    content: {
-        flex: 1,
-        backgroundColor: Colors.light.cardBackground,
-        margin: spacing.md,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-    },
-    description: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: spacing.lg,
-        marginTop: spacing.md,
-        textAlign: 'center',
-    },
-    sectionHeader: {
-        marginBottom: spacing.md,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: spacing.xs,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: Colors.light.textSecondary,
-    },
-    list: {
-        flex: 1,
-    },
-    activityItem: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    activityAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#e0e0e0',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    avatarText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#666',
-    },
-    activityContent: {
-        flex: 1,
-    },
-    activityTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 4,
-    },
-    activityDetails: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
-    },
-    activityTime: {
-        fontSize: 12,
-        color: '#999',
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 40,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-    },
-    emptyMessage: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-});
 
 export default ActivityScreen;
 

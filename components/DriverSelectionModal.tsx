@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Driver } from '../src/types';
-import Colors from '../constants/Colors';
-import { spacing } from '../utils/styles';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
 
 interface DriverSelectionModalProps {
     visible: boolean;
@@ -39,11 +39,168 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
     submitting = false,
     userPicks,
 }) => {
+    const { resolvedTheme } = useTheme();
+
+    // Get current theme colors
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
     const handleDriverPress = (driver: Driver) => {
         if (disabled || submitting) return;
         onDriverSelect(driver);
         onClose();
     };
+
+    // Create theme-aware styles
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: currentColors.backgroundPrimary,
+        },
+        header: {
+            backgroundColor: currentColors.cardBackground,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.borderLight,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+        },
+        headerContent: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        headerTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            flex: 1,
+        },
+        closeButton: {
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: currentColors.borderLight,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        closeButtonText: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            fontWeight: 'bold',
+        },
+        driversContainer: {
+            flex: 1,
+        },
+        driversContent: {
+            padding: 16,
+            paddingBottom: 100, // Extra padding for footer
+        },
+        driversGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+        },
+        driverCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 12,
+            width: '48%', // Two columns with spacing
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+            shadowColor: currentColors.textPrimary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+            minHeight: 120,
+        },
+        selectedDriverCard: {
+            backgroundColor: currentColors.primary + '20',
+            borderColor: currentColors.primary,
+            borderWidth: 2,
+        },
+        disabledDriverCard: {
+            opacity: 0.5,
+        },
+        alreadyPickedDriverCard: {
+            backgroundColor: currentColors.backgroundSecondary,
+            borderColor: currentColors.borderMedium,
+            opacity: 0.7,
+        },
+        driverHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        driverNumber: {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: currentColors.textSecondary,
+        },
+        driverCountry: {
+            fontSize: 10,
+            color: currentColors.textTertiary,
+            textTransform: 'uppercase',
+        },
+        driverName: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 4,
+            textAlign: 'center',
+        },
+        driverTeam: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 8,
+        },
+        selectedIndicator: {
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            backgroundColor: currentColors.success,
+            borderRadius: 10,
+            width: 20,
+            height: 20,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: currentColors.textInverse,
+        },
+        selectedIndicatorText: {
+            color: currentColors.textInverse,
+            fontSize: 12,
+            fontWeight: 'bold',
+        },
+        alreadyPickedIndicator: {
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            backgroundColor: currentColors.secondary,
+            borderRadius: 8,
+            paddingHorizontal: 6,
+            paddingVertical: 2,
+        },
+        alreadyPickedIndicatorText: {
+            color: currentColors.textInverse,
+            fontSize: 10,
+            fontWeight: 'bold',
+        },
+        footer: {
+            backgroundColor: currentColors.cardBackground,
+            borderTopWidth: 1,
+            borderTopColor: currentColors.borderLight,
+            padding: 16,
+            alignItems: 'center',
+        },
+        footerText: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+        },
+    });
 
     return (
         <Modal
@@ -134,156 +291,5 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
         </Modal>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    header: {
-        backgroundColor: Colors.light.cardBackground,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-    },
-    headerContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-        flex: 1,
-    },
-    closeButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#f0f0f0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    closeButtonText: {
-        fontSize: 16,
-        color: '#666',
-        fontWeight: 'bold',
-    },
-    driversContainer: {
-        flex: 1,
-    },
-    driversContent: {
-        padding: spacing.md,
-        paddingBottom: 100, // Extra padding for footer
-    },
-    driversGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-    driverCard: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        width: '48%', // Two columns with spacing
-        borderWidth: 1,
-        borderColor: '#e9ecef',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        minHeight: 120,
-    },
-    selectedDriverCard: {
-        backgroundColor: '#e3f2fd',
-        borderColor: '#2196f3',
-        borderWidth: 2,
-    },
-    disabledDriverCard: {
-        opacity: 0.5,
-    },
-    alreadyPickedDriverCard: {
-        backgroundColor: '#f3f4f6',
-        borderColor: '#d1d5db',
-        opacity: 0.7,
-    },
-    driverHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    driverNumber: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#666',
-    },
-    driverCountry: {
-        fontSize: 10,
-        color: '#999',
-        textTransform: 'uppercase',
-    },
-    driverName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
-        textAlign: 'center',
-    },
-    driverTeam: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    selectedIndicator: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#4caf50',
-        borderRadius: 10,
-        width: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'white',
-    },
-    selectedIndicatorText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    alreadyPickedIndicator: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#6b7280',
-        borderRadius: 8,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-    },
-    alreadyPickedIndicatorText: {
-        color: 'white',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    footer: {
-        backgroundColor: Colors.light.cardBackground,
-        borderTopWidth: 1,
-        borderTopColor: Colors.light.borderLight,
-        padding: spacing.md,
-        alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-    },
-});
 
 export default DriverSelectionModal;

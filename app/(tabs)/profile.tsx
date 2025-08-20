@@ -17,16 +17,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
-import Colors from '../../constants/Colors';
-import { spacing, borderRadius } from '../../utils/styles';
+import { useTheme } from '../../src/context/ThemeContext';
+import { lightColors, darkColors } from '../../src/constants/Colors';
+import { createThemeStyles } from '../../src/styles/universalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { contactConfig } from '../../config/environment';
 
 const ProfileScreen = () => {
   const { user, logout, refreshUser } = useAuth();
   const { showToast } = useSimpleToast();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render when avatar updates
+
+  // Get current theme colors from universal palette
+  const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
   // Profile avatar state - fetched directly from API
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
@@ -221,17 +226,85 @@ const ProfileScreen = () => {
     }
   };
 
+  // Create universal styles with current theme colors
+  const universalStyles = createThemeStyles(currentColors);
+
+  // Create profile-specific styles
+  const styles = StyleSheet.create({
+    // Profile-specific styles that extend universal styles
+    avatarContainer: {
+      position: 'relative',
+      marginBottom: 12,
+    },
+    avatarOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: currentColors.primary,
+      borderRadius: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: currentColors.cardBackground,
+    },
+    avatarHint: {
+      fontSize: 12,
+      color: currentColors.textSecondary,
+      marginTop: 4,
+    },
+    userName: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: currentColors.textPrimary,
+      marginBottom: 4,
+    },
+    userEmail: {
+      fontSize: 16,
+      color: currentColors.textSecondary,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: currentColors.borderMedium,
+    },
+    menuItemText: {
+      fontSize: 16,
+      color: currentColors.textPrimary,
+    },
+    logoutButton: {
+      backgroundColor: currentColors.error,
+      margin: 16,
+      borderRadius: 8,
+      padding: 12,
+      alignItems: 'center',
+    },
+    logoutButtonText: {
+      color: currentColors.textInverse,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    deleteAccountText: {
+      fontSize: 16,
+      color: currentColors.error,
+    },
+  });
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
+    <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+      <ScrollView style={universalStyles.scrollView}>
+        <View style={universalStyles.header}>
           <TouchableOpacity
             style={styles.avatarContainer}
             onPress={handleAvatarUpload}
             disabled={uploadingAvatar}
           >
             {uploadingAvatar ? (
-              <ActivityIndicator size="small" color={Colors.light.textInverse} />
+              <ActivityIndicator size="small" color={currentColors.textInverse} />
             ) : (
               <Avatar
                 key={refreshKey} // Force re-render when avatar updates
@@ -241,7 +314,7 @@ const ProfileScreen = () => {
               />
             )}
             <View style={styles.avatarOverlay}>
-              <Ionicons name="camera" size={20} color={Colors.light.textInverse} />
+              <Ionicons name="camera" size={20} color={currentColors.textInverse} />
             </View>
           </TouchableOpacity>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
@@ -251,15 +324,15 @@ const ProfileScreen = () => {
 
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+        <View style={universalStyles.section}>
+          <Text style={universalStyles.sectionTitle}>Account</Text>
 
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/edit-profile')}
           >
             <Text style={styles.menuItemText}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -267,7 +340,7 @@ const ProfileScreen = () => {
             onPress={() => router.push('/change-password')}
           >
             <Text style={styles.menuItemText}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -275,15 +348,44 @@ const ProfileScreen = () => {
             onPress={() => router.push('/notifications')}
           >
             <Text style={styles.menuItemText}>Notification Settings</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* Theme Toggle */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={toggleTheme}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuItemText}>Theme</Text>
+              <Text style={[styles.menuItemText, { fontSize: 12, color: currentColors.textSecondary }]}>
+                Switch between light and dark mode
+              </Text>
+            </View>
+            <View style={{
+              width: 44,
+              height: 24,
+              backgroundColor: resolvedTheme === 'dark' ? currentColors.primary : currentColors.borderLight,
+              borderRadius: 12,
+              justifyContent: 'center',
+              paddingHorizontal: 2,
+            }}>
+              <View style={{
+                width: 20,
+                height: 20,
+                backgroundColor: currentColors.textInverse,
+                borderRadius: 10,
+                alignSelf: resolvedTheme === 'dark' ? 'flex-end' : 'flex-start',
+              }} />
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.menuItem, styles.deleteAccountItem]}
+            style={styles.menuItem}
             onPress={() => router.push('/delete-account')}
           >
             <Text style={styles.deleteAccountText}>Delete Account</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.error} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.error} />
           </TouchableOpacity>
 
           {user?.role === 'admin' && (
@@ -292,161 +394,51 @@ const ProfileScreen = () => {
               onPress={() => router.push('/admin')}
             >
               <Text style={styles.menuItemText}>Admin Dashboard</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+              <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App</Text>
+        <View style={universalStyles.section}>
+          <Text style={universalStyles.sectionTitle}>App</Text>
 
           <TouchableOpacity
             style={styles.menuItem}
             onPress={handleAboutFinalPoint}
           >
             <Text style={styles.menuItemText}>About FinalPoint</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handlePrivacyPolicy}>
             <Text style={styles.menuItemText}>Privacy Policy</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handleTermsOfService}>
             <Text style={styles.menuItemText}>Terms of Service</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handleHelpAndSupport}>
             <Text style={styles.menuItemText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
+        <View style={universalStyles.section}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>FinalPoint v1.0.0</Text>
-          <Text style={styles.footerSubtext}>F1 Prediction Game</Text>
+        <View style={universalStyles.footer}>
+          <Text style={universalStyles.footerText}>FinalPoint v1.0.0</Text>
+          <Text style={[universalStyles.footerText, { fontSize: 12 }]}>F1 Prediction Game</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.backgroundPrimary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    backgroundColor: Colors.light.cardBackground,
-    padding: spacing.lg,
-    alignItems: 'center',
-    minHeight: 64,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.borderLight,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: spacing.md,
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: Colors.light.primary,
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.light.cardBackground,
-  },
-  avatarHint: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: spacing.xs,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.light.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: Colors.light.textSecondary,
-  },
-  section: {
-    marginTop: spacing.lg,
-    backgroundColor: Colors.light.cardBackground,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.light.borderLight,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: Colors.light.textPrimary,
-    padding: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.borderLight,
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: Colors.light.textPrimary,
-  },
-  logoutButton: {
-    backgroundColor: Colors.light.error,
-    margin: spacing.lg,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: Colors.light.textInverse,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    alignItems: 'center',
-    padding: spacing.lg,
-    marginTop: spacing.lg,
-  },
-  footerText: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  footerSubtext: {
-    fontSize: 12,
-    color: Colors.light.textTertiary,
-  },
-  deleteAccountItem: {
-    borderBottomWidth: 0,
-  },
-  deleteAccountText: {
-    fontSize: 16,
-    color: Colors.light.error,
-  },
-
-});
 
 export default ProfileScreen;

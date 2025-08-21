@@ -67,7 +67,16 @@ apiService.interceptors.request.use(
 
 // Response interceptor to handle errors
 apiService.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Check if the response contains a new token
+        const newToken = response.headers['x-new-token'];
+        if (newToken) {
+            AsyncStorage.setItem('token', newToken).catch(error => {
+                console.error('Error storing new token:', error);
+            });
+        }
+        return response;
+    },
     async (error) => {
         // Enhanced error logging
         if (error.response) {
@@ -100,8 +109,9 @@ apiService.interceptors.response.use(
             console.log('🔒 401 Unauthorized, clearing auth data');
             await AsyncStorage.removeItem('token');
             await AsyncStorage.removeItem('user');
-        } else if (error.response?.status === 403) {
-            console.log('🚫 403 Forbidden - Access denied');
+
+            // Let the app's navigation logic handle redirects
+            // The AuthContext and route protection will automatically redirect to login when needed
         } else if (error.response?.status === 404) {
             console.log('🔍 404 Not Found - Endpoint or resource not found');
         } else if (error.response?.status === 429) {

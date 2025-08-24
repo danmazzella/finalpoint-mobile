@@ -880,6 +880,8 @@ const LeagueDetailScreen = () => {
                 return 'trophy';
             case 'league_name_changed':
                 return 'create';
+            case 'picks_locked':
+                return 'lock-closed';
             default:
                 return 'information-circle';
         }
@@ -906,6 +908,8 @@ const LeagueDetailScreen = () => {
                 return 'Created the league';
             case 'league_name_changed':
                 return 'Changed the league name';
+            case 'picks_locked':
+                return `Picks locked for ${activity.raceName || 'this race'}`;
             default:
                 // Smart fallback for pick activities with driver change data
                 if (activity.activityType?.includes('pick') && activity.previousDriverName && activity.driverName) {

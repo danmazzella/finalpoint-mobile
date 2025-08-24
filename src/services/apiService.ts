@@ -156,6 +156,9 @@ export const adminAPI = {
         apiService.put(`/admin/users/${userId}/role`, { role }),
     getAllLeagues: () => apiService.get('/admin/leagues'),
     getPickStatsByWeek: () => apiService.get('/admin/pick-stats-by-week'),
+    getAvailableRacesForResults: () => apiService.get('/admin/available-races-for-results'),
+    enterRaceResults: (weekNumber: number, results: { driverId: number; finishingPosition: number }[]) =>
+        apiService.post('/admin/enter-race-results', { weekNumber, results })
 };
 
 export const leaguesAPI = {

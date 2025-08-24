@@ -20,6 +20,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
+import { formatTimeRemainingLocal } from '../../utils/timeUtils';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
@@ -544,6 +545,11 @@ const PicksScreen = () => {
             fontSize: 14,
             color: currentColors.textSecondary,
         },
+        countdownBannerSubtext: {
+            fontSize: 12,
+            color: currentColors.textTertiary,
+            marginTop: 4,
+        },
         qualifyingDate: {
             fontSize: 14,
             color: currentColors.textSecondary,
@@ -698,7 +704,7 @@ const PicksScreen = () => {
 
         // Check if picks are locked
         if (currentRace?.picksLocked) {
-            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
+            showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
             return;
         }
 
@@ -737,7 +743,7 @@ const PicksScreen = () => {
 
         // Check if picks are locked
         if (currentRace?.picksLocked) {
-            showToast('Picks are currently locked for this race. Picks lock 1 hour before qualifying starts.', 'warning');
+            showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
             return;
         }
 
@@ -802,6 +808,8 @@ const PicksScreen = () => {
     const isRaceLocked = () => {
         return currentRace?.isLocked || false;
     };
+
+    // Time formatting is now handled by the imported utility function
 
     if (authLoading || loading) {
         return (
@@ -971,7 +979,19 @@ const PicksScreen = () => {
                                 {!currentRace.picksLocked && currentRace.showCountdown && (
                                     <View style={styles.countdownBanner}>
                                         <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
-                                        <Text style={styles.countdownBannerMessage}>{currentRace.lockMessage}</Text>
+                                        <Text style={styles.countdownBannerMessage}>
+                                            {currentRace.lockTime ? (
+                                                <>
+                                                    Picks will lock in {formatTimeRemainingLocal(currentRace.lockTime, { compact: true })} for {currentRace.raceName}
+                                                    {'\n'}
+                                                    <Text style={styles.countdownBannerSubtext}>
+                                                        Lock time: {new Date(currentRace.lockTime).toLocaleString()}
+                                                    </Text>
+                                                </>
+                                            ) : (
+                                                currentRace.lockMessage
+                                            )}
+                                        </Text>
                                     </View>
                                 )}
 

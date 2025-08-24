@@ -271,6 +271,7 @@ export interface F1Race {
     timeUntilLock?: string;
     timeUntilQualifying?: string;
     lockMessage?: string;
+    lockTime?: string; // Added for new countdown logic
     qualifyingDate?: string;
     circuitName?: string;
     country?: string;

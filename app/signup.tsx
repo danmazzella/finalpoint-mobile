@@ -21,6 +21,9 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import SimpleSocialSignIn from '../components/SimpleSocialSignIn';
+import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
+import { shouldShowGoogleSignIn } from '../config/environment';
 
 const SignupScreen = () => {
   const [name, setName] = useState('');
@@ -42,6 +45,7 @@ const SignupScreen = () => {
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const confirmPasswordInputRef = useRef<TextInput>(null);
+  const googleButtonRef = useRef<View>(null);
 
   const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
   const universalStyles = createThemeStyles(currentColors);
@@ -392,6 +396,9 @@ const SignupScreen = () => {
                 <Text style={[styles.createAccountButtonText, { color: currentColors.textInverse }]}>Create account</Text>
               )}
             </TouchableOpacity>
+
+            {/* Simple Social Sign-In */}
+            <SimpleSocialSignIn />
           </View>
 
           {/* Footer Links */}
@@ -591,6 +598,22 @@ const styles = StyleSheet.create({
   learnMoreText: {
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 14,
+    marginHorizontal: 16,
+  },
+  socialButtonsContainer: {
+    gap: 12,
   },
 });
 

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "FinalPoint",
+    "name": "FP Dev",
     "slug": "finalpoint-mobile",
-    "version": "1.0.12",
+    "version": "1.0.8",
     "orientation": "default",
-    "scheme": "finalpoint",
+    "scheme": "finalpoint-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "statusBar": {
@@ -19,8 +19,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "49",
+      "bundleIdentifier": "com.finalpoint.dev",
+      "buildNumber": "124",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
@@ -42,8 +42,8 @@
       "softwareKeyboardLayoutMode": "pan",
       "enableHermes": true,
       "enableProguardInReleaseBuilds": false,
-      "package": "com.finalpoint.mobile",
-      "versionCode": 24,
+      "package": "com.finalpoint.dev",
+      "versionCode": 99,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -101,7 +101,7 @@
             "googleServicesFile": "./google-services.json",
             "enableProguardInReleaseBuilds": false,
             "enableShrinkResourcesInReleaseBuilds": false,
-            "namespace": "com.finalpoint.mobile"
+            "namespace": "com.finalpoint.dev"
           },
           "ios": {
             "googleServicesFile": "./credentials/ios/GoogleService-Info.plist"

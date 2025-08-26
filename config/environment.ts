@@ -82,12 +82,40 @@ export const isDevelopment = (): boolean => {
 
 // Helper function to check if Google Sign In should be shown
 export const shouldShowGoogleSignIn = (): boolean => {
-    // TEMPORARY: Enable Google Sign-In in production for testing
-    // TODO: Revert this change after testing is complete
-    // return true;
+    // Check if Google Sign-In is configured and enabled
+    const hasGoogleConfig = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID &&
+        process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID.length > 0;
 
-    // Original logic (commented out for reversion):
-    return environment.app.showGoogleSignIn;
+    // Check if explicitly disabled via environment variable
+    const isExplicitlyDisabled = process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'false';
+
+    // Check if explicitly enabled via environment variable
+    const isExplicitlyEnabled = process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN === 'true';
+
+    // Log the configuration for debugging
+    console.log('🔍 Google Sign-In Configuration Debug:');
+    console.log('  - EXPO_PUBLIC_GOOGLE_CLIENT_ID:', process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ? 'Set' : 'Missing');
+    console.log('  - EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN:', process.env.EXPO_PUBLIC_SHOW_GOOGLE_SIGNIN);
+    console.log('  - hasGoogleConfig:', hasGoogleConfig);
+    console.log('  - isExplicitlyDisabled:', isExplicitlyDisabled);
+    console.log('  - isExplicitlyEnabled:', isExplicitlyEnabled);
+
+    // If explicitly disabled, return false
+    if (isExplicitlyDisabled) {
+        console.log('❌ Google Sign-In explicitly disabled');
+        return false;
+    }
+
+    // If explicitly enabled, return true
+    if (isExplicitlyEnabled) {
+        console.log('✅ Google Sign-In explicitly enabled');
+        return true;
+    }
+
+    // Default behavior: enable if Google config is present
+    const result = hasGoogleConfig;
+    console.log(`🔧 Google Sign-In default behavior: ${result ? 'enabled' : 'disabled'}`);
+    return result;
 };
 
 export const environment: EnvironmentConfig = isProduction ? PROD_CONFIG : DEV_CONFIG;

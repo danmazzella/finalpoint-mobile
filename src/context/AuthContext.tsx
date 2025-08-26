@@ -11,6 +11,7 @@ interface AuthContextType {
     isAuthenticating: boolean;
     login: (email: string, password: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     loginWithGoogle: (googleData: { accessToken: string; userInfo: any }) => Promise<{ success: boolean; message?: string; error?: string }>;
+    loginWithApple: (appleData: { idToken: string; userInfo: any }) => Promise<{ success: boolean; message?: string; error?: string }>;
     signup: (email: string, password: string, name: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     logout: () => Promise<void>;
     validateToken: () => Promise<boolean>;
@@ -36,6 +37,7 @@ export const useAuth = () => {
                 isLoading: true,
                 login: async () => ({ success: false, error: 'Context not available' }),
                 loginWithGoogle: async () => ({ success: false, error: 'Context not available' }),
+                loginWithApple: async () => ({ success: false, error: 'Context not available' }),
                 signup: async () => ({ success: false, error: 'Context not available' }),
                 logout: async () => { },
                 validateToken: async () => false,
@@ -59,6 +61,7 @@ export const useAuth = () => {
             isAuthenticating: false,
             login: async () => ({ success: false, error: 'Context not available' }),
             loginWithGoogle: async () => ({ success: false, error: 'Context not available' }),
+            loginWithApple: async () => ({ success: false, error: 'Context not available' }),
             signup: async () => ({ success: false, error: 'Context not available' }),
             logout: async () => { },
             validateToken: async () => false,
@@ -750,12 +753,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const loginWithApple = async (appleData: { idToken: string; userInfo: any }): Promise<{ success: boolean; message?: string; error?: string }> => {
+        try {
+            setIsAuthenticating(true);
+
+            // Prepare Apple login data with optional push token
+            const loginData: any = {
+                idToken: appleData.idToken,
+                userFullName: appleData.userInfo.name,
+                platform: Platform.OS
+            };
+
+            // Try to get push token for mobile devices
+            try {
+                const { registerForPushNotificationsAsync } = await import('../../utils/notifications');
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken) {
+                    loginData.pushToken = pushToken;
+                }
+            } catch (pushTokenError) {
+                console.error('Could not get push token during Apple login (will register later):', pushTokenError);
+            }
+
+            const response = await apiService.post('/users/apple-auth', loginData);
+
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'appleLogin');
+
+            if (result.success) {
+                const userData = response.data.user;
+                setUser(userData);
+                await AsyncStorage.setItem('user', JSON.stringify(userData));
+                await AsyncStorage.setItem('token', response.data.token);
+
+                // Register push token with server after successful Apple login
+                if (loginData.pushToken) {
+                    try {
+                        const { sendPushTokenToServer } = await import('../../utils/notifications');
+                        await sendPushTokenToServer(loginData.pushToken, loginData.platform);
+                    } catch (pushTokenError) {
+                        console.error('❌ Failed to register push token with server:', pushTokenError);
+                    }
+                }
+
+                return { success: true, message: 'Apple login successful!' };
+            }
+
+            return result;
+        } catch (error: any) {
+            // Log detailed error information for debugging
+            if (error.response) {
+                console.error('📥 Backend response error:', {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
+            } else if (error.request) {
+                console.error('📥 No response received:', error.request);
+            } else {
+                console.error('📥 Request setup error:', error.message);
+            }
+
+            return handleApiError(error, 'appleLogin');
+        } finally {
+            // Set isAuthenticating to false immediately after Apple login attempt completes
+            setIsAuthenticating(false);
+        }
+    };
+
     const value = {
         user,
         isLoading,
         isAuthenticating,
         login,
         loginWithGoogle,
+        loginWithApple,
         signup,
         logout,
         validateToken,

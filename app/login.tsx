@@ -22,6 +22,7 @@ import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 import { shouldShowGoogleSignIn } from '../config/environment';
+import SimpleSocialSignIn from '../components/SimpleSocialSignIn';
 
 
 const LoginScreen = () => {
@@ -215,20 +216,8 @@ const LoginScreen = () => {
                             )}
                         </TouchableOpacity>
 
-                        {/* Google Sign-In Section */}
-                        {shouldShowGoogleSignIn() && (
-                            <>
-                                {/* Divider */}
-                                <View style={styles.dividerContainer}>
-                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
-                                    <Text style={[styles.dividerText, { color: currentColors.textSecondary }]}>or</Text>
-                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
-                                </View>
-
-                                {/* Conditional Google Sign-In Button */}
-                                <GoogleSignInWrapper disabled={isAuthenticating || false} />
-                            </>
-                        )}
+                        {/* Simple Social Sign-In */}
+                        <SimpleSocialSignIn />
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity
@@ -431,6 +420,9 @@ const styles = StyleSheet.create({
         marginHorizontal: 12,
         fontSize: 14,
         fontWeight: '500',
+    },
+    socialButtonsContainer: {
+        gap: 12,
     },
 });
 

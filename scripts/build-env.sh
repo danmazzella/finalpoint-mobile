@@ -33,12 +33,12 @@ print_error() {
 show_help() {
     echo "FinalPoint Mobile App - Environment Build Script"
     echo ""
-    echo "Usage: $0 <environment> [platform]"
+    echo "Usage: $0 <environment> [platform] [options]"
     echo ""
     echo "Environments:"
     echo "  development, dev    - Development build (APK, auto-increment versions)"
     echo "  staging             - Staging build (AAB, auto-increment versions)"
-    echo "  production, prod    - Production build (AAB, fixed versions)"
+    echo "  production, prod    - Production build (AAB/IPA, fixed versions)"
     echo "  production_apk      - Production APK build (Android only, fixed versions)"
     echo "  production_ipa      - Production IPA build (iOS only, fixed versions)"
     echo ""
@@ -51,9 +51,18 @@ show_help() {
     echo "  $0 development android"
     echo "  $0 staging ios"
     echo "  $0 production all"
+    echo "  $0 production android"
+    echo "  $0 production ios"
     echo "  $0 production_apk"
     echo "  $0 production_ipa"
     echo "  $0 staging --dry-run"
+    echo "  $0 production android --remote"
+    echo "  $0 staging ios --remote"
+    echo ""
+    echo "Production Build Options:"
+    echo "  production          - Full production build for both platforms (AAB + IPA)"
+    echo "  production_apk      - Production APK for Android (easier testing/installation)"
+    echo "  production_ipa      - Production IPA for iOS (easier testing/installation)"
     echo ""
     echo "Version Management:"
     echo "  Development/Staging: Auto-increments build numbers (versionCode/buildNumber)"
@@ -62,6 +71,11 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --dry-run           - Show configuration changes without building"
+    echo "  --remote            - Build remotely on EAS servers (default: --local)"
+    echo ""
+    echo "Build Location:"
+    echo "  --local             - Build locally on your machine (default)"
+    echo "  --remote            - Build remotely on EAS servers (faster, no local resources)"
     echo ""
     echo "Note: This script modifies app.json directly. Manual changes will persist."
 }
@@ -241,6 +255,44 @@ update_app_config() {
     print_warning "⚠️  Note: app.json has been modified. Manual changes will persist."
 }
 
+# Function to show production build summary
+show_production_summary() {
+    local environment=$1
+    local platform=$2
+    
+    if [[ "$environment" == *"production"* ]]; then
+        echo ""
+        print_success "🚀 PRODUCTION BUILD SUMMARY"
+        print_success "=========================="
+        
+        case $environment in
+            "production"|"prod")
+                if [ "$platform" = "android" ]; then
+                    print_status "📱 Building: Android App Bundle (AAB) for store submission"
+                    print_status "🍎 Skipping: iOS build (use 'production ios' for iOS only)"
+                elif [ "$platform" = "ios" ]; then
+                    print_status "🍎 Building: iOS IPA for store submission"
+                    print_status "📱 Skipping: Android build (use 'production android' for Android only)"
+                else
+                    print_status "📱🍎 Building: Both Android AAB and iOS IPA for store submission"
+                fi
+                ;;
+            "production_apk")
+                print_status "📱 Building: Android APK for testing/distribution"
+                print_status "ℹ️  Note: APK is easier to install for testing but not for store submission"
+                ;;
+            "production_ipa")
+                print_status "🍎 Building: iOS IPA for testing/distribution"
+                print_status "ℹ️  Note: IPA requires proper provisioning profiles for installation"
+                ;;
+        esac
+        
+        print_warning "⚠️  IMPORTANT: This is a PRODUCTION build with store-ready configuration"
+        print_warning "⚠️  Ensure all environment variables and configurations are correct"
+        echo ""
+    fi
+}
+
 # Function to organize build outputs after build completion
 organize_build_outputs() {
     local environment=$1
@@ -322,6 +374,47 @@ output_adb_commands() {
     fi
 }
 
+# Function to show production build next steps
+show_production_next_steps() {
+    local environment=$1
+    local platform=$2
+    
+    if [[ "$environment" == *"production"* ]]; then
+        echo ""
+        print_success "🎯 PRODUCTION BUILD NEXT STEPS"
+        print_success "============================="
+        
+        case $environment in
+            "production"|"prod")
+                if [ "$platform" = "android" ] || [ "$platform" = "all" ]; then
+                    print_status "📱 Android AAB: Ready for Google Play Store submission"
+                    print_status "   - Upload to Google Play Console"
+                    print_status "   - Test on internal testing track if needed"
+                fi
+                if [ "$platform" = "ios" ] || [ "$platform" = "all" ]; then
+                    print_status "🍎 iOS IPA: Ready for App Store submission"
+                    print_status "   - Upload to App Store Connect"
+                    print_status "   - Test on TestFlight if needed"
+                fi
+                ;;
+            "production_apk")
+                print_status "📱 Android APK: Ready for testing and distribution"
+                print_status "   - Install directly on devices for testing"
+                print_status "   - Distribute to testers via email, file sharing, etc."
+                print_status "   - Note: APK cannot be submitted to Google Play Store"
+                ;;
+            "production_ipa")
+                print_status "🍎 iOS IPA: Ready for testing and distribution"
+                print_status "   - Install via Xcode, TestFlight, or enterprise distribution"
+                print_status "   - Note: IPA requires proper provisioning profiles"
+                ;;
+        esac
+        
+        print_warning "⚠️  Remember to update version numbers for the next release"
+        echo ""
+    fi
+}
+
 # Check if help is requested
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "help" ]; then
     show_help
@@ -341,6 +434,7 @@ PLATFORM=${2:-"all"}
 
 # Check for dry-run flag and adjust platform if needed
 DRY_RUN=false
+REMOTE_BUILD=false
 if [ "$2" = "--dry-run" ]; then
     DRY_RUN=true
     PLATFORM="all"  # Default to all platforms in dry-run mode
@@ -348,6 +442,14 @@ if [ "$2" = "--dry-run" ]; then
 elif [ "$3" = "--dry-run" ]; then
     DRY_RUN=true
     print_status "🔍 DRY RUN MODE - No actual build will be performed"
+fi
+
+if [ "$2" = "--remote" ]; then
+    REMOTE_BUILD=true
+    print_status "🚀 Building remotely on EAS servers..."
+elif [ "$3" = "--remote" ]; then
+    REMOTE_BUILD=true
+    print_status "🚀 Building remotely on EAS servers..."
 fi
 
 print_status "Building for environment: $ENVIRONMENT"
@@ -392,6 +494,9 @@ case $ENVIRONMENT in
         ;;
 esac
 
+# Show production build summary if applicable
+show_production_summary "$ENVIRONMENT" "$PLATFORM"
+
 # Handle version management using version-manager.js
 manage_versions "$ENVIRONMENT" "$PLATFORM"
 
@@ -401,7 +506,11 @@ update_app_config "$ENVIRONMENT" "$PLATFORM"
 # Skip build if in dry-run mode
 if [ "$DRY_RUN" = true ]; then
     print_status "🔍 DRY RUN: Configuration updated, skipping build"
-    print_status "🔍 DRY RUN: Would run: eas build --platform $PLATFORM --profile $PROFILE --local"
+    if [ "$REMOTE_BUILD" = true ]; then
+        print_status "🔍 DRY RUN: Would run: eas build --platform $PLATFORM --profile $PROFILE"
+    else
+        print_status "🔍 DRY RUN: Would run: eas build --platform $PLATFORM --profile $PROFILE --local"
+    fi
     print_status "🔍 DRY RUN: Check app.json to see the changes that would be applied"
     exit 0
 fi
@@ -410,7 +519,11 @@ fi
 case $PLATFORM in
     "android")
         echo "Building Android for $ENVIRONMENT environment..."
-        eas build --platform android --profile $PROFILE --local
+        if [ "$REMOTE_BUILD" = true ]; then
+            eas build --platform android --profile $PROFILE
+        else
+            eas build --platform android --profile $PROFILE --local
+        fi
         ;;
     "ios")
             # Prevent iOS builds for production_apk
@@ -424,20 +537,36 @@ case $PLATFORM in
             exit 1
         fi
         echo "Building iOS for $ENVIRONMENT environment..."
-        eas build --platform ios --profile $PROFILE --local
+        if [ "$REMOTE_BUILD" = true ]; then
+            eas build --platform ios --profile $PROFILE
+        else
+            eas build --platform ios --profile $PROFILE --local
+        fi
         ;;
     "all")
             # Prevent all-platform builds for production_apk
         if [ "$ENVIRONMENT" = "production_apk" ]; then
             echo "Error: production_apk profile is Android only. Building for Android only."
-            eas build --platform android --profile $PROFILE --local
+            if [ "$REMOTE_BUILD" = true ]; then
+                eas build --platform android --profile $PROFILE
+            else
+                eas build --platform android --profile $PROFILE --local
+            fi
         # Prevent all-platform builds for production_ipa
         elif [ "$ENVIRONMENT" = "production_ipa" ]; then
             echo "Error: production_ipa profile is iOS only. Building for iOS only."
-            eas build --platform ios --profile $PROFILE --local
+            if [ "$REMOTE_BUILD" = true ]; then
+                eas build --platform ios --profile $PROFILE
+            else
+                eas build --platform ios --profile $PROFILE --local
+            fi
         else
             echo "Building for all platforms for $ENVIRONMENT environment..."
-            eas build --platform all --profile $PROFILE --local
+            if [ "$REMOTE_BUILD" = true ]; then
+                eas build --platform all --profile $PROFILE
+            else
+                eas build --platform all --profile $PROFILE --local
+            fi
         fi
         ;;
     *)
@@ -453,8 +582,16 @@ organize_build_outputs "$ENVIRONMENT" "$PLATFORM"
 # Output adb install commands for Android builds
 output_adb_commands "$ENVIRONMENT" "$PLATFORM"
 
+# Show production build next steps if applicable
+show_production_next_steps "$ENVIRONMENT" "$PLATFORM"
+
 print_success "Build completed for $ENVIRONMENT environment!"
 echo "📁 Build outputs organized in ./builds/$ENVIRONMENT/"
+if [ "$REMOTE_BUILD" = true ]; then
+    print_status "🚀 Build completed remotely on EAS servers"
+else
+    print_status "💻 Build completed locally on your machine"
+fi
 print_warning "⚠️  Note: app.json has been modified for this environment. Manual changes will persist."
 print_status "ℹ️  Build numbers were auto-incremented for development/staging builds"
 print_status "ℹ️  Semantic version remains unchanged (manage manually in version-config.local.json)"

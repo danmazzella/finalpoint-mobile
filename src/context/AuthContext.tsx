@@ -16,8 +16,8 @@ interface AuthContextType {
     validateToken: () => Promise<boolean>;
     updateAvatar: (avatar: FormData) => Promise<boolean>;
     refreshUser: () => Promise<void>;
-    changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
-    updateProfile: (name: string) => Promise<boolean>;
+    changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+    updateProfile: (name: string) => Promise<{ success: boolean; error?: string }>;
     forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
     registerPushToken: () => Promise<boolean>;
@@ -76,8 +76,225 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+    // Universal error handler for API responses
+    const handleApiError = (error: any, context: string): { success: false; error: string } => {
+        console.error(`${context} error:`, error);
+
+        // Handle specific error types
+        if (error.response?.status === 400) {
+            // Check for ErrorClass format first (errors array)
+            let errorMessage = 'Invalid request';
+            if (error.response.data.errors && error.response.data.errors.length > 0) {
+                errorMessage = error.response.data.errors[0].message;
+            } else if (error.response.data.error) {
+                errorMessage = error.response.data.error;
+            }
+
+            // Context-specific error message mapping
+            switch (context) {
+                case 'signup':
+                    if (errorMessage.includes('email') && errorMessage.includes('already')) {
+                        return { success: false, error: 'An account with this email already exists. Please try logging in instead.' };
+                    } else if (errorMessage.includes('username') && errorMessage.includes('already')) {
+                        return { success: false, error: 'This username is already taken. Please choose a different one.' };
+                    } else if (errorMessage.includes('password')) {
+                        return { success: false, error: 'Password does not meet requirements. Please check the requirements below.' };
+                    } else if (errorMessage.includes('validation')) {
+                        return { success: false, error: 'Please check your input and try again.' };
+                    }
+                    break;
+
+                case 'login':
+                    if (errorMessage.includes('credentials') || errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Invalid credentials. Please check your email and password.' };
+                    }
+                    break;
+
+                case 'forgotPassword':
+                    if (errorMessage.includes('email') && errorMessage.includes('not found')) {
+                        return { success: false, error: 'No account found with this email address.' };
+                    } else if (errorMessage.includes('email') && errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Please enter a valid email address.' };
+                    }
+                    break;
+
+                case 'resetPassword':
+                    if (errorMessage.includes('token') && errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Invalid or expired reset token. Please request a new password reset.' };
+                    } else if (errorMessage.includes('password')) {
+                        return { success: false, error: 'Password does not meet requirements. Please check the requirements.' };
+                    }
+                    break;
+
+                case 'changePassword':
+                    if (errorMessage.includes('current password') || errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Current password is incorrect. Please try again.' };
+                    } else if (errorMessage.includes('password') && errorMessage.includes('requirements')) {
+                        return { success: false, error: 'New password does not meet requirements. Please check the requirements below.' };
+                    }
+                    break;
+
+                case 'updateProfile':
+                    if (errorMessage.includes('username') && errorMessage.includes('already')) {
+                        return { success: false, error: 'This username is already taken. Please choose a different one.' };
+                    } else if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Please check your input and try again.' };
+                    }
+                    break;
+
+                case 'googleLogin':
+                    if (errorMessage.includes('token') || errorMessage.includes('invalid')) {
+                        return { success: false, error: 'Invalid Google token. Please try signing in again.' };
+                    } else if (errorMessage.includes('email')) {
+                        return { success: false, error: 'Email verification failed. Please try again.' };
+                    }
+                    break;
+            }
+
+            // Default error message for 400 status
+            return { success: false, error: errorMessage };
+
+        } else if (error.response?.status === 401) {
+            switch (context) {
+                case 'login':
+                case 'signup':
+                    return { success: false, error: 'Invalid credentials. Please check your email and password.' };
+                case 'resetPassword':
+                    return { success: false, error: 'Reset token has expired. Please request a new password reset.' };
+                case 'changePassword':
+                case 'updateProfile':
+                    return { success: false, error: 'Session expired. Please log in again.' };
+                case 'googleLogin':
+                    return { success: false, error: 'Google authentication failed. Please try again.' };
+                default:
+                    return { success: false, error: 'Authentication failed. Please try again.' };
+            }
+
+        } else if (error.response?.status === 403) {
+            switch (context) {
+                case 'login':
+                case 'signup':
+                    return { success: false, error: 'Account locked or suspended. Please contact support.' };
+                case 'googleLogin':
+                    return { success: false, error: 'Access denied. Please check your Google account permissions.' };
+                default:
+                    return { success: false, error: 'Access denied. Please contact support.' };
+            }
+
+        } else if (error.response?.status === 404) {
+            switch (context) {
+                case 'resetPassword':
+                    return { success: false, error: 'Reset token not found. Please request a new password reset.' };
+                default:
+                    return { success: false, error: 'Resource not found. Please try again.' };
+            }
+
+        } else if (error.response?.status === 409) {
+            switch (context) {
+                case 'signup':
+                    return { success: false, error: 'Account already exists. Please try logging in instead.' };
+                case 'googleLogin':
+                    return { success: false, error: 'Account already exists with different login method. Please use email/password login.' };
+                default:
+                    return { success: false, error: 'Resource conflict. Please try again.' };
+            }
+
+        } else if (error.response?.status === 422) {
+            return { success: false, error: 'Invalid data provided. Please check your input.' };
+
+        } else if (error.response?.status === 429) {
+            switch (context) {
+                case 'login':
+                case 'signup':
+                    return { success: false, error: 'Too many login attempts. Please try again later.' };
+                case 'forgotPassword':
+                    return { success: false, error: 'Too many reset attempts. Please try again later.' };
+                default:
+                    return { success: false, error: 'Too many requests. Please try again later.' };
+            }
+
+        } else if (error.response?.status === 500) {
+            return { success: false, error: 'Server error. Please try again later.' };
+
+        } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+            return { success: false, error: 'Network error. Please check your internet connection.' };
+
+        } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            return { success: false, error: 'Request timed out. Please try again.' };
+
+        } else if (error.message?.includes('Failed to fetch')) {
+            return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
+
+        } else {
+            // Handle API error response structure in catch block
+            if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+                const errorMessage = error.response.data.errors[0].message;
+                return { success: false, error: errorMessage };
+            } else if (error.response?.data?.error) {
+                return { success: false, error: error.response.data.error };
+            } else {
+                // Context-specific fallback messages
+                switch (context) {
+                    case 'signup':
+                        return { success: false, error: 'Signup failed. An unexpected error occurred.' };
+                    case 'login':
+                        return { success: false, error: 'Login failed. An unexpected error occurred.' };
+                    case 'forgotPassword':
+                        return { success: false, error: 'Failed to send password reset email. Please try again.' };
+                    case 'resetPassword':
+                        return { success: false, error: 'Failed to reset password. The link may have expired.' };
+                    case 'changePassword':
+                        return { success: false, error: 'Failed to change password. Please try again.' };
+                    case 'updateProfile':
+                        return { success: false, error: 'Failed to update profile. Please try again.' };
+                    case 'googleLogin':
+                        return { success: false, error: 'Google login failed. An unexpected error occurred.' };
+                    default:
+                        return { success: false, error: 'An unexpected error occurred. Please try again.' };
+                }
+            }
+        }
+    };
+
+    // Universal API response handler for both success and error cases
+    const handleApiResponse = (response: any, context: string): { success: boolean; message?: string; error?: string } => {
+        if (response.data.success) {
+            return { success: true, message: response.data.message };
+        }
+
+        // Handle API error response structure
+        if (response.data.errors && response.data.errors.length > 0) {
+            // ErrorClass format: { errors: [{ reason, message }] }
+            const errorMessage = response.data.errors[0].message;
+            return { success: false, error: errorMessage };
+        } else if (response.data.error) {
+            // Fallback for other error formats
+            return { success: false, error: response.data.error };
+        } else {
+            // Context-specific fallback messages
+            switch (context) {
+                case 'signup':
+                    return { success: false, error: 'Signup failed. Invalid credentials or server error.' };
+                case 'login':
+                    return { success: false, error: 'Login failed. Invalid credentials or server error.' };
+                case 'forgotPassword':
+                    return { success: false, error: 'Failed to send password reset email. Please try again.' };
+                case 'resetPassword':
+                    return { success: false, error: 'Failed to reset password. The link may have expired.' };
+                case 'changePassword':
+                    return { success: false, error: 'Failed to change password. Please try again.' };
+                case 'updateProfile':
+                    return { success: false, error: 'Failed to update profile. Please try again.' };
+                case 'googleLogin':
+                    return { success: false, error: 'Google login failed. Please try again.' };
+                default:
+                    return { success: false, error: 'Operation failed. Please try again.' };
+            }
+        }
+    };
 
     useEffect(() => {
         // Simple initialization without immediate API calls
@@ -170,7 +387,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const response = await apiService.post('/users/login', loginData);
 
-            if (response.data.success) {
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'login');
+
+            if (result.success) {
                 const userData = response.data.user;
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -189,40 +409,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Login successful!' };
             }
-            // Handle API error response structure
-            if (response.data.errors && response.data.errors.length > 0) {
-                // ErrorClass format: { errors: [{ reason, message }] }
-                const errorMessage = response.data.errors[0].message;
-                return { success: false, error: errorMessage };
-            } else if (response.data.error) {
-                // Fallback for other error formats
-                return { success: false, error: response.data.error };
-            } else {
-                return { success: false, error: 'Login failed. Invalid credentials or server error.' };
-            }
-        } catch (error: any) {
-            console.error('Login error:', error);
 
-            // Handle specific error types
-            if (error.response?.status === 400) {
-                return { success: false, error: error.response.data.error || 'Invalid request. Please check your input.' };
-            } else if (error.response?.status === 401) {
-                return { success: false, error: 'Invalid credentials. Please check your email and password.' };
-            } else if (error.response?.status === 403) {
-                return { success: false, error: 'Account locked or suspended. Please contact support.' };
-            } else if (error.response?.status === 429) {
-                return { success: false, error: 'Too many login attempts. Please try again later.' };
-            } else if (error.response?.status === 500) {
-                return { success: false, error: 'Server error. Please try again later.' };
-            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-                return { success: false, error: 'Network error. Please check your internet connection.' };
-            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                return { success: false, error: 'Request timed out. Please try again.' };
-            } else if (error.message?.includes('Failed to fetch')) {
-                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
-            } else {
-                return { success: false, error: error.response?.data?.error || 'Login failed. An unexpected error occurred.' };
-            }
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'login');
         } finally {
             // Set isAuthenticating to false immediately after login attempt completes
             setIsAuthenticating(false);
@@ -254,7 +444,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const response = await apiService.post('/users/signup', signupData);
 
-            if (response.data.success) {
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'signup');
+
+            if (result.success) {
                 const userData = response.data.user;
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -274,49 +467,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Signup successful!' };
             }
-            // Handle API error response structure
-            if (response.data.errors && response.data.errors.length > 0) {
-                // ErrorClass format: { errors: [{ reason, message }] }
-                const errorMessage = response.data.errors[0].message;
-                return { success: false, error: errorMessage };
-            } else if (response.data.error) {
-                // Fallback for other error formats
-                return { success: false, error: response.data.error };
-            } else {
-                return { success: false, error: 'Signup failed. Invalid credentials or server error.' };
-            }
-        } catch (error: any) {
-            console.error('Signup error:', error);
 
-            // Handle specific error types
-            if (error.response?.status === 400) {
-                const errorMessage = error.response.data.error || 'Invalid request';
-                if (errorMessage.includes('email') && errorMessage.includes('already')) {
-                    return { success: false, error: 'An account with this email already exists. Please try logging in instead.' };
-                } else if (errorMessage.includes('username') && errorMessage.includes('already')) {
-                    return { success: false, error: 'This username is already taken. Please choose a different one.' };
-                } else if (errorMessage.includes('password')) {
-                    return { success: false, error: 'Password does not meet requirements. Please check the requirements below.' };
-                } else if (errorMessage.includes('validation')) {
-                    return { success: false, error: 'Please check your input and try again.' };
-                } else {
-                    return { success: false, error: errorMessage };
-                }
-            } else if (error.response?.status === 409) {
-                return { success: false, error: 'Account already exists. Please try logging in instead.' };
-            } else if (error.response?.status === 422) {
-                return { success: false, error: 'Invalid data provided. Please check your input.' };
-            } else if (error.response?.status === 500) {
-                return { success: false, error: 'Server error. Please try again later.' };
-            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-                return { success: false, error: 'Network error. Please check your internet connection.' };
-            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                return { success: false, error: 'Request timed out. Please try again.' };
-            } else if (error.message?.includes('Failed to fetch')) {
-                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
-            } else {
-                return { success: false, error: error.response?.data?.error || 'Signup failed. An unexpected error occurred.' };
-            }
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'signup');
         } finally {
             // Set isAuthenticating to false immediately after signup attempt completes
             setIsAuthenticating(false);
@@ -388,39 +542,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
         try {
             setIsLoading(true);
             const response = await apiService.put('/users/password', { currentPassword, newPassword });
-            if (response.data.success) {
+
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'changePassword');
+
+            if (result.success) {
                 await refreshUser(); // Refresh user to update token if it was changed
-                return true;
+                return { success: true };
             }
-            return false;
-        } catch (error) {
-            console.error('Change password error:', error);
-            return false;
+
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'changePassword');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const updateProfile = async (name: string): Promise<boolean> => {
+    const updateProfile = async (name: string): Promise<{ success: boolean; error?: string }> => {
         try {
             setIsLoading(true);
             const response = await apiService.put('/users/profile', { name });
-            if (response.data.success) {
+
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'updateProfile');
+
+            if (result.success) {
                 const updatedUser = user ? { ...user, name } : null;
                 setUser(updatedUser);
                 if (updatedUser) {
                     await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
                 }
-                return true;
+                return { success: true };
             }
-            return false;
-        } catch (error) {
-            console.error('Update profile error:', error);
-            return false;
+
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'updateProfile');
         } finally {
             setIsLoading(false);
         }
@@ -429,100 +591,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const forgotPassword = async (email: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             const response = await authAPI.forgotPassword(email);
-            if (response.data.success) {
+
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'forgotPassword');
+
+            if (result.success) {
                 return {
                     success: true,
                     message: response.data.message || 'If there is an account associated with that email, you will receive a password reset link shortly.'
                 };
             }
-            // Handle API error response structure
-            if (response.data.errors && response.data.errors.length > 0) {
-                // ErrorClass format: { errors: [{ reason, message }] }
-                const errorMessage = response.data.errors[0].message;
-                return { success: false, error: errorMessage };
-            } else if (response.data.error) {
-                // Fallback for other error formats
-                return { success: false, error: response.data.error };
-            } else {
-                return { success: false, error: 'Failed to send password reset email. Please try again.' };
-            }
-        } catch (error: any) {
-            console.error('Forgot password error:', error);
 
-            // Handle specific error types
-            if (error.response?.status === 400) {
-                const errorMessage = error.response.data.error || 'Invalid request';
-                if (errorMessage.includes('email') && errorMessage.includes('not found')) {
-                    return { success: false, error: 'No account found with this email address.' };
-                } else if (errorMessage.includes('email') && errorMessage.includes('invalid')) {
-                    return { success: false, error: 'Please enter a valid email address.' };
-                } else {
-                    return { success: false, error: errorMessage };
-                }
-            } else if (error.response?.status === 429) {
-                return { success: false, error: 'Too many reset attempts. Please try again later.' };
-            } else if (error.response?.status === 500) {
-                return { success: false, error: 'Server error. Please try again later.' };
-            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-                return { success: false, error: 'Network error. Please check your internet connection.' };
-            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                return { success: false, error: 'Request timed out. Please try again.' };
-            } else if (error.message?.includes('Failed to fetch')) {
-                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
-            } else {
-                return { success: false, error: error.response?.data?.error || 'Failed to send password reset email. Please try again.' };
-            }
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'forgotPassword');
         }
     };
 
     const resetPassword = async (token: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> => {
         try {
             const response = await authAPI.resetPassword(token, newPassword);
-            if (response.data.success) {
+
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'resetPassword');
+
+            if (result.success) {
                 return {
                     success: true,
                     message: response.data.message || 'Password reset successful! You can now log in with your new password.'
                 };
             }
-            // Handle API error response structure
-            if (response.data.errors && response.data.errors.length > 0) {
-                // ErrorClass format: { errors: [{ reason, message }] }
-                const errorMessage = response.data.errors[0].message;
-                return { success: false, error: errorMessage };
-            } else if (response.data.error) {
-                // Fallback for other error formats
-                return { success: false, error: response.data.error };
-            } else {
-                return { success: false, error: 'Failed to reset password. The link may have expired.' };
-            }
-        } catch (error: any) {
-            console.error('Reset password error:', error);
 
-            // Handle specific error types
-            if (error.response?.status === 400) {
-                const errorMessage = error.response.data.error || 'Invalid request';
-                if (errorMessage.includes('token') && errorMessage.includes('invalid')) {
-                    return { success: false, error: 'Invalid or expired reset token. Please request a new password reset.' };
-                } else if (errorMessage.includes('password')) {
-                    return { success: false, error: 'Password does not meet requirements. Please check the requirements.' };
-                } else {
-                    return { success: false, error: errorMessage };
-                }
-            } else if (error.response?.status === 401) {
-                return { success: false, error: 'Reset token has expired. Please request a new password reset.' };
-            } else if (error.response?.status === 404) {
-                return { success: false, error: 'Reset token not found. Please request a new password reset.' };
-            } else if (error.response?.status === 500) {
-                return { success: false, error: 'Server error. Please try again later.' };
-            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-                return { success: false, error: 'Network error. Please check your internet connection.' };
-            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                return { success: false, error: 'Request timed out. Please try again.' };
-            } else if (error.message?.includes('Failed to fetch')) {
-                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
-            } else {
-                return { success: false, error: error.response?.data?.error || 'Failed to reset password. The link may have expired.' };
-            }
+            return result;
+        } catch (error: any) {
+            return handleApiError(error, 'resetPassword');
         }
     };
 
@@ -602,7 +704,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const response = await apiService.post('/users/google-auth', requestPayload);
 
-            if (response.data.success) {
+            // Handle API response using universal handler
+            const result = handleApiResponse(response, 'googleLogin');
+
+            if (result.success) {
                 const userData = response.data.user;
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -620,21 +725,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 return { success: true, message: 'Google login successful!' };
             }
-            // Handle API error response structure
-            if (response.data.errors && response.data.errors.length > 0) {
-                // ErrorClass format: { errors: [{ reason, message }] }
-                const errorMessage = response.data.errors[0].message;
-                return { success: false, error: errorMessage };
-            } else if (response.data.error) {
-                // Fallback for other error formats
-                return { success: false, error: response.data.error };
-            } else {
-                return { success: false, error: 'Google login failed. Please try again.' };
-            }
-        } catch (error: any) {
-            console.error('Google login error:', error);
 
-            // Log detailed error information
+            return result;
+        } catch (error: any) {
+            // Log detailed error information for debugging
             if (error.response) {
                 console.error('📥 Backend response error:', {
                     status: error.response.status,
@@ -648,49 +742,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error('📥 Request setup error:', error.message);
             }
 
-            // Handle specific error types
-            if (error.response?.status === 400) {
-                // Handle API error response structure
-                let errorMessage = 'Invalid request';
-                if (error.response.data.errors && error.response.data.errors.length > 0) {
-                    // ErrorClass format: { errors: [{ reason, message }] }
-                    errorMessage = error.response.data.errors[0].message;
-                } else if (error.response.data.error) {
-                    errorMessage = error.response.data.error;
-                }
-
-                if (errorMessage.includes('token') || errorMessage.includes('invalid')) {
-                    return { success: false, error: 'Invalid Google token. Please try signing in again.' };
-                } else if (errorMessage.includes('email')) {
-                    return { success: false, error: 'Email verification failed. Please try again.' };
-                } else {
-                    return { success: false, error: errorMessage };
-                }
-            } else if (error.response?.status === 401) {
-                return { success: false, error: 'Google authentication failed. Please try again.' };
-            } else if (error.response?.status === 403) {
-                return { success: false, error: 'Access denied. Please check your Google account permissions.' };
-            } else if (error.response?.status === 409) {
-                return { success: false, error: 'Account already exists with different login method. Please use email/password login.' };
-            } else if (error.response?.status === 500) {
-                return { success: false, error: 'Server error. Please try again later.' };
-            } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-                return { success: false, error: 'Network error. Please check your internet connection.' };
-            } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-                return { success: false, error: 'Request timed out. Please try again.' };
-            } else if (error.message?.includes('Failed to fetch')) {
-                return { success: false, error: 'Unable to connect to server. Please check your internet connection.' };
-            } else {
-                // Handle API error response structure in catch block
-                if (error.response?.data?.errors && error.response.data.errors.length > 0) {
-                    const errorMessage = error.response.data.errors[0].message;
-                    return { success: false, error: errorMessage };
-                } else if (error.response?.data?.error) {
-                    return { success: false, error: error.response.data.error };
-                } else {
-                    return { success: false, error: 'Google login failed. An unexpected error occurred.' };
-                }
-            }
+            return handleApiError(error, 'googleLogin');
         } finally {
             // Set isAuthenticating to false immediately after Google login attempt completes
             setIsAuthenticating(false);

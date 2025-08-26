@@ -46,8 +46,8 @@ const EditProfileScreen = () => {
         setIsLoading(true);
 
         try {
-            const success = await updateProfile(name.trim());
-            if (success) {
+            const result = await updateProfile(name.trim());
+            if (result.success) {
                 showToast('Profile updated successfully!', 'success');
                 Alert.alert(
                     'Success',
@@ -60,15 +60,11 @@ const EditProfileScreen = () => {
                     ]
                 );
             } else {
-                showToast('Failed to update profile. Please try again.', 'error');
+                showToast(result.error || 'Failed to update profile. Please try again.', 'error');
             }
         } catch (error: any) {
             console.error('Update profile error:', error);
-            if (error?.response?.data?.errors?.some((e: any) => e.message === 'Username already taken')) {
-                showToast('Username already taken. Please choose a different username.', 'error');
-            } else {
-                showToast('An error occurred. Please try again.', 'error');
-            }
+            showToast('An error occurred. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }

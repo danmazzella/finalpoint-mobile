@@ -121,7 +121,7 @@ const SignupScreen = () => {
       }
 
       // Attempt signup
-      const result = await signup(name, email, password);
+      const result = await signup(email, password, name);
       if (result.success) {
         showToast('Account created successfully!', 'success');
         // Navigate to main app

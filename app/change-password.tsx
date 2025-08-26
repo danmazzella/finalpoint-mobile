@@ -63,8 +63,8 @@ const ChangePasswordScreen = () => {
         setIsLoading(true);
 
         try {
-            const success = await changePassword(currentPassword, newPassword);
-            if (success) {
+            const result = await changePassword(currentPassword, newPassword);
+            if (result.success) {
                 showToast('Password changed successfully!', 'success');
                 Alert.alert(
                     'Success',
@@ -77,7 +77,7 @@ const ChangePasswordScreen = () => {
                     ]
                 );
             } else {
-                showToast('Failed to change password. Please check your current password.', 'error');
+                showToast(result.error || 'Failed to change password. Please check your current password.', 'error');
             }
         } catch (error) {
             console.error('Change password error:', error);

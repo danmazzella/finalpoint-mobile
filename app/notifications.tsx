@@ -46,9 +46,11 @@ const NotificationSettingsScreen = () => {
     emailReminder5Days: true,
     emailReminder3Days: true,
     emailReminder1Day: true,
+    emailReminder1Hour: true,
     pushReminder5Days: true,
     pushReminder3Days: true,
     pushReminder1Day: true,
+    pushReminder1Hour: true,
     emailOther: true,
     pushOther: true,
   });
@@ -77,9 +79,11 @@ const NotificationSettingsScreen = () => {
           emailReminder5Days: Boolean(rawData.emailReminder5Days ?? true),
           emailReminder3Days: Boolean(rawData.emailReminder3Days ?? true),
           emailReminder1Day: Boolean(rawData.emailReminder1Day ?? true),
+          emailReminder1Hour: Boolean(rawData.emailReminder1Hour ?? true),
           pushReminder5Days: Boolean(rawData.pushReminder5Days ?? true),
           pushReminder3Days: Boolean(rawData.pushReminder3Days ?? true),
           pushReminder1Day: Boolean(rawData.pushReminder1Day ?? true),
+          pushReminder1Hour: Boolean(rawData.pushReminder1Hour ?? true),
           emailOther: Boolean(rawData.emailOther ?? true),
           pushOther: Boolean(rawData.pushOther ?? true)
         });
@@ -331,14 +335,53 @@ const NotificationSettingsScreen = () => {
 
             <View style={styles.preferenceRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.preferenceLabel}>Race Reminders</Text>
-                <Text style={styles.preferenceDescription}>Get reminded about upcoming races</Text>
+                <Text style={styles.preferenceLabel}>5-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 5 days before a race</Text>
               </View>
               <Switch
-                value={preferences.emailReminders}
-                onValueChange={(value) => handlePreferenceChange('emailReminders', value)}
+                value={preferences.emailReminder5Days}
+                onValueChange={(value) => handlePreferenceChange('emailReminder5Days', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
-                thumbColor={preferences.emailReminders ? currentColors.primary : currentColors.borderMedium}
+                thumbColor={preferences.emailReminder5Days ? currentColors.primary : currentColors.borderMedium}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>3-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 3 days before a race</Text>
+              </View>
+              <Switch
+                value={preferences.emailReminder3Days}
+                onValueChange={(value) => handlePreferenceChange('emailReminder3Days', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.emailReminder3Days ? currentColors.primary : currentColors.borderMedium}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>1-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 1 day before a race</Text>
+              </View>
+              <Switch
+                value={preferences.emailReminder1Day}
+                onValueChange={(value) => handlePreferenceChange('emailReminder1Day', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.emailReminder1Day ? currentColors.primary : currentColors.borderMedium}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>1-Hour Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 1 hour before a race</Text>
+              </View>
+              <Switch
+                value={preferences.emailReminder1Hour}
+                onValueChange={(value) => handlePreferenceChange('emailReminder1Hour', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.emailReminder1Hour ? currentColors.primary : currentColors.borderMedium}
               />
             </View>
 
@@ -355,7 +398,7 @@ const NotificationSettingsScreen = () => {
               />
             </View>
 
-            <View style={styles.preferenceRow}>
+            <View style={[styles.preferenceRow, styles.preferenceRowLast]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.preferenceLabel}>Other Updates</Text>
                 <Text style={styles.preferenceDescription}>Receive other important updates</Text>
@@ -375,14 +418,56 @@ const NotificationSettingsScreen = () => {
 
             <View style={styles.preferenceRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.preferenceLabel}>Race Reminders</Text>
-                <Text style={styles.preferenceDescription}>Get reminded about upcoming races</Text>
+                <Text style={styles.preferenceLabel}>5-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 5 days before a race</Text>
               </View>
               <Switch
-                value={preferences.pushReminders}
-                onValueChange={(value) => handlePreferenceChange('pushReminders', value)}
+                value={preferences.pushReminder5Days}
+                onValueChange={(value) => handlePreferenceChange('pushReminder5Days', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
-                thumbColor={preferences.pushReminders ? currentColors.primary : currentColors.borderMedium}
+                thumbColor={preferences.pushReminder5Days ? currentColors.primary : currentColors.borderMedium}
+                disabled={!notificationsSupported}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>3-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 3 days before a race</Text>
+              </View>
+              <Switch
+                value={preferences.pushReminder3Days}
+                onValueChange={(value) => handlePreferenceChange('pushReminder3Days', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.pushReminder3Days ? currentColors.primary : currentColors.borderMedium}
+                disabled={!notificationsSupported}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>1-Day Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 1 day before a race</Text>
+              </View>
+              <Switch
+                value={preferences.pushReminder1Day}
+                onValueChange={(value) => handlePreferenceChange('pushReminder1Day', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.pushReminder1Day ? currentColors.primary : currentColors.borderMedium}
+                disabled={!notificationsSupported}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>1-Hour Reminder</Text>
+                <Text style={styles.preferenceDescription}>Get reminded 1 hour before a race</Text>
+              </View>
+              <Switch
+                value={preferences.pushReminder1Hour}
+                onValueChange={(value) => handlePreferenceChange('pushReminder1Hour', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.pushReminder1Hour ? currentColors.primary : currentColors.borderMedium}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -401,7 +486,7 @@ const NotificationSettingsScreen = () => {
               />
             </View>
 
-            <View style={styles.preferenceRow}>
+            <View style={[styles.preferenceRow, styles.preferenceRowLast]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.preferenceLabel}>Other Updates</Text>
                 <Text style={styles.preferenceDescription}>Receive other important updates</Text>

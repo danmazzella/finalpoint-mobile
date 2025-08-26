@@ -172,9 +172,11 @@ export interface NotificationPreferences {
     emailReminder5Days: boolean;
     emailReminder3Days: boolean;
     emailReminder1Day: boolean;
+    emailReminder1Hour: boolean;
     pushReminder5Days: boolean;
     pushReminder3Days: boolean;
     pushReminder1Day: boolean;
+    pushReminder1Hour: boolean;
     emailOther: boolean;
     pushOther: boolean;
 }

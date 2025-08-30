@@ -616,31 +616,45 @@ const PicksScreen = () => {
                 f1racesAPI.getCurrentRace()
             ]);
 
-            if (driversResponse.data.success) {
-                setDrivers(driversResponse.data.data);
+            if (driversResponse.data.success && driversResponse.data.data) {
+                const validDrivers = Array.isArray(driversResponse.data.data)
+                    ? driversResponse.data.data.filter((driver: any) => driver && driver.id && driver.name)
+                    : [];
+                setDrivers(validDrivers);
+            } else {
+                setDrivers([]);
             }
 
-            if (leaguesResponse.data.success) {
-                setLeagues(leaguesResponse.data.data);
+            if (leaguesResponse.data.success && leaguesResponse.data.data) {
+                const validLeagues = Array.isArray(leaguesResponse.data.data)
+                    ? leaguesResponse.data.data.filter((league: any) => league && league.id)
+                    : [];
+                setLeagues(validLeagues);
+
                 // If we have a leagueId from URL, select that league
-                if (urlLeagueId && leaguesResponse.data.data.length > 0) {
+                if (urlLeagueId && validLeagues.length > 0) {
                     const urlLeagueIdNum = Number(urlLeagueId);
-                    const urlLeague = leaguesResponse.data.data.find((league: League) => league.id === urlLeagueIdNum);
+                    const urlLeague = validLeagues.find((league: League) => league.id === urlLeagueIdNum);
                     if (urlLeague) {
                         setSelectedLeague(urlLeague.id);
                     } else if (!selectedLeague) {
                         // Fallback to first league if URL league not found
-                        setSelectedLeague(leaguesResponse.data.data[0].id);
+                        setSelectedLeague(validLeagues[0].id);
                     }
-                } else if (!selectedLeague && leaguesResponse.data.data.length > 0) {
+                } else if (!selectedLeague && validLeagues.length > 0) {
                     // If no league is selected and we have leagues, select the first one
-                    setSelectedLeague(leaguesResponse.data.data[0].id);
+                    setSelectedLeague(validLeagues[0].id);
                 }
+            } else {
+                setLeagues([]);
             }
 
-            if (currentRaceResponse.data.success) {
+            if (currentRaceResponse.data.success && currentRaceResponse.data.data) {
                 setCurrentRace(currentRaceResponse.data.data);
-                setCurrentWeek(currentRaceResponse.data.data.weekNumber);
+                setCurrentWeek(currentRaceResponse.data.data.weekNumber || 1);
+            } else {
+                setCurrentRace(null);
+                setCurrentWeek(1);
             }
         } catch (error: any) {
             console.error('Error loading data:', error);
@@ -659,17 +673,28 @@ const PicksScreen = () => {
 
         try {
             const response = await picksAPI.getUserPicksV2(selectedLeague);
-            if (response.data.success) {
-                setUserPicks(response.data.data);
+            if (response.data.success && response.data.data) {
+                // Ensure data is an array and filter out any invalid entries
+                const validPicks = Array.isArray(response.data.data)
+                    ? response.data.data.filter((pick: any) => pick && typeof pick.position === 'number' && pick.driverId)
+                    : [];
+
+                setUserPicks(validPicks);
+
                 // Convert existing picks to selectedPicks format
-                const picks = response.data.data.map((pick: UserPickV2) => ({
+                const picks = validPicks.map((pick: UserPickV2) => ({
                     position: pick.position,
                     driverId: pick.driverId
                 }));
                 setSelectedPicks(picks);
+            } else {
+                setUserPicks([]);
+                setSelectedPicks([]);
             }
         } catch (error) {
             console.error('Error loading user picks:', error);
+            setUserPicks([]);
+            setSelectedPicks([]);
         }
     };
 
@@ -678,11 +703,18 @@ const PicksScreen = () => {
 
         try {
             const response = await picksAPI.getLeaguePositions(selectedLeague);
-            if (response.data.success) {
-                setLeaguePositions(response.data.data);
+            if (response.data.success && response.data.data) {
+                // Ensure data is an array and filter out any invalid entries
+                const validPositions = Array.isArray(response.data.data)
+                    ? response.data.data.filter((pos: any) => pos && typeof pos === 'number')
+                    : [];
+                setLeaguePositions(validPositions);
+            } else {
+                setLeaguePositions([]);
             }
         } catch (error) {
             console.error('Error loading league positions:', error);
+            setLeaguePositions([]);
         }
     };
 
@@ -703,7 +735,7 @@ const PicksScreen = () => {
         }
 
         // Check if picks are locked
-        if (currentRace?.picksLocked) {
+        if (currentRace && Boolean(currentRace.picksLocked)) {
             showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
             return;
         }
@@ -742,7 +774,7 @@ const PicksScreen = () => {
         }
 
         // Check if picks are locked
-        if (currentRace?.picksLocked) {
+        if (currentRace && Boolean(currentRace.picksLocked)) {
             showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
             return;
         }
@@ -773,7 +805,7 @@ const PicksScreen = () => {
     };
 
     const handlePositionPress = (position: number) => {
-        if (currentRace?.picksLocked || isRaceLocked()) {
+        if ((currentRace && Boolean(currentRace.picksLocked)) || isRaceLocked()) {
             showToast('Picks are currently locked for this race.', 'warning');
             return;
         }
@@ -793,20 +825,28 @@ const PicksScreen = () => {
     };
 
     const getCurrentPickForPosition = (position: number) => {
-        return userPicks.find(pick => pick.position === position);
+        if (!userPicks || !Array.isArray(userPicks)) return null;
+        return userPicks.find(pick => pick && pick.position === position);
     };
 
     const getSelectedDriverForPosition = (position: number) => {
-        return selectedPicks.find(pick => pick.position === position)?.driverId;
+        if (!selectedPicks || !Array.isArray(selectedPicks)) return null;
+        const pick = selectedPicks.find(pick => pick && pick.position === position);
+        return pick ? pick.driverId : null;
     };
 
     const isPositionLocked = (position: number) => {
         const pick = getCurrentPickForPosition(position);
-        return pick?.isLocked || false;
+        return pick && Boolean(pick.isLocked);
     };
 
     const isRaceLocked = () => {
-        return currentRace?.isLocked || false;
+        if (!currentRace || currentRace.picksLocked === undefined || currentRace.picksLocked === null) {
+            return false;
+        }
+        // Handle both boolean and number types from API
+        const picksLocked = currentRace.picksLocked;
+        return Boolean(picksLocked);
     };
 
     // Time formatting is now handled by the imported utility function
@@ -968,45 +1008,69 @@ const PicksScreen = () => {
                                 <Text style={styles.sectionTitle}>Current Race</Text>
 
                                 {/* Pick Locking Status Banner */}
-                                {currentRace.picksLocked && (
+                                {currentRace.picksLocked && Boolean(currentRace.picksLocked) && (
                                     <View style={styles.lockedBanner}>
                                         <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
+                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
                                     </View>
                                 )}
 
                                 {/* Pick Locking Countdown */}
-                                {!currentRace.picksLocked && currentRace.showCountdown && (
+                                {!Boolean(currentRace.picksLocked) && Boolean(currentRace.showCountdown) && (
                                     <View style={styles.countdownBanner}>
                                         <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
                                         <Text style={styles.countdownBannerMessage}>
                                             {currentRace.lockTime ? (
                                                 <>
-                                                    Picks will lock in {formatTimeRemainingLocal(currentRace.lockTime, { compact: true })} for {currentRace.raceName}
+                                                    Picks will lock in {(() => {
+                                                        try {
+                                                            return formatTimeRemainingLocal(currentRace.lockTime, { compact: true });
+                                                        } catch (e) {
+                                                            return 'soon';
+                                                        }
+                                                    })()} for {currentRace.raceName || 'this race'}
                                                     {'\n'}
                                                     <Text style={styles.countdownBannerSubtext}>
-                                                        Lock time: {new Date(currentRace.lockTime).toLocaleString()}
+                                                        Lock time: {(() => {
+                                                            try {
+                                                                return new Date(currentRace.lockTime).toLocaleString();
+                                                            } catch (e) {
+                                                                return 'Invalid date';
+                                                            }
+                                                        })()}
                                                     </Text>
                                                 </>
                                             ) : (
-                                                currentRace.lockMessage
+                                                currentRace.lockMessage || 'Picks will lock soon'
                                             )}
                                         </Text>
                                     </View>
                                 )}
 
                                 <View style={styles.raceCard}>
-                                    <Text style={styles.raceName}>{currentRace.raceName}</Text>
+                                    <Text style={styles.raceName}>{currentRace.raceName || 'Race'}</Text>
                                     <Text style={styles.raceDate}>
-                                        {new Date(currentRace.raceDate).toLocaleDateString()}
+                                        {currentRace.raceDate ? (() => {
+                                            try {
+                                                return new Date(currentRace.raceDate).toLocaleDateString();
+                                            } catch (e) {
+                                                return 'Invalid date';
+                                            }
+                                        })() : 'Date TBD'}
                                     </Text>
                                     {currentRace.qualifyingDate && (
                                         <Text style={styles.qualifyingDate}>
-                                            Qualifying: {new Date(currentRace.qualifyingDate).toLocaleDateString()}
+                                            Qualifying: {(() => {
+                                                try {
+                                                    return new Date(currentRace.qualifyingDate).toLocaleDateString();
+                                                } catch (e) {
+                                                    return 'Invalid date';
+                                                }
+                                            })()}
                                         </Text>
                                     )}
                                     <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
-                                        Status: {isRaceLocked() ? 'Locked' : currentRace.status}
+                                        Status: {isRaceLocked() ? 'Locked' : (currentRace.status || 'Unknown')}
                                     </Text>
                                 </View>
                             </View>
@@ -1049,7 +1113,7 @@ const PicksScreen = () => {
                                                     {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
                                                 </View>
 
-                                                {currentPick ? (
+                                                {currentPick && currentPick.driverName && currentPick.driverTeam ? (
                                                     <View style={styles.currentPickCard}>
                                                         <Text style={styles.currentPickDriver}>{currentPick.driverName}</Text>
                                                         <Text style={styles.currentPickTeam}>{currentPick.driverTeam}</Text>
@@ -1090,10 +1154,10 @@ const PicksScreen = () => {
                                 </Text>
 
                                 {/* Show pick locking message for legacy picks */}
-                                {currentRace?.picksLocked && (
+                                {currentRace && Boolean(currentRace.picksLocked) && (
                                     <View style={styles.lockedBanner}>
                                         <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage}</Text>
+                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
                                     </View>
                                 )}
 
@@ -1106,7 +1170,7 @@ const PicksScreen = () => {
                                                 getSelectedDriverForPosition(10) === driver.id && styles.selectedDriverCard
                                             ]}
                                             onPress={() => makePick(10, driver.id)}
-                                            disabled={submitting || isRaceLocked() || currentRace?.picksLocked}
+                                            disabled={submitting || isRaceLocked() || (currentRace ? Boolean(currentRace.picksLocked) : false)}
                                         >
                                             <View style={styles.driverInfo}>
                                                 <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
@@ -1136,9 +1200,9 @@ const PicksScreen = () => {
                 onClose={closeDriverModal}
                 position={selectedPosition || 0}
                 drivers={drivers}
-                selectedDriverId={selectedPosition ? getSelectedDriverForPosition(selectedPosition) : undefined}
+                selectedDriverId={selectedPosition ? getSelectedDriverForPosition(selectedPosition) || undefined : undefined}
                 onDriverSelect={handleDriverSelect}
-                disabled={currentRace?.picksLocked || isRaceLocked()}
+                disabled={(currentRace ? Boolean(currentRace.picksLocked) : false) || isRaceLocked()}
                 submitting={submitting}
                 userPicks={new Map(selectedPicks.map(pick => [pick.position, pick.driverId]))}
             />

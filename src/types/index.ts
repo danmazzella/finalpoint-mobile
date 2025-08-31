@@ -200,6 +200,11 @@ export interface Activity {
     raceName: string | null;
     leagueName: string | null;
     createdAt: string;
+    // New fields for formatted messages from backend
+    primaryMessage?: string;
+    secondaryMessage?: string;
+    // New field for flexible activity data
+    activityData?: string;
 }
 
 // User stats types

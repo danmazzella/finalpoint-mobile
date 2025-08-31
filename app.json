@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "49",
+      "buildNumber": "50",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
@@ -43,7 +43,7 @@
       "enableHermes": true,
       "enableProguardInReleaseBuilds": false,
       "package": "com.finalpoint.mobile",
-      "versionCode": 24,
+      "versionCode": 25,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

@@ -1421,10 +1421,21 @@ const RaceResultsScreen = () => {
                                             <View style={styles.memberInfo}>
                                                 <Text style={styles.memberName}>{result.userName}</Text>
                                                 <View style={styles.memberStatus}>
-                                                    <Ionicons name="checkmark-circle" size={16} color={currentColors.success} />
-                                                    <Text style={styles.memberStats}>
-                                                        All {result.picks.filter(p => p.driverName).length} picks made
-                                                    </Text>
+                                                    {result.picks.filter(p => p.driverName).length === result.picks.length ? (
+                                                        <>
+                                                            <Ionicons name="checkmark-circle" size={16} color={currentColors.success} />
+                                                            <Text style={[styles.memberStats, { color: currentColors.success }]}>
+                                                                All {result.picks.filter(p => p.driverName).length} picks made
+                                                            </Text>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Ionicons name="alert-circle" size={16} color={currentColors.warning} />
+                                                            <Text style={[styles.memberStats, { color: currentColors.warning }]}>
+                                                                {result.picks.filter(p => p.driverName).length} of {result.picks.length} picks made
+                                                            </Text>
+                                                        </>
+                                                    )}
                                                 </View>
                                             </View>
                                         </View>

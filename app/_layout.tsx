@@ -54,11 +54,13 @@ const getScreenOptionsWithBackground = (theme: string, additionalOptions: any = 
 });
 
 // Conditionally initialize Firebase configuration
-if (shouldEnableNotifications()) {
+// Only initialize Firebase in native environments (iOS/Android)
+// Web browsers don't support Firebase Cloud Messaging and can cause errors
+if (shouldEnableNotifications() && Platform.OS !== 'web') {
   // console.log('🔑 Initializing Firebase...');
   import('../config/firebase');
 } else {
-  // console.log('🚫 Firebase disabled in Expo Go');
+  // console.log('🚫 Firebase disabled in Expo Go or web browser');
 }
 
 // Log environment information

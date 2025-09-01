@@ -214,6 +214,8 @@ export interface UserStats {
     totalPoints: number;
     averagePoints: number;
     accuracy: number;
+    avgDistance: number;
+    perfectPicksRate: number;
 }
 
 export interface GlobalStats {
@@ -309,8 +311,10 @@ export interface LeagueStanding {
     accuracy: number | null;
     averagePoints: number;
     averageDistanceFromCorrect?: number;
+    avgDistance?: number;
     racesParticipated?: number;
     averagePointsPerRace?: number;
+    newAccuracy?: number; // New points-based accuracy field
 }
 
 // League stats types
@@ -319,6 +323,7 @@ export interface LeagueStats {
     totalPicks: number;
     correctPicks: number;
     accuracy: number;
+    avgDistance?: number;
     averagePoints: number;
     totalPoints: number;
     mostActiveMember: {

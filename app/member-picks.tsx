@@ -730,7 +730,7 @@ const MemberPicksScreen = () => {
                                         <Text style={[
                                             styles.actualResultLabel,
                                             pick.isCorrect === true ? styles.correctResultLabel : styles.incorrectResultLabel
-                                        ]}>Result:</Text>
+                                        ]}>Actual:</Text>
                                         <Text style={[
                                             styles.actualResultDriver,
                                             pick.isCorrect === true ? styles.correctResultDriver : styles.incorrectResultDriver

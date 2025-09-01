@@ -320,11 +320,11 @@ const PicksScreen = () => {
         },
         removePickIcon: {
             position: 'absolute',
-            top: 6,
-            right: 6,
-            width: 20,
-            height: 20,
-            borderRadius: 10,
+            top: 8,
+            right: 8,
+            width: 24,
+            height: 24,
+            borderRadius: 12,
             backgroundColor: currentColors.error,
             justifyContent: 'center',
             alignItems: 'center',
@@ -475,7 +475,13 @@ const PicksScreen = () => {
         },
         selectedLeagueCard: {
             borderColor: currentColors.primary,
+            borderWidth: 2,
             backgroundColor: currentColors.primary + '20',
+            shadowColor: currentColors.primary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 4,
         },
         leagueCardContent: {
             alignItems: 'center',
@@ -491,6 +497,7 @@ const PicksScreen = () => {
         },
         selectedLeagueName: {
             color: currentColors.primary,
+            fontWeight: '700',
         },
         leagueDetails: {
             fontSize: 12,
@@ -604,11 +611,12 @@ const PicksScreen = () => {
         if (urlLeagueId && leagues.length > 0) {
             const urlLeagueIdNum = Number(urlLeagueId);
             const urlLeague = leagues.find((league: League) => league.id === urlLeagueIdNum);
-            if (urlLeague && urlLeague.id !== selectedLeague) {
+            if (urlLeague && !selectedLeague) {
+                // Only set from URL if no league is currently selected
                 setSelectedLeague(urlLeague.id);
             }
         }
-    }, [urlLeagueId, leagues, selectedLeague]);
+    }, [urlLeagueId, leagues]);
 
     const loadData = async () => {
         try {
@@ -683,10 +691,13 @@ const PicksScreen = () => {
                     ? response.data.data.filter((pick: any) => pick && typeof pick.position === 'number' && pick.driverId)
                     : [];
 
-                setUserPicks(validPicks);
+                // Filter picks by current week
+                const currentWeekPicks = validPicks.filter((pick: UserPickV2) => pick.weekNumber === currentWeek);
+
+                setUserPicks(currentWeekPicks);
 
                 // Convert existing picks to selectedPicks format
-                const picks = validPicks.map((pick: UserPickV2) => ({
+                const picks = currentWeekPicks.map((pick: UserPickV2) => ({
                     position: pick.position,
                     driverId: pick.driverId
                 }));

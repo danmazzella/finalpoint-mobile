@@ -1,10 +1,18 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 /**
  * Check if the app is running in Expo Go
  */
 export const isExpoGo = (): boolean => {
     return Constants.appOwnership === 'expo';
+};
+
+/**
+ * Check if the app is running in a web browser
+ */
+export const isWebBrowser = (): boolean => {
+    return Platform.OS === 'web';
 };
 
 /**
@@ -24,16 +32,18 @@ export const isProductionBuild = (): boolean => {
 /**
  * Determine if notifications should be enabled
  * - Disabled in Expo Go (SDK 53+ limitation)
+ * - Disabled in web browsers (Firebase messaging not supported)
  * - Enabled in development builds and production builds
  */
 export const shouldEnableNotifications = (): boolean => {
-    return !isExpoGo();
+    return !isExpoGo() && !isWebBrowser();
 };
 
 /**
  * Get the current environment type for debugging
  */
 export const getEnvironmentType = (): string => {
+    if (isWebBrowser()) return 'Web Browser';
     if (isExpoGo()) return 'Expo Go';
     if (isDevelopmentBuild()) return 'Development Build';
     if (isProductionBuild()) return 'Production Build';
@@ -45,7 +55,9 @@ export const getEnvironmentType = (): string => {
  */
 export const logEnvironmentInfo = (): void => {
     console.log('🔧 Environment Info:', {
+        platform: Platform.OS,
         appOwnership: Constants.appOwnership,
+        isWebBrowser: isWebBrowser(),
         isExpoGo: isExpoGo(),
         isDevelopmentBuild: isDevelopmentBuild(),
         isProductionBuild: isProductionBuild(),

@@ -261,14 +261,14 @@ const PositionResultsScreen = () => {
             marginTop: spacing.xs,
         },
         checkIcon: {
-            color: currentColors.success,
-            fontSize: 14,
+            color: currentColors.textSecondary,
+            fontSize: 10,
             fontWeight: 'bold',
             marginRight: spacing.xs,
         },
         pickStatusText: {
-            fontSize: 12,
-            color: currentColors.success,
+            fontSize: 11,
+            color: currentColors.textSecondary,
             flex: 1,
         },
         pointsLabel: {
@@ -281,10 +281,62 @@ const PositionResultsScreen = () => {
         playerInfo: {
             flex: 1,
         },
+        nameAndStatus: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
         playerName: {
             fontSize: 16,
             fontWeight: 'bold',
             color: currentColors.textPrimary,
+        },
+        statusIcon: {
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginLeft: spacing.xs,
+        },
+        statusIconGreen: {
+            backgroundColor: currentColors.successLight,
+        },
+        statusIconRed: {
+            backgroundColor: currentColors.errorLight,
+        },
+        statusIconGray: {
+            backgroundColor: currentColors.borderLight,
+        },
+        statusIconText: {
+            fontSize: 10,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        driverInfo: {
+            marginTop: spacing.xs,
+        },
+        driverInfoLabel: {
+            fontSize: 10,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+        },
+        driverInfoText: {
+            fontSize: 12,
+            color: currentColors.textPrimary,
+            fontWeight: '500',
+        },
+        actualInfo: {
+            marginTop: spacing.xs,
+        },
+        actualInfoLabel: {
+            fontSize: 10,
+            color: currentColors.textSecondary,
+            fontWeight: '500',
+        },
+        actualInfoText: {
+            fontSize: 12,
+            color: currentColors.textPrimary,
+            fontWeight: '500',
         },
         playerPick: {
             fontSize: 12,
@@ -301,28 +353,7 @@ const PositionResultsScreen = () => {
             color: currentColors.textPrimary,
             textAlign: 'center',
         },
-        correctText: {
-            fontSize: 12,
-            color: currentColors.success,
-            fontWeight: 'bold',
-        },
-        resultDetails: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingTop: spacing.sm,
-            borderTopWidth: 1,
-            borderTopColor: currentColors.borderLight,
-        },
-        actualResultText: {
-            fontSize: 12,
-            color: currentColors.textSecondary,
-        },
-        incorrectText: {
-            fontSize: 12,
-            color: currentColors.error,
-            fontWeight: 'bold',
-        },
+
         emptyContainer: {
             flex: 1,
             justifyContent: 'center',
@@ -679,13 +710,41 @@ const PositionResultsScreen = () => {
 
                                 {/* User Info */}
                                 <View style={styles.playerInfo}>
-                                    <Text style={styles.playerName}>{pick.userName}</Text>
-                                    <View style={styles.pickStatus}>
-                                        <Text style={styles.checkIcon}>✓</Text>
-                                        <Text style={styles.pickStatusText}>
-                                            All 2 picks made
+                                    <View style={styles.nameAndStatus}>
+                                        <Text style={styles.playerName}>{pick.userName}</Text>
+                                        {/* Status Icon */}
+                                        {results.actualResult && (
+                                            <View style={[
+                                                styles.statusIcon,
+                                                pick.isCorrect === null && styles.statusIconGray,
+                                                pick.isCorrect === true && styles.statusIconGreen,
+                                                pick.isCorrect === false && styles.statusIconRed
+                                            ]}>
+                                                <Text style={styles.statusIconText}>
+                                                    {pick.isCorrect === null ? '?' : pick.isCorrect ? '✓' : '✗'}
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+
+
+                                    {/* Driver Pick Information */}
+                                    <View style={styles.driverInfo}>
+                                        <Text style={styles.driverInfoLabel}>Picked:</Text>
+                                        <Text style={styles.driverInfoText}>
+                                            {pick.driverName} ({pick.driverTeam})
                                         </Text>
                                     </View>
+
+                                    {/* Actual Result Information */}
+                                    {results.actualResult && pick.actualFinishPosition && (
+                                        <View style={styles.actualInfo}>
+                                            <Text style={styles.actualInfoLabel}>Actual Finish:</Text>
+                                            <Text style={styles.actualInfoText}>
+                                                P{pick.actualFinishPosition}
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
 
                                 {/* Points Display */}
@@ -697,16 +756,7 @@ const PositionResultsScreen = () => {
                                 )}
                             </View>
 
-                            {results.actualResult && (
-                                <View style={styles.resultDetails}>
-                                    {pick.isCorrect === true && (
-                                        <Text style={styles.correctText}>✓ Correct</Text>
-                                    )}
-                                    {pick.isCorrect === false && (
-                                        <Text style={styles.incorrectText}>✗ Incorrect</Text>
-                                    )}
-                                </View>
-                            )}
+                            {/* Status now shown as icon next to username */}
                         </View>
                     ))}
                 </View>

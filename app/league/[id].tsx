@@ -1087,8 +1087,8 @@ const LeagueDetailScreen = () => {
                                     <Text style={styles.infoValue}>{leagueStats.correctPicks}</Text>
                                 </View>
                                 <View style={styles.infoRow}>
-                                    <Text style={styles.infoLabel}>Accuracy</Text>
-                                    <Text style={styles.infoValue}>{leagueStats.accuracy || 0}%</Text>
+                                    <Text style={styles.infoLabel}>Avg Distance</Text>
+                                    <Text style={styles.infoValue}>{leagueStats.avgDistance || 0} positions</Text>
                                 </View>
                                 <View style={styles.infoRow}>
                                     <Text style={styles.infoLabel}>Average Points</Text>

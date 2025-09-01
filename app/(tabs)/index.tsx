@@ -435,7 +435,9 @@ const HomeScreen = () => {
     correctPicks: 0,
     totalPoints: 0,
     averagePoints: 0,
-    accuracy: 0
+    accuracy: 0,
+    avgDistance: 0,
+    perfectPicksRate: 0
   });
   const [globalStats, setGlobalStats] = useState<GlobalStats>({
     totalUsers: 0,
@@ -640,7 +642,15 @@ const HomeScreen = () => {
                 </View>
                 <View style={styles.statCard}>
                   <Text style={styles.statPlaceholder}>N/A</Text>
-                  <Text style={styles.statLabel}>Accuracy</Text>
+                  <Text style={styles.statLabel}>Avg Points</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Avg Distance</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statPlaceholder}>N/A</Text>
+                  <Text style={styles.statLabel}>Perfect Rate</Text>
                 </View>
               </View>
             </View>
@@ -792,8 +802,16 @@ const HomeScreen = () => {
               <Text style={styles.statLabel}>Total Points</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{userStats.accuracy}%</Text>
-              <Text style={styles.statLabel}>Accuracy</Text>
+              <Text style={styles.statNumber}>{userStats.averagePoints}</Text>
+              <Text style={styles.statLabel}>Avg Points</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{userStats.avgDistance}</Text>
+              <Text style={styles.statLabel}>Avg Distance</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{userStats.perfectPicksRate}%</Text>
+              <Text style={styles.statLabel}>Perfect Rate</Text>
             </View>
           </View>
         </View>

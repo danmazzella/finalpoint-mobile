@@ -259,7 +259,12 @@ const LeagueStandingsScreen = () => {
             justifyContent: 'space-between',
         },
         statCard: {
-            width: '48%',
+            width: '48%', // 2 columns for first row
+            marginBottom: 12,
+            alignItems: 'center',
+        },
+        statCardSecondary: {
+            width: '31%', // 3 columns for second row
             marginBottom: 12,
             alignItems: 'center',
         },
@@ -450,19 +455,21 @@ const LeagueStandingsScreen = () => {
                             </View>
                         </View>
 
-                        {/* Average Accuracy */}
+                        {/* Points Accuracy */}
                         <View style={styles.summaryCard}>
                             <View style={styles.summaryIcon}>
                                 <Ionicons name="time" size={24} color={currentColors.primary} />
                             </View>
                             <View style={styles.summaryTextContainer}>
-                                <Text style={styles.summaryLabel}>AVG ACCURACY</Text>
+                                <Text style={styles.summaryLabel}>POINTS ACCURACY</Text>
                                 <Text style={styles.summaryValue}>
                                     {(() => {
                                         const activeUsers = standings.filter(s => s.totalPicks > 0);
-                                        if (activeUsers.length === 0) return 0;
-                                        const totalAccuracy = activeUsers.reduce((sum, s) => sum + (s.accuracy || 0), 0);
-                                        return Math.round(totalAccuracy / activeUsers.length);
+                                        if (activeUsers.length === 0) return '0.0';
+                                        const totalPicks = activeUsers.reduce((sum, s) => sum + (s.totalPicks || 0), 0);
+                                        const totalPoints = activeUsers.reduce((sum, s) => sum + (s.totalPoints || 0), 0);
+                                        const maxPotentialPoints = totalPicks * 10;
+                                        return maxPotentialPoints > 0 ? Math.round((totalPoints / maxPotentialPoints) * 100) : 0;
                                     })()}%
                                 </Text>
                             </View>
@@ -515,7 +522,7 @@ const LeagueStandingsScreen = () => {
                                         </View>
                                     </View>
 
-                                    {/* Statistics Grid */}
+                                    {/* Primary Stats - Row 1 (2 columns) */}
                                     <View style={styles.statsGrid}>
                                         {/* Points */}
                                         <View style={styles.statCard}>
@@ -530,9 +537,9 @@ const LeagueStandingsScreen = () => {
                                             </Text>
                                         </View>
 
-                                        {/* Accuracy */}
+                                        {/* Perfect Picks */}
                                         <View style={styles.statCard}>
-                                            <Text style={styles.statLabel}>ACCURACY</Text>
+                                            <Text style={styles.statLabel}>PERFECT PICKS</Text>
                                             <Text style={[
                                                 styles.statValue,
                                                 { color: (standing.accuracy || 0) < 10 ? currentColors.error : currentColors.textPrimary }
@@ -540,24 +547,46 @@ const LeagueStandingsScreen = () => {
                                                 {(standing.accuracy || 0).toFixed(1)}%
                                             </Text>
                                             <Text style={styles.statSubtext}>
-                                                {standing.correctPicks || 0} perfect
+                                                {standing.correctPicks || 0} out of {standing.totalPicks || 0} picks
                                             </Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Secondary Stats - Row 2 (3 columns) */}
+                                    <View style={[styles.statsGrid, { marginTop: 12 }]}>
+                                        {/* Points Accuracy */}
+                                        <View style={styles.statCardSecondary}>
+                                            <Text style={styles.statLabel}>POINTS ACCURACY</Text>
+                                            <Text style={[
+                                                styles.statValue,
+                                                { color: (standing.newAccuracy || 0) < 50 ? currentColors.error : currentColors.textPrimary }
+                                            ]}>
+                                                {standing.newAccuracy || 0}%
+                                            </Text>
+                                            <Text style={styles.statSubtext}>points-based</Text>
                                         </View>
 
                                         {/* Average Distance */}
-                                        <View style={styles.statCard}>
+                                        <View style={styles.statCardSecondary}>
                                             <Text style={styles.statLabel}>AVG DISTANCE</Text>
                                             <Text style={[
                                                 styles.statValue,
-                                                { color: currentColors.error }
+                                                {
+                                                    color: (() => {
+                                                        const distance = standing.avgDistance || 0;
+                                                        if (distance <= 2) return currentColors.success;      // Green for close
+                                                        if (distance <= 5) return currentColors.warning;      // Yellow for moderate
+                                                        return currentColors.error;                           // Red for far
+                                                    })()
+                                                }
                                             ]}>
-                                                {standing.averageDistanceFromCorrect || 0} positions
+                                                {standing.avgDistance || 0} positions
                                             </Text>
                                             <Text style={styles.statSubtext}>from target</Text>
                                         </View>
 
                                         {/* Races */}
-                                        <View style={styles.statCard}>
+                                        <View style={styles.statCardSecondary}>
                                             <Text style={styles.statLabel}>RACES</Text>
                                             <Text style={styles.statValue}>
                                                 {standing.racesParticipated || Math.ceil((standing.totalPicks || 0) / 2)}

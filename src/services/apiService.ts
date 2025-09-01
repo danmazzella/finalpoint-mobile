@@ -21,7 +21,14 @@ const getApiBaseUrl = () => {
         return apiUrl;
     }
 
-    // If no environment variable is set, throw an error
+    // Fallback for development when environment variable is not set
+    // This allows the app to work in development without requiring .env setup
+    if (__DEV__) {
+        console.log('⚠️ EXPO_PUBLIC_API_URL not set, using development fallback');
+        return 'http://localhost:6075/api';
+    }
+
+    // If no environment variable is set and not in development, throw an error
     throw new Error('EXPO_PUBLIC_API_URL environment variable is not set. Please check your .env file.');
 };
 

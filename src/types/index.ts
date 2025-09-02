@@ -58,6 +58,7 @@ export interface Driver {
     team: string;
     driverNumber: number;
     country: string;
+    isActive?: boolean;
 }
 
 // Pick types
@@ -315,6 +316,17 @@ export interface LeagueStanding {
     racesParticipated?: number;
     averagePointsPerRace?: number;
     newAccuracy?: number; // New points-based accuracy field
+    correctPicksByPosition?: {
+        userId: number;
+        userName: string;
+        positions: {
+            [position: number]: {
+                position: number;
+                totalPicks: number;
+                correctPicks: number;
+            };
+        };
+    } | null;
 }
 
 // League stats types
@@ -337,3 +349,5 @@ export interface LeagueStats {
         totalPoints: number;
     };
 }
+
+

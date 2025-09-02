@@ -48,7 +48,7 @@ const LeagueStandingsScreen = () => {
             setLoading(true);
             setError(null);
 
-            // Load detailed league standings to get real average distance data
+            // Load detailed league standings (now includes correct picks by position)
             const standingsResponse = await leaguesAPI.getDetailedLeagueStandings(leagueId);
             if (standingsResponse?.data?.success) {
                 setStandings(standingsResponse.data.data);
@@ -85,6 +85,53 @@ const LeagueStandingsScreen = () => {
 
     const handleRetry = () => {
         loadStandingsData();
+    };
+
+    const getAccuracyColor = (accuracy: number) => {
+        if (accuracy >= 80) return currentColors.success;      // Green
+        if (accuracy >= 60) return currentColors.warning;      // Yellow
+        if (accuracy >= 40) return '#FF8C00';                  // Orange
+        return currentColors.error;                            // Red
+    };
+
+    const getDistanceColor = (distance: number | null | undefined) => {
+        if (distance === null || distance === undefined || isNaN(distance)) return currentColors.textSecondary;
+        if (distance <= 2) return currentColors.success;       // Green for close
+        if (distance <= 5) return currentColors.warning;       // Yellow for moderate
+        return currentColors.error;                            // Red for far
+    };
+
+    const renderCorrectPicksByPosition = (standing: LeagueStanding) => {
+        const userPicks = standing.correctPicksByPosition;
+        if (!userPicks || !userPicks.positions) return null;
+
+        const positions = Object.keys(userPicks.positions)
+            .map(Number)
+            .sort((a, b) => a - b);
+
+        if (positions.length === 0) return null;
+
+        return (
+            <View style={styles.correctPicksContainer}>
+                <Text style={styles.correctPicksTitle}>Correct Picks by Position</Text>
+                <View style={styles.correctPicksGrid}>
+                    {positions.map(position => {
+                        const positionData = userPicks.positions[position];
+                        const accuracy = positionData.totalPicks > 0
+                            ? Math.round((positionData.correctPicks / positionData.totalPicks) * 100)
+                            : 0;
+
+                        return (
+                            <View key={position} style={styles.correctPickBadge}>
+                                <Text style={styles.correctPickPosition}>P{position}:</Text>
+                                <Text style={styles.correctPickCount}>{positionData.correctPicks}/{positionData.totalPicks}</Text>
+                                <Text style={[styles.correctPickAccuracy, { color: getAccuracyColor(accuracy) }]}>({accuracy}%)</Text>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
+        );
     };
 
     // Create styles with current theme colors
@@ -350,6 +397,50 @@ const LeagueStandingsScreen = () => {
             textAlign: 'center',
             fontStyle: 'italic',
         },
+        correctPicksContainer: {
+            marginTop: 12,
+            padding: 12,
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: 8,
+        },
+        correctPicksTitle: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+            marginBottom: 8,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+        },
+        correctPicksGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 6,
+        },
+        correctPickBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: currentColors.cardBackground,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        correctPickPosition: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        correctPickCount: {
+            fontSize: 10,
+            color: currentColors.textPrimary,
+            marginLeft: 4,
+        },
+        correctPickAccuracy: {
+            fontSize: 9,
+            color: currentColors.textSecondary,
+            marginLeft: 4,
+        },
     });
 
     if (!leagueId || isNaN(leagueId)) {
@@ -542,7 +633,7 @@ const LeagueStandingsScreen = () => {
                                             <Text style={styles.statLabel}>PERFECT PICKS</Text>
                                             <Text style={[
                                                 styles.statValue,
-                                                { color: (standing.accuracy || 0) < 10 ? currentColors.error : currentColors.textPrimary }
+                                                { color: getAccuracyColor(standing.accuracy || 0) }
                                             ]}>
                                                 {(standing.accuracy || 0).toFixed(1)}%
                                             </Text>
@@ -559,7 +650,7 @@ const LeagueStandingsScreen = () => {
                                             <Text style={styles.statLabel}>POINTS ACCURACY</Text>
                                             <Text style={[
                                                 styles.statValue,
-                                                { color: (standing.newAccuracy || 0) < 50 ? currentColors.error : currentColors.textPrimary }
+                                                { color: getAccuracyColor(standing.newAccuracy || 0) }
                                             ]}>
                                                 {standing.newAccuracy || 0}%
                                             </Text>
@@ -571,14 +662,7 @@ const LeagueStandingsScreen = () => {
                                             <Text style={styles.statLabel}>AVG DISTANCE</Text>
                                             <Text style={[
                                                 styles.statValue,
-                                                {
-                                                    color: (() => {
-                                                        const distance = standing.avgDistance || 0;
-                                                        if (distance <= 2) return currentColors.success;      // Green for close
-                                                        if (distance <= 5) return currentColors.warning;      // Yellow for moderate
-                                                        return currentColors.error;                           // Red for far
-                                                    })()
-                                                }
+                                                { color: getDistanceColor(standing.avgDistance) }
                                             ]}>
                                                 {standing.avgDistance || 0} positions
                                             </Text>
@@ -593,6 +677,9 @@ const LeagueStandingsScreen = () => {
                                             </Text>
                                         </View>
                                     </View>
+
+                                    {/* Correct Picks by Position */}
+                                    {renderCorrectPicksByPosition(standing)}
                                 </View>
                             );
                         })

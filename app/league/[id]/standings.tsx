@@ -125,7 +125,7 @@ const LeagueStandingsScreen = () => {
                             <View key={position} style={styles.correctPickBadge}>
                                 <Text style={styles.correctPickPosition}>P{position}:</Text>
                                 <Text style={styles.correctPickCount}>{positionData.correctPicks}/{positionData.totalPicks}</Text>
-                                <Text style={[styles.correctPickAccuracy, { color: getAccuracyColor(accuracy) }]}>({accuracy}%)</Text>
+                                <Text style={[styles.correctPickAccuracy]}>({accuracy}%)</Text>
                             </View>
                         );
                     })}
@@ -622,11 +622,7 @@ const LeagueStandingsScreen = () => {
                                             <Text style={styles.statLabel}>POINTS</Text>
                                             <Text style={styles.statValue}>{standing.totalPoints || 0}</Text>
                                             <Text style={styles.statSubtext}>
-                                                {(() => {
-                                                    const races = Math.ceil((standing.totalPicks || 0) / 2);
-                                                    if (races === 0) return '0.00 avg/race';
-                                                    return `${((standing.totalPoints || 0) / races).toFixed(2)} avg/race`;
-                                                })()}
+                                                points
                                             </Text>
                                         </View>
 

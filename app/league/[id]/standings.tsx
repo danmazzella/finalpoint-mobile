@@ -410,11 +410,13 @@ const LeagueStandingsScreen = () => {
             marginBottom: 8,
             textTransform: 'uppercase',
             letterSpacing: 0.5,
+            textAlign: 'center',
         },
         correctPicksGrid: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: 6,
+            justifyContent: 'center',
         },
         correctPickBadge: {
             flexDirection: 'row',

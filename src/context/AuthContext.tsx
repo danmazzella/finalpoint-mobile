@@ -311,6 +311,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const userData = JSON.parse(storedUser);
                         setUser(userData);
 
+                        // Initialize WebSocket connection for chat
+                        try {
+                            const { SecureChatService } = await import('../services/secureChatService');
+                            SecureChatService.updateWebSocketToken(storedToken);
+                            await SecureChatService.initializeWebSocket();
+                        } catch (wsError) {
+                            console.error('Could not initialize WebSocket for existing user:', wsError);
+                            // Don't fail auth initialization if WebSocket initialization fails
+                        }
+
                         // Auto-register push token for existing authenticated users
                         try {
                             const { registerForPushNotificationsAsync, sendPushTokenToServer } = await import('../../utils/notifications');
@@ -396,6 +406,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
                 await AsyncStorage.setItem('token', response.data.token);
 
+                // Initialize WebSocket connection for chat
+                try {
+                    const { SecureChatService } = await import('../services/secureChatService');
+                    SecureChatService.updateWebSocketToken(response.data.token);
+                    await SecureChatService.initializeWebSocket();
+                } catch (wsError) {
+                    console.error('Could not initialize WebSocket after login:', wsError);
+                    // Don't fail login if WebSocket initialization fails
+                }
+
                 // Register push token with server after successful login
                 if (loginData.pushToken) {
                     try {
@@ -480,6 +500,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = async () => {
         try {
+            // Disconnect WebSocket connection
+            try {
+                const { SecureChatService } = await import('../services/secureChatService');
+                SecureChatService.disconnectWebSocket();
+            } catch (wsError) {
+                console.error('Could not disconnect WebSocket during logout:', wsError);
+                // Don't fail logout if WebSocket disconnection fails
+            }
+
             // Set user to null immediately for instant UI update
             setUser(null);
             // Clear stored auth data in background (don't block UI)
@@ -712,6 +741,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(userData);
                 await AsyncStorage.setItem('user', JSON.stringify(userData));
                 await AsyncStorage.setItem('token', response.data.token);
+
+                // Initialize WebSocket connection for chat
+                try {
+                    const { SecureChatService } = await import('../services/secureChatService');
+                    SecureChatService.updateWebSocketToken(response.data.token);
+                    await SecureChatService.initializeWebSocket();
+                } catch (wsError) {
+                    console.error('Could not initialize WebSocket after Google login:', wsError);
+                    // Don't fail login if WebSocket initialization fails
+                }
 
                 // Register push token with server after successful Google login
                 if (loginData.pushToken) {

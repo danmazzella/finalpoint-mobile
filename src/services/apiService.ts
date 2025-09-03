@@ -11,7 +11,6 @@ const getApiBaseUrl = () => {
         // Check if the URL already ends with /api
         if (baseUrl.endsWith('/api')) {
             // If it already ends with /api, use it as is
-            console.log('Constructed API URL:', baseUrl);
             return baseUrl;
         }
 
@@ -24,7 +23,6 @@ const getApiBaseUrl = () => {
     // Fallback for development when environment variable is not set
     // This allows the app to work in development without requiring .env setup
     if (__DEV__) {
-        console.log('⚠️ EXPO_PUBLIC_API_URL not set, using development fallback');
         return 'http://localhost:6075/api';
     }
 
@@ -41,9 +39,6 @@ export const getBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
-
-console.log(process.env);
-console.log('API_BASE_URL', API_BASE_URL);
 
 export const apiService = axios.create({
     baseURL: API_BASE_URL,
@@ -113,18 +108,11 @@ apiService.interceptors.response.use(
         // Handle specific error types
         if (error.response?.status === 401) {
             // Token expired or invalid, clear storage
-            console.log('🔒 401 Unauthorized, clearing auth data');
             await AsyncStorage.removeItem('token');
             await AsyncStorage.removeItem('user');
 
             // Let the app's navigation logic handle redirects
             // The AuthContext and route protection will automatically redirect to login when needed
-        } else if (error.response?.status === 404) {
-            console.log('🔍 404 Not Found - Endpoint or resource not found');
-        } else if (error.response?.status === 429) {
-            console.log('⏰ 429 Too Many Requests - Rate limited');
-        } else if (error.response?.status >= 500) {
-            console.log('💥 Server Error - Backend issue');
         }
 
         return Promise.reject(error);
@@ -186,6 +174,19 @@ export const leaguesAPI = {
         apiService.put(`/leagues/${leagueId}`, { name, isPublic }),
     deleteLeague: (leagueId: number) => apiService.delete(`/leagues/${leagueId}`),
     leaveLeague: (leagueId: number) => apiService.post(`/leagues/${leagueId}/leave`),
+};
+
+export const chatAPI = {
+    validateAccess: (leagueId: number) => apiService.get(`/chat/validate/${leagueId}`),
+    markMessagesAsRead: (leagueId: number) => apiService.post(`/chat/mark-read/${leagueId}`),
+    getUnreadCount: (leagueId: number) => apiService.get(`/chat/unread-count/${leagueId}`),
+    getAllUnreadCounts: () => apiService.get('/chat/unread-counts'),
+    getNotificationPreferences: (leagueId: number) => apiService.get(`/chat/notification-preferences/${leagueId}`),
+    updateNotificationPreferences: (leagueId: number, notificationsEnabled: boolean) =>
+        apiService.put(`/chat/notification-preferences/${leagueId}`, { notificationsEnabled }),
+    getAllNotificationPreferences: () => apiService.get('/chat/notification-preferences'),
+    getOnlineUsers: (leagueId: number) => apiService.get(`/chat/online-users/${leagueId}`),
+    updateStatus: (isOnline: boolean) => apiService.post('/chat/update-status', { isOnline }),
 };
 
 export const picksAPI = {

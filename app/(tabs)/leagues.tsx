@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { leaguesAPI } from '../../src/services/apiService';
+import { leaguesAPI, chatAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
@@ -130,12 +130,47 @@ const LeaguesScreen = () => {
             alignItems: 'center',
             marginBottom: 8,
         },
+        leagueNameContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+            marginRight: 8,
+        },
         leagueName: {
             fontSize: 18,
             fontWeight: '600',
             color: currentColors.textPrimary,
             flex: 1,
             marginRight: 8,
+        },
+        chatIconContainer: {
+            position: 'relative',
+        },
+        unreadBadge: {
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            backgroundColor: '#3b82f6',
+            borderRadius: 8,
+            minWidth: 16,
+            height: 16,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 4,
+        },
+        unreadBadgeText: {
+            color: 'white',
+            fontSize: 10,
+            fontWeight: '600',
+        },
+        headerActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+        },
+        chatButton: {
+            padding: 4,
+            borderRadius: 4,
         },
         visibilityBadge: {
             paddingHorizontal: 8,
@@ -422,6 +457,7 @@ const LeaguesScreen = () => {
 
     const [myLeagues, setMyLeagues] = useState<League[]>([]);
     const [publicLeagues, setPublicLeagues] = useState<League[]>([]);
+    const [unreadCounts, setUnreadCounts] = useState<{ [leagueId: number]: number }>({});
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [newLeagueName, setNewLeagueName] = useState('');
@@ -453,9 +489,10 @@ const LeaguesScreen = () => {
 
             if (user) {
                 // Authenticated user - load both their leagues and public leagues
-                const [myLeaguesResponse, publicLeaguesResponse] = await Promise.all([
+                const [myLeaguesResponse, publicLeaguesResponse, unreadCountsResponse] = await Promise.all([
                     leaguesAPI.getLeagues(),
-                    leaguesAPI.getPublicLeagues()
+                    leaguesAPI.getPublicLeagues(),
+                    chatAPI.getAllUnreadCounts()
                 ]);
 
                 if (myLeaguesResponse.data.success) {
@@ -465,6 +502,14 @@ const LeaguesScreen = () => {
                 if (publicLeaguesResponse.data.success) {
                     // Backend now returns only public leagues user is not a member of
                     setPublicLeagues(publicLeaguesResponse.data.data);
+                }
+
+                if (unreadCountsResponse.data.success) {
+                    const counts: { [leagueId: number]: number } = {};
+                    unreadCountsResponse.data.unreadCounts.forEach((item: { leagueId: number; unreadCount: number }) => {
+                        counts[item.leagueId] = item.unreadCount;
+                    });
+                    setUnreadCounts(counts);
                 }
             } else {
                 // Unauthenticated user - load only public leagues
@@ -556,9 +601,19 @@ const LeaguesScreen = () => {
             return (
                 <View key={league.id} style={styles.leagueCard}>
                     <View style={styles.leagueCardHeader}>
-                        <Text style={styles.leagueName} numberOfLines={1}>
-                            {league.name}
-                        </Text>
+                        <View style={styles.leagueNameContainer}>
+                            <Text style={styles.leagueName} numberOfLines={1}>
+                                {league.name}
+                            </Text>
+                            {unreadCounts[league.id] > 0 && (
+                                <View style={styles.chatIconContainer}>
+                                    <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
+                                    <View style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>{unreadCounts[league.id]}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
                         <View style={[
                             styles.visibilityBadge,
                             { backgroundColor: currentColors.success }
@@ -633,16 +688,28 @@ const LeaguesScreen = () => {
                     activeOpacity={0.7}
                 >
                     <View style={styles.leagueCardHeader}>
-                        <Text style={styles.leagueName} numberOfLines={1}>
-                            {league.name}
-                        </Text>
-                        <View style={[
-                            styles.visibilityBadge,
-                            { backgroundColor: league.isPublic ? currentColors.success : currentColors.secondary }
-                        ]}>
-                            <Text style={styles.visibilityText}>
-                                {league.isPublic ? 'Public' : 'Private'}
+                        <View style={styles.leagueNameContainer}>
+                            <Text style={styles.leagueName} numberOfLines={1}>
+                                {league.name}
                             </Text>
+                            {unreadCounts[league.id] > 0 && (
+                                <View style={styles.chatIconContainer}>
+                                    <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
+                                    <View style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>{unreadCounts[league.id]}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                        <View style={styles.headerActions}>
+                            <View style={[
+                                styles.visibilityBadge,
+                                { backgroundColor: league.isPublic ? currentColors.success : currentColors.secondary }
+                            ]}>
+                                <Text style={styles.visibilityText}>
+                                    {league.isPublic ? 'Public' : 'Private'}
+                                </Text>
+                            </View>
                         </View>
                     </View>
 

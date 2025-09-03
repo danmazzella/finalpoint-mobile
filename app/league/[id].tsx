@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { leaguesAPI, picksAPI, activityAPI } from '../../src/services/apiService';
+import { leaguesAPI, picksAPI, activityAPI, chatAPI } from '../../src/services/apiService';
 import { League, LeagueMember, LeagueStanding, LeagueStats, Activity } from '../../src/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -110,11 +110,36 @@ const LeagueDetailScreen = () => {
         headerContent: {
             flex: 1,
         },
+        leagueNameContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: spacing.xs,
+        },
         leagueName: {
             fontSize: 24,
             fontWeight: 'bold',
             color: currentColors.textPrimary,
-            marginBottom: spacing.xs,
+            marginRight: spacing.sm,
+        },
+        chatIconContainer: {
+            position: 'relative',
+        },
+        unreadBadge: {
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            backgroundColor: '#3b82f6',
+            borderRadius: 8,
+            minWidth: 16,
+            height: 16,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 4,
+        },
+        unreadBadgeText: {
+            color: 'white',
+            fontSize: 10,
+            fontWeight: '600',
         },
         leagueSubtitle: {
             fontSize: 16,
@@ -654,6 +679,7 @@ const LeagueDetailScreen = () => {
     const [leaving, setLeaving] = useState(false);
     const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         loadLeagueData();
@@ -701,14 +727,22 @@ const LeagueDetailScreen = () => {
 
             // Only load authenticated data if user is logged in
             if (user) {
-                const activityResponse = await activityAPI.getRecentActivity(leagueId, 5);
+                const [activityResponse, unreadCountResponse] = await Promise.all([
+                    activityAPI.getRecentActivity(leagueId, 5),
+                    chatAPI.getUnreadCount(leagueId)
+                ]);
 
                 if (activityResponse?.data?.success) {
                     setActivities(activityResponse.data.data);
                 }
+
+                if (unreadCountResponse?.data?.success) {
+                    setUnreadCount(unreadCountResponse.data.unreadCount);
+                }
             } else {
                 // For unauthenticated users, set empty/default values
                 setActivities([]);
+                setUnreadCount(0);
             }
         } catch (error: any) {
             console.error('Error loading league data:', error);
@@ -992,7 +1026,17 @@ const LeagueDetailScreen = () => {
                         <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
-                        <Text style={styles.leagueName}>{league.name}</Text>
+                        <View style={styles.leagueNameContainer}>
+                            <Text style={styles.leagueName}>{league.name}</Text>
+                            {unreadCount > 0 && (
+                                <View style={styles.chatIconContainer}>
+                                    <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
+                                    <View style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
                     </View>
                     <TouchableOpacity
                         style={styles.settingsButton}
@@ -1036,6 +1080,12 @@ const LeagueDetailScreen = () => {
                             >
                                 <Text style={styles.secondaryButtonText}>View Results</Text>
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/chat/${leagueId}`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>League Chat</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 )}
@@ -1050,6 +1100,12 @@ const LeagueDetailScreen = () => {
                                 onPress={() => router.replace(`/(tabs)/picks?leagueId=${leagueId}`)}
                             >
                                 <Text style={styles.primaryButtonText}>Make Picks</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => router.push(`/chat/${leagueId}`)}
+                            >
+                                <Text style={styles.secondaryButtonText}>League Chat</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.secondaryButton}

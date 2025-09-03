@@ -12,6 +12,7 @@ import { ThemeProvider as AppThemeProvider, useTheme } from '../src/context/Them
 import { lightColors, darkColors } from '../src/constants/Colors';
 
 import { NotificationProvider } from '../components/NotificationProvider';
+import ScreenTracker from '../components/ScreenTracker';
 
 import SimpleToast from '../components/SimpleToast';
 import StatusBarWrapper from '../components/StatusBarWrapper';
@@ -109,6 +110,9 @@ function AppContent() {
       } else if (data.type === 'score_update' && data.leagueId) {
         // Navigate to league standings
         router.push(`/league/${data.leagueId}/standings`);
+      } else if (data.type === 'chat_message' && data.leagueId) {
+        // Navigate to league chat
+        router.push(`/league/${data.leagueId}/chat`);
       }
     }
   };
@@ -222,6 +226,7 @@ function AppContent() {
   return (
     <ThemeProvider value={resolvedTheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBarWrapper style="dark">
+        <ScreenTracker />
         <View style={{
           flex: 1,
           backgroundColor: resolvedTheme === 'dark' ? darkColors.backgroundPrimary : lightColors.backgroundPrimary

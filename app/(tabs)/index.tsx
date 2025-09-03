@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useTheme } from '../../src/context/ThemeContext';
-import { leaguesAPI, authAPI, getBaseUrl } from '../../src/services/apiService';
+import { leaguesAPI, authAPI, getBaseUrl, chatAPI } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
@@ -160,11 +160,36 @@ const HomeScreen = () => {
     leagueInfo: {
       flex: 1,
     },
+    leagueNameContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
     leagueName: {
       fontSize: 14,
       fontWeight: '500',
       color: currentColors.textPrimary,
-      marginBottom: 4,
+      marginRight: 8,
+    },
+    chatIconContainer: {
+      position: 'relative',
+    },
+    unreadBadge: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      backgroundColor: '#3b82f6',
+      borderRadius: 8,
+      minWidth: 16,
+      height: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 4,
+    },
+    unreadBadgeText: {
+      color: 'white',
+      fontSize: 10,
+      fontWeight: '600',
     },
     leagueDetails: {
       fontSize: 14,
@@ -452,6 +477,7 @@ const HomeScreen = () => {
     weekAccuracy: 0,
     weekAvgDistance: 0
   });
+  const [unreadCounts, setUnreadCounts] = useState<{ [leagueId: number]: number }>({});
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -476,10 +502,11 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       setError(null);
-      const [leaguesResponse, statsResponse, globalStatsResponse] = await Promise.all([
+      const [leaguesResponse, statsResponse, globalStatsResponse, unreadCountsResponse] = await Promise.all([
         leaguesAPI.getLeagues(),
         authAPI.getUserStats(),
-        authAPI.getGlobalStats()
+        authAPI.getGlobalStats(),
+        chatAPI.getAllUnreadCounts()
       ]);
 
       if (leaguesResponse.data.success) {
@@ -492,6 +519,14 @@ const HomeScreen = () => {
 
       if (globalStatsResponse.data.success) {
         setGlobalStats(globalStatsResponse.data.data);
+      }
+
+      if (unreadCountsResponse.data.success) {
+        const counts: { [leagueId: number]: number } = {};
+        unreadCountsResponse.data.unreadCounts.forEach((item: { leagueId: number; unreadCount: number }) => {
+          counts[item.leagueId] = item.unreadCount;
+        });
+        setUnreadCounts(counts);
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -768,7 +803,17 @@ const HomeScreen = () => {
                   onPress={() => router.push(`/league/${league.id}`)}
                 >
                   <View style={styles.leagueInfo}>
-                    <Text style={styles.leagueName}>{league.name}</Text>
+                    <View style={styles.leagueNameContainer}>
+                      <Text style={styles.leagueName}>{league.name}</Text>
+                      {unreadCounts[league.id] > 0 && (
+                        <View style={styles.chatIconContainer}>
+                          <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
+                          <View style={styles.unreadBadge}>
+                            <Text style={styles.unreadBadgeText}>{unreadCounts[league.id]}</Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.leagueDetails}>
                       Join Code: {league.joinCode}
                     </Text>

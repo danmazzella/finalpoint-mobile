@@ -476,7 +476,6 @@ const PicksScreen = () => {
         selectedLeagueCard: {
             borderColor: currentColors.primary,
             borderWidth: 2,
-            backgroundColor: currentColors.primary + '20',
             shadowColor: currentColors.primary,
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.3,

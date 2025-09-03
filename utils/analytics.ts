@@ -1,38 +1,39 @@
-import { logEvent, setUserProperties, setUserId } from 'firebase/analytics';
+// Analytics utility functions for mobile using Firebase Analytics
+
+import { logEvent as firebaseLogEvent, setUserProperties as firebaseSetUserProperties, setUserId as firebaseSetUserId } from 'firebase/analytics';
 import { analytics } from '../config/firebase';
 
-// Analytics utility functions for mobile
 export const analyticsUtils = {
     // Log custom events
     logEvent: (eventName: string, parameters?: Record<string, any>) => {
-        if (analytics) {
-            try {
-                logEvent(analytics, eventName, parameters);
-            } catch (error) {
-                console.warn('Analytics error:', error);
-            }
+        try {
+            firebaseLogEvent(analytics, eventName, parameters);
+        } catch (error) {
+            console.error('Firebase Analytics error:', error);
+            // Fallback to console logging
+            console.log('Analytics Event:', eventName, parameters);
         }
     },
 
     // Set user properties
     setUserProperties: (properties: Record<string, any>) => {
-        if (analytics) {
-            try {
-                setUserProperties(analytics, properties);
-            } catch (error) {
-                console.warn('Analytics error:', error);
-            }
+        try {
+            firebaseSetUserProperties(analytics, properties);
+        } catch (error) {
+            console.error('Firebase Analytics error:', error);
+            // Fallback to console logging
+            console.log('Analytics User Properties:', properties);
         }
     },
 
     // Set user ID
     setUserId: (userId: string) => {
-        if (analytics) {
-            try {
-                setUserId(analytics, userId);
-            } catch (error) {
-                console.warn('Analytics error:', error);
-            }
+        try {
+            firebaseSetUserId(analytics, userId);
+        } catch (error) {
+            console.error('Firebase Analytics error:', error);
+            // Fallback to console logging
+            console.log('Analytics User ID:', userId);
         }
     },
 

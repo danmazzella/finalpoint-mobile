@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { getEasProjectId } from '../config/firebase.config';
+// Note: Firebase config removed - using environment variables directly
 
 export interface PushNotificationToken {
     type: 'ios' | 'android';
@@ -30,6 +30,18 @@ async function setupAndroidNotificationChannel(): Promise<void> {
         await Notifications.setNotificationChannelAsync('finalpoint_race_scoring', {
             name: 'Race Scoring',
             description: 'Updates when race results are scored and standings change',
+            importance: Notifications.AndroidImportance.DEFAULT,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#1e3a8a',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+        });
+
+        // Create Chat Messages channel
+        await Notifications.setNotificationChannelAsync('finalpoint_chat', {
+            name: 'Chat Messages',
+            description: 'New messages in league chat rooms',
             importance: Notifications.AndroidImportance.DEFAULT,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#1e3a8a',
@@ -97,8 +109,20 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
         if (Platform.OS === 'android') {
             // Get FCM device token for Android
             try {
-                token = (await Notifications.getDevicePushTokenAsync()).data;
+                // Try to get FCM token first
+                const { messaging } = await import('../config/firebase');
+                if (messaging) {
+                    // Use Firebase FCM for Android
+                    const { getToken } = await import('firebase/messaging');
+                    token = await getToken(messaging, {
+                        vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY
+                    });
+                } else {
+                    // Fallback to Expo FCM token
+                    token = (await Notifications.getDevicePushTokenAsync()).data;
+                }
             } catch (error) {
+                console.error('FCM token error, falling back to Expo:', error);
                 // Fallback to Expo push token
                 token = await getExpoPushToken();
             }
@@ -118,10 +142,11 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
  * Get Expo push token
  */
 async function getExpoPushToken(): Promise<string> {
-    let projectId = getEasProjectId();
+    // Get project ID from environment variables
+    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 
     if (!projectId) {
-        throw new Error('EAS project ID not found in configuration');
+        throw new Error('EAS project ID not found in environment variables');
     }
 
     const token = (await Notifications.getExpoPushTokenAsync({

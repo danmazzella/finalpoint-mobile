@@ -180,6 +180,7 @@ export interface NotificationPreferences {
     pushReminder1Hour: boolean;
     emailOther: boolean;
     pushOther: boolean;
+    pushChatMessages: boolean;
 }
 
 // Activity types

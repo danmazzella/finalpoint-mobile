@@ -53,6 +53,7 @@ const NotificationSettingsScreen = () => {
     pushReminder1Hour: true,
     emailOther: true,
     pushOther: true,
+    pushChatMessages: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -85,7 +86,8 @@ const NotificationSettingsScreen = () => {
           pushReminder1Day: Boolean(rawData.pushReminder1Day ?? true),
           pushReminder1Hour: Boolean(rawData.pushReminder1Hour ?? true),
           emailOther: Boolean(rawData.emailOther ?? true),
-          pushOther: Boolean(rawData.pushOther ?? true)
+          pushOther: Boolean(rawData.pushOther ?? true),
+          pushChatMessages: Boolean(rawData.pushChatMessages ?? true)
         });
 
       }
@@ -482,6 +484,20 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushScoreUpdates', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushScoreUpdates ? currentColors.primary : currentColors.borderMedium}
+                disabled={!notificationsSupported}
+              />
+            </View>
+
+            <View style={styles.preferenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.preferenceLabel}>Chat Messages</Text>
+                <Text style={styles.preferenceDescription}>Get notified when someone sends a message in league chats</Text>
+              </View>
+              <Switch
+                value={preferences.pushChatMessages}
+                onValueChange={(value) => handlePreferenceChange('pushChatMessages', value)}
+                trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
+                thumbColor={preferences.pushChatMessages ? currentColors.primary : currentColors.borderMedium}
                 disabled={!notificationsSupported}
               />
             </View>

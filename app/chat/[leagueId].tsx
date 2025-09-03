@@ -5,6 +5,7 @@ import { LeagueChat } from '../../components/LeagueChat';
 import { SecureChatService } from '../../src/services/secureChatService';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useChatFeature } from '../../src/context/FeatureFlagContext';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { chatAPI, leaguesAPI } from '../../src/services/apiService';
@@ -14,6 +15,7 @@ export default function LeagueChatScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { resolvedTheme } = useTheme();
+    const { isChatFeatureEnabled, isLoading: featureFlagLoading } = useChatFeature();
     const [leagueName, setLeagueName] = useState('League Chat');
     const [hasAccess, setHasAccess] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -39,6 +41,16 @@ export default function LeagueChatScreen() {
     }, [leagueId]);
 
     useEffect(() => {
+        // Check if chat feature is enabled
+        if (!featureFlagLoading && !isChatFeatureEnabled) {
+            Alert.alert(
+                'Feature Not Available',
+                'Chat functionality is currently not available. Please try again later.',
+                [{ text: 'OK', onPress: () => router.back() }]
+            );
+            return;
+        }
+
         if (!user || !leagueId) {
             if (!user) {
                 router.push('/login');
@@ -87,7 +99,7 @@ export default function LeagueChatScreen() {
         };
 
         checkAccess();
-    }, [user, leagueId, router, loadNotificationPreferences]);
+    }, [user, leagueId, router, loadNotificationPreferences, isChatFeatureEnabled, featureFlagLoading]);
 
     const toggleNotifications = async () => {
         try {
@@ -239,10 +251,12 @@ export default function LeagueChatScreen() {
         );
     }
 
-    if (loading) {
+    if (loading || featureFlagLoading) {
         return (
             <View style={[styles.loadingContainer, { backgroundColor: currentColors.backgroundPrimary }]}>
-                <Text style={{ color: currentColors.textPrimary }}>Loading chat...</Text>
+                <Text style={{ color: currentColors.textPrimary }}>
+                    {featureFlagLoading ? 'Loading...' : 'Loading chat...'}
+                </Text>
             </View>
         );
     }

@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, router, usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { Platform, AppState, View } from 'react-native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SimpleToastProvider, useSimpleToast } from '../src/context/SimpleToastContext';
 import { ThemeProvider as AppThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { FeatureFlagProvider, useFeatureFlags } from '../src/context/FeatureFlagContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 
 import { NotificationProvider } from '../components/NotificationProvider';
@@ -71,10 +72,11 @@ function AppContent() {
   const { user, isLoading, isAuthenticating } = useAuth();
   const { toast, hideToast } = useSimpleToast();
   const { resolvedTheme } = useTheme();
+  const { isChatFeatureEnabled } = useFeatureFlags();
   const pathname = usePathname();
 
   // Notification handlers (only active when notifications are enabled)
-  const handleNotificationReceived = async (notification: any) => {
+  const handleNotificationReceived = useCallback(async (notification: any) => {
     if (!shouldEnableNotifications()) return;
 
     // Clear badge when notification is received while app is running
@@ -86,9 +88,9 @@ function AppContent() {
     }
 
     // You can show a toast or update UI here
-  };
+  }, []);
 
-  const handleNotificationResponse = async (response: any) => {
+  const handleNotificationResponse = useCallback(async (response: any) => {
     if (!shouldEnableNotifications()) return;
 
     // Clear badge when user responds to notification
@@ -111,11 +113,16 @@ function AppContent() {
         // Navigate to league standings
         router.push(`/league/${data.leagueId}/standings`);
       } else if (data.type === 'chat_message' && data.leagueId) {
-        // Navigate to league chat
-        router.push(`/league/${data.leagueId}/chat`);
+        // Navigate to league chat only if feature is enabled
+        if (isChatFeatureEnabled) {
+          router.push(`/chat/${data.leagueId}`);
+        } else {
+          // Fallback to league detail page if chat is disabled
+          router.push(`/league/${data.leagueId}`);
+        }
       }
     }
-  };
+  }, [isChatFeatureEnabled]);
 
   // Only set up notification listeners when notifications are enabled
   useEffect(() => {
@@ -149,7 +156,7 @@ function AppContent() {
         responseSubscription.remove();
       }
     };
-  }, []);
+  }, [handleNotificationReceived, handleNotificationResponse]);
 
   // Clear badge when app becomes active
   useEffect(() => {
@@ -158,10 +165,8 @@ function AppContent() {
     const clearBadgeOnAppActive = async () => {
       try {
         const { getAndClearBadgeAsync } = await import('../utils/notifications');
-        const badgeCount = await getAndClearBadgeAsync();
-        // if (badgeCount > 0) {
-        //   console.log(`Cleared ${badgeCount} notification badges`);
-        // }
+        await getAndClearBadgeAsync();
+        // Badge cleared successfully
       } catch (error) {
         console.error('Error clearing badge on app active:', error);
       }
@@ -367,21 +372,23 @@ export default function RootLayout() {
       <AuthProvider>
         <SimpleToastProvider>
           <AppThemeProvider>
-            {shouldEnableNotifications() ? (
-              <NotificationProvider
-                autoRegister={false}
-                onNotificationReceived={(notification) => {
-                  // console.log('Notification received globally:', notification);
-                }}
-                onNotificationResponse={(response) => {
-                  // console.log('Notification response globally:', response);
-                }}
-              >
+            <FeatureFlagProvider>
+              {shouldEnableNotifications() ? (
+                <NotificationProvider
+                  autoRegister={false}
+                  onNotificationReceived={(notification) => {
+                    // console.log('Notification received globally:', notification);
+                  }}
+                  onNotificationResponse={(response) => {
+                    // console.log('Notification response globally:', response);
+                  }}
+                >
+                  <RootLayoutNav />
+                </NotificationProvider>
+              ) : (
                 <RootLayoutNav />
-              </NotificationProvider>
-            ) : (
-              <RootLayoutNav />
-            )}
+              )}
+            </FeatureFlagProvider>
           </AppThemeProvider>
         </SimpleToastProvider>
       </AuthProvider>

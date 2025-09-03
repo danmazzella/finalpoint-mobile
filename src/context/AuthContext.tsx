@@ -311,6 +311,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const userData = JSON.parse(storedUser);
                         setUser(userData);
 
+                        // Try to refresh user data from API to get latest feature flags
+                        try {
+                            const response = await authAPI.getProfile();
+                            if (response.data.success && response.data.data) {
+                                const freshUserData = response.data.data;
+                                setUser(freshUserData);
+                                await AsyncStorage.setItem('user', JSON.stringify(freshUserData));
+                            } else {
+                                console.log('⚠️ Mobile AuthContext: Failed to refresh user data from API, using cached data');
+                            }
+                        } catch (refreshError) {
+                            console.log('⚠️ Mobile AuthContext: Error refreshing user data, using cached data:', refreshError);
+                        }
+
                         // Initialize WebSocket connection for chat
                         try {
                             const { SecureChatService } = await import('../services/secureChatService');
@@ -555,8 +569,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (storedUser && storedToken) {
                 try {
+                    // First set the cached user data
                     const userData = JSON.parse(storedUser);
                     setUser(userData);
+
+                    // Then try to refresh from API to get latest data
+                    try {
+                        const response = await authAPI.getProfile();
+                        if (response.data.success && response.data.data) {
+                            const freshUserData = response.data.data;
+                            setUser(freshUserData);
+                            await AsyncStorage.setItem('user', JSON.stringify(freshUserData));
+                        }
+                    } catch (apiError) {
+                        console.log('Could not refresh user data from API, using cached data:', apiError);
+                        // Keep using cached data if API call fails
+                    }
                 } catch (parseError) {
                     console.error('Error parsing stored user data during refresh:', parseError);
                     await clearStoredAuth();

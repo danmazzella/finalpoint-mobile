@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging } from 'firebase/messaging';
+
 import { Platform } from 'react-native';
 import { firebaseConfig } from './environment';
 
@@ -25,6 +26,8 @@ if (Platform.OS === 'android') {
         console.error('Firebase FCM initialization failed:', error);
     }
 }
+
+
 
 export { app, analytics, messaging };
 export default app;

@@ -131,6 +131,7 @@ export const authAPI = {
         apiService.post('/users/reset-password', { token, newPassword }),
     deleteAccount: (data: { password: string }) =>
         apiService.delete('/users/account', { data }),
+    getProfile: () => apiService.get('/users/profile'),
     getUserStats: () => apiService.get('/users/stats'),
     getGlobalStats: () => apiService.get('/users/global-stats'),
     getMonthlyStats: () => apiService.get('/users/monthly-stats'),

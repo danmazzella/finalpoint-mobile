@@ -20,6 +20,7 @@ import { lightColors, darkColors } from '../../src/constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
+import { useChatFeature } from '../../src/context/FeatureFlagContext';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
@@ -27,6 +28,7 @@ const LeagueDetailScreen = () => {
     const { showToast } = useSimpleToast();
     const { user } = useAuth();
     const { resolvedTheme } = useTheme();
+    const { isChatFeatureEnabled } = useChatFeature();
 
     // Get current theme colors
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -683,7 +685,7 @@ const LeagueDetailScreen = () => {
 
     useEffect(() => {
         loadLeagueData();
-    }, [leagueId]);
+    }, [leagueId, isChatFeatureEnabled]);
 
     // Validate leagueId after all hooks
     if (!leagueId || isNaN(leagueId)) {
@@ -727,17 +729,28 @@ const LeagueDetailScreen = () => {
 
             // Only load authenticated data if user is logged in
             if (user) {
-                const [activityResponse, unreadCountResponse] = await Promise.all([
-                    activityAPI.getRecentActivity(leagueId, 5),
-                    chatAPI.getUnreadCount(leagueId)
-                ]);
+                const promises = [
+                    activityAPI.getRecentActivity(leagueId, 5)
+                ];
+
+                // Only load chat data if chat feature is enabled
+                if (isChatFeatureEnabled) {
+                    promises.push(chatAPI.getUnreadCount(leagueId));
+                }
+
+                const responses = await Promise.all(promises);
+                const [activityResponse, unreadCountResponse] = responses;
 
                 if (activityResponse?.data?.success) {
                     setActivities(activityResponse.data.data);
                 }
 
-                if (unreadCountResponse?.data?.success) {
+                // Only process chat data if chat feature is enabled and response exists
+                if (isChatFeatureEnabled && unreadCountResponse?.data?.success) {
                     setUnreadCount(unreadCountResponse.data.unreadCount);
+                } else if (!isChatFeatureEnabled) {
+                    // Clear unread count if chat feature is disabled
+                    setUnreadCount(0);
                 }
             } else {
                 // For unauthenticated users, set empty/default values
@@ -1028,7 +1041,7 @@ const LeagueDetailScreen = () => {
                     <View style={styles.headerContent}>
                         <View style={styles.leagueNameContainer}>
                             <Text style={styles.leagueName}>{league.name}</Text>
-                            {unreadCount > 0 && (
+                            {isChatFeatureEnabled && unreadCount > 0 && (
                                 <View style={styles.chatIconContainer}>
                                     <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
                                     <View style={styles.unreadBadge}>
@@ -1080,12 +1093,14 @@ const LeagueDetailScreen = () => {
                             >
                                 <Text style={styles.secondaryButtonText}>View Results</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.secondaryButton}
-                                onPress={() => router.push(`/chat/${leagueId}`)}
-                            >
-                                <Text style={styles.secondaryButtonText}>League Chat</Text>
-                            </TouchableOpacity>
+                            {isChatFeatureEnabled && (
+                                <TouchableOpacity
+                                    style={styles.secondaryButton}
+                                    onPress={() => router.push(`/chat/${leagueId}`)}
+                                >
+                                    <Text style={styles.secondaryButtonText}>League Chat</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
                 )}
@@ -1101,12 +1116,14 @@ const LeagueDetailScreen = () => {
                             >
                                 <Text style={styles.primaryButtonText}>Make Picks</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.secondaryButton}
-                                onPress={() => router.push(`/chat/${leagueId}`)}
-                            >
-                                <Text style={styles.secondaryButtonText}>League Chat</Text>
-                            </TouchableOpacity>
+                            {isChatFeatureEnabled && (
+                                <TouchableOpacity
+                                    style={styles.secondaryButton}
+                                    onPress={() => router.push(`/chat/${leagueId}`)}
+                                >
+                                    <Text style={styles.secondaryButtonText}>League Chat</Text>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                                 style={styles.secondaryButton}
                                 onPress={() => router.push(`/league/${leagueId}/standings`)}

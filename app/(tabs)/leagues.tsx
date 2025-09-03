@@ -18,6 +18,7 @@ import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useChatFeature } from '../../src/context/FeatureFlagContext';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
@@ -26,6 +27,7 @@ const LeaguesScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useSimpleToast();
     const { resolvedTheme } = useTheme();
+    const { isChatFeatureEnabled } = useChatFeature();
 
     // Get current theme colors from universal palette
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -466,12 +468,12 @@ const LeaguesScreen = () => {
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Load data when auth state changes
+    // Load data when auth state or chat feature flag changes
     useEffect(() => {
         if (!authLoading) {
             loadLeagues();
         }
-    }, [authLoading, user]);
+    }, [authLoading, user, isChatFeatureEnabled]);
 
     // Reload data when the tab comes into focus
     useFocusEffect(
@@ -489,11 +491,18 @@ const LeaguesScreen = () => {
 
             if (user) {
                 // Authenticated user - load both their leagues and public leagues
-                const [myLeaguesResponse, publicLeaguesResponse, unreadCountsResponse] = await Promise.all([
+                const promises = [
                     leaguesAPI.getLeagues(),
-                    leaguesAPI.getPublicLeagues(),
-                    chatAPI.getAllUnreadCounts()
-                ]);
+                    leaguesAPI.getPublicLeagues()
+                ];
+
+                // Only load chat data if chat feature is enabled
+                if (isChatFeatureEnabled) {
+                    promises.push(chatAPI.getAllUnreadCounts());
+                }
+
+                const responses = await Promise.all(promises);
+                const [myLeaguesResponse, publicLeaguesResponse, unreadCountsResponse] = responses;
 
                 if (myLeaguesResponse.data.success) {
                     setMyLeagues(myLeaguesResponse.data.data);
@@ -504,12 +513,16 @@ const LeaguesScreen = () => {
                     setPublicLeagues(publicLeaguesResponse.data.data);
                 }
 
-                if (unreadCountsResponse.data.success) {
+                // Only process chat data if chat feature is enabled and response exists
+                if (isChatFeatureEnabled && unreadCountsResponse?.data?.success) {
                     const counts: { [leagueId: number]: number } = {};
                     unreadCountsResponse.data.unreadCounts.forEach((item: { leagueId: number; unreadCount: number }) => {
                         counts[item.leagueId] = item.unreadCount;
                     });
                     setUnreadCounts(counts);
+                } else if (!isChatFeatureEnabled) {
+                    // Clear unread counts if chat feature is disabled
+                    setUnreadCounts({});
                 }
             } else {
                 // Unauthenticated user - load only public leagues
@@ -605,7 +618,7 @@ const LeaguesScreen = () => {
                             <Text style={styles.leagueName} numberOfLines={1}>
                                 {league.name}
                             </Text>
-                            {unreadCounts[league.id] > 0 && (
+                            {isChatFeatureEnabled && unreadCounts[league.id] > 0 && (
                                 <View style={styles.chatIconContainer}>
                                     <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
                                     <View style={styles.unreadBadge}>
@@ -692,7 +705,7 @@ const LeaguesScreen = () => {
                             <Text style={styles.leagueName} numberOfLines={1}>
                                 {league.name}
                             </Text>
-                            {unreadCounts[league.id] > 0 && (
+                            {isChatFeatureEnabled && unreadCounts[league.id] > 0 && (
                                 <View style={styles.chatIconContainer}>
                                     <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
                                     <View style={styles.unreadBadge}>

@@ -5,6 +5,7 @@ export interface User {
     name: string;
     avatar?: string;
     role?: 'user' | 'admin';
+    chatFeatureEnabled?: boolean;
 }
 
 export interface SignupData {

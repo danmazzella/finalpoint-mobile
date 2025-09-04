@@ -73,12 +73,12 @@ async function setupAndroidNotificationChannel(): Promise<void> {
         await Notifications.setNotificationChannelAsync('finalpoint_misc', {
             name: 'Miscellaneous',
             description: 'Other notifications like league invites, admin messages, etc.',
-            importance: Notifications.AndroidImportance.LOW,
+            importance: Notifications.AndroidImportance.DEFAULT,
             vibrationPattern: [0, 250],
             lightColor: '#1e3a8a',
             sound: 'default',
-            enableVibrate: false,
-            showBadge: false,
+            enableVibrate: true,
+            showBadge: true,
         });
 
         // Keep the high priority channel for critical notifications

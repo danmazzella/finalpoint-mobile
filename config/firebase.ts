@@ -4,18 +4,23 @@ import { getAnalytics } from 'firebase/analytics';
 import { getMessaging } from 'firebase/messaging';
 import { Platform } from 'react-native';
 import { firebaseConfig } from './environment';
+import { isExpoGo, isWebBrowser } from '../utils/environment';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics - works for both web and React Native
+// Initialize Analytics - only in native builds, not in Expo Go or web
 let analytics: any = null;
-try {
-    // Firebase Analytics v9+ works in React Native with proper configuration
-    analytics = getAnalytics(app);
-} catch (error) {
-    console.error('❌ Firebase Analytics initialization failed:', error);
-    // Analytics will remain null, but the app will still work
+if (!isExpoGo() && !isWebBrowser()) {
+    try {
+        // Firebase Analytics v9+ works in React Native with proper configuration
+        analytics = getAnalytics(app);
+    } catch (error) {
+        console.error('❌ Firebase Analytics initialization failed:', error);
+        // Analytics will remain null, but the app will still work
+    }
+} else {
+    console.log('🚫 Firebase Analytics disabled in Expo Go or web browser');
 }
 
 // Initialize FCM for Android only

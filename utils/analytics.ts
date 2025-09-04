@@ -2,11 +2,18 @@
 
 import { logEvent as firebaseLogEvent, setUserProperties as firebaseSetUserProperties, setUserId as firebaseSetUserId } from 'firebase/analytics';
 import { analytics } from '../config/firebase';
+import { isExpoGo, isWebBrowser } from './environment';
 
 export const analyticsUtils = {
     // Log custom events
     logEvent: (eventName: string, parameters?: Record<string, any>) => {
         try {
+            // Skip analytics in Expo Go or web browser
+            if (isExpoGo() || isWebBrowser()) {
+                console.log(`📊 Analytics Event (Expo Go/Web): ${eventName}`, parameters);
+                return;
+            }
+            
             if (analytics) {
                 firebaseLogEvent(analytics, eventName, parameters);
             } else {
@@ -23,6 +30,12 @@ export const analyticsUtils = {
     // Set user properties
     setUserProperties: (properties: Record<string, any>) => {
         try {
+            // Skip analytics in Expo Go or web browser
+            if (isExpoGo() || isWebBrowser()) {
+                console.log('📊 Analytics User Properties (Expo Go/Web):', properties);
+                return;
+            }
+            
             if (analytics) {
                 firebaseSetUserProperties(analytics, properties);
             } else {
@@ -39,6 +52,12 @@ export const analyticsUtils = {
     // Set user ID
     setUserId: (userId: string) => {
         try {
+            // Skip analytics in Expo Go or web browser
+            if (isExpoGo() || isWebBrowser()) {
+                console.log('📊 Analytics User ID (Expo Go/Web):', userId);
+                return;
+            }
+            
             if (analytics) {
                 firebaseSetUserId(analytics, userId);
             } else {

@@ -227,6 +227,10 @@ export const driversAPI = {
     getDrivers: () => apiService.get('/drivers/get'),
 };
 
+export const statsAPI = {
+    getDriverPositionStats: (position: number) => apiService.get(`/stats/driver-positions?position=${position}`),
+};
+
 export const f1racesAPI = {
     getCurrentRace: () => apiService.get('/f1races/current'),
     getAllRaces: (seasonYear = 2025) => apiService.get(`/f1races/all?seasonYear=${seasonYear}`),

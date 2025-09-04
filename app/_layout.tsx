@@ -289,6 +289,10 @@ function AppContent() {
               options={getScreenOptionsWithBackground(resolvedTheme)}
             />
             <Stack.Screen
+              name="stats"
+              options={getScreenOptionsWithBackground(resolvedTheme)}
+            />
+            <Stack.Screen
               name="league/[id]"
               options={getScreenOptionsWithBackground(resolvedTheme)}
             />

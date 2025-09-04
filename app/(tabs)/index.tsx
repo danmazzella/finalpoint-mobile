@@ -453,6 +453,22 @@ const HomeScreen = () => {
       color: currentColors.primary,
       marginBottom: 4,
     },
+    statsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: currentColors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: currentColors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    statsButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: currentColors.primary,
+      marginLeft: 4,
+    },
   });
 
   // Remove the hardcoded getBaseUrl function - use the one from apiService
@@ -688,7 +704,16 @@ const HomeScreen = () => {
 
           {/* Platform Statistics Section */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Platform Statistics</Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Platform Statistics</Text>
+              <TouchableOpacity
+                style={styles.statsButton}
+                onPress={() => router.push('/stats')}
+              >
+                <Ionicons name="stats-chart" size={16} color={currentColors.primary} />
+                <Text style={styles.statsButtonText}>Driver Position Stats</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Lifetime Performance */}
             <View style={styles.statsSubsection}>
@@ -858,7 +883,16 @@ const HomeScreen = () => {
 
         {/* Global Stats Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Platform Statistics</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Platform Statistics</Text>
+            <TouchableOpacity
+              style={styles.statsButton}
+              onPress={() => router.push('/stats')}
+            >
+              <Ionicons name="stats-chart" size={16} color={currentColors.primary} />
+              <Text style={styles.statsButtonText}>Driver Position Stats</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Lifetime Performance */}
           <View style={styles.globalStatsSubsection}>

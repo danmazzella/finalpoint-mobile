@@ -1,19 +1,21 @@
 // Analytics utility functions for mobile using Firebase Analytics
 
-import { logEvent as firebaseLogEvent, setUserProperties as firebaseSetUserProperties, setUserId as firebaseSetUserId } from 'firebase/analytics';
-import { analytics } from '../config/firebase';
 import { isExpoGo, isWebBrowser } from './environment';
 
 export const analyticsUtils = {
     // Log custom events
-    logEvent: (eventName: string, parameters?: Record<string, any>) => {
+    logEvent: async (eventName: string, parameters?: Record<string, any>) => {
         try {
             // Skip analytics in Expo Go or web browser
             if (isExpoGo() || isWebBrowser()) {
                 console.log(`📊 Analytics Event (Expo Go/Web): ${eventName}`, parameters);
                 return;
             }
-            
+
+            // Dynamic import to avoid issues in Expo Go
+            const { logEvent: firebaseLogEvent } = await import('firebase/analytics');
+            const { analytics } = await import('../config/firebase');
+
             if (analytics) {
                 firebaseLogEvent(analytics, eventName, parameters);
             } else {
@@ -28,14 +30,18 @@ export const analyticsUtils = {
     },
 
     // Set user properties
-    setUserProperties: (properties: Record<string, any>) => {
+    setUserProperties: async (properties: Record<string, any>) => {
         try {
             // Skip analytics in Expo Go or web browser
             if (isExpoGo() || isWebBrowser()) {
                 console.log('📊 Analytics User Properties (Expo Go/Web):', properties);
                 return;
             }
-            
+
+            // Dynamic import to avoid issues in Expo Go
+            const { setUserProperties: firebaseSetUserProperties } = await import('firebase/analytics');
+            const { analytics } = await import('../config/firebase');
+
             if (analytics) {
                 firebaseSetUserProperties(analytics, properties);
             } else {
@@ -50,14 +56,18 @@ export const analyticsUtils = {
     },
 
     // Set user ID
-    setUserId: (userId: string) => {
+    setUserId: async (userId: string) => {
         try {
             // Skip analytics in Expo Go or web browser
             if (isExpoGo() || isWebBrowser()) {
                 console.log('📊 Analytics User ID (Expo Go/Web):', userId);
                 return;
             }
-            
+
+            // Dynamic import to avoid issues in Expo Go
+            const { setUserId: firebaseSetUserId } = await import('firebase/analytics');
+            const { analytics } = await import('../config/firebase');
+
             if (analytics) {
                 firebaseSetUserId(analytics, userId);
             } else {

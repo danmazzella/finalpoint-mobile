@@ -1,5 +1,4 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import * as Notifications from 'expo-notifications';
 import { useNotifications, UseNotificationsOptions, UseNotificationsReturn } from '../hooks/useNotifications';
 import { shouldEnableNotifications } from '../utils/environment';
 
@@ -10,7 +9,7 @@ interface NotificationContextValue extends UseNotificationsReturn {
     scheduleNotification: (
         title: string,
         body: string,
-        trigger: Notifications.NotificationTriggerInput,
+        trigger: any, // Using any to avoid importing Notifications type
         data?: any
     ) => Promise<string>;
     /** Manually register for push notifications */
@@ -28,37 +27,50 @@ export function NotificationProvider({ children, ...options }: NotificationProvi
 
     const showLocalNotification = async (title: string, body: string, data?: any) => {
         if (!shouldEnableNotifications()) {
+            console.log('🚫 Local notification disabled in Expo Go');
             return;
         }
 
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title,
-                body,
-                data,
-            },
-            trigger: null, // Show immediately
-        });
+        try {
+            const Notifications = await import('expo-notifications');
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title,
+                    body,
+                    data,
+                },
+                trigger: null, // Show immediately
+            });
+        } catch (error) {
+            console.error('❌ Error showing local notification:', error);
+        }
     };
 
     const scheduleNotification = async (
         title: string,
         body: string,
-        trigger: Notifications.NotificationTriggerInput,
+        trigger: any,
         data?: any
     ): Promise<string> => {
         if (!shouldEnableNotifications()) {
+            console.log('🚫 Scheduled notification disabled in Expo Go');
             return 'disabled';
         }
 
-        return await Notifications.scheduleNotificationAsync({
-            content: {
-                title,
-                body,
-                data,
-            },
-            trigger,
-        });
+        try {
+            const Notifications = await import('expo-notifications');
+            return await Notifications.scheduleNotificationAsync({
+                content: {
+                    title,
+                    body,
+                    data,
+                },
+                trigger,
+            });
+        } catch (error) {
+            console.error('❌ Error scheduling notification:', error);
+            return 'error';
+        }
     };
 
     const registerForNotifications = async () => {

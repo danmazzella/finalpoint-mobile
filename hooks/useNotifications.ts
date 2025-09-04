@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import { shouldEnableNotifications } from '../utils/environment';
 import {
     registerForPushNotificationsAsync,
     sendPushTokenToServer,
@@ -14,9 +14,9 @@ export interface UseNotificationsOptions {
     /** User ID to associate with the push token */
     userId?: string;
     /** Callback when a notification is received while app is running */
-    onNotificationReceived?: (notification: Notifications.Notification) => void;
+    onNotificationReceived?: (notification: any) => void;
     /** Callback when user taps on a notification */
-    onNotificationResponse?: (response: Notifications.NotificationResponse) => void;
+    onNotificationResponse?: (response: any) => void;
 }
 
 export interface UseNotificationsReturn {
@@ -47,8 +47,8 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     const [isRegistering, setIsRegistering] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const notificationListener = useRef<Notifications.Subscription>();
-    const responseListener = useRef<Notifications.Subscription>();
+    const notificationListener = useRef<any>();
+    const responseListener = useRef<any>();
 
     // Check if device supports notifications at all
     const checkDeviceSupport = async () => {
@@ -66,6 +66,13 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
         try {
             setIsRegistering(true);
             setError(null);
+
+            // Skip registration in Expo Go
+            if (!shouldEnableNotifications()) {
+                setIsSupported(false);
+                setError('Push notifications not supported in Expo Go');
+                return;
+            }
 
             // First check device support
             const deviceSupportsNotifications = await checkDeviceSupport();
@@ -99,7 +106,8 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
             // Don't immediately mark as unsupported - might be a temporary issue
             // Only mark as unsupported if it's a clear device limitation
             if (errorMessage.includes('Project ID not found') ||
-                errorMessage.includes('Must use physical device')) {
+                errorMessage.includes('Must use physical device') ||
+                errorMessage.includes('expo-notifications android push notifications functionalyremoved from expo go')) {
                 setIsSupported(false);
             }
         } finally {
@@ -121,14 +129,24 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     };
 
     useEffect(() => {
-        // Set up notification listeners
-        if (onNotificationReceived) {
-            notificationListener.current = addNotificationReceivedListener(onNotificationReceived);
+        // Skip setting up listeners in Expo Go
+        if (!shouldEnableNotifications()) {
+            console.log('🚫 Notification listeners disabled in Expo Go');
+            return;
         }
 
-        if (onNotificationResponse) {
-            responseListener.current = addNotificationResponseReceivedListener(onNotificationResponse);
-        }
+        // Set up notification listeners asynchronously
+        const setupListeners = async () => {
+            if (onNotificationReceived) {
+                notificationListener.current = await addNotificationReceivedListener(onNotificationReceived);
+            }
+
+            if (onNotificationResponse) {
+                responseListener.current = await addNotificationResponseReceivedListener(onNotificationResponse);
+            }
+        };
+
+        setupListeners();
 
         // Auto-register if enabled
         if (autoRegister) {
@@ -166,39 +184,57 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
 
     // Update listeners when callbacks change
     useEffect(() => {
-        if (notificationListener.current) {
-            try {
-                // Use the modern remove() method
-                if (typeof notificationListener.current.remove === 'function') {
-                    notificationListener.current.remove();
-                } else {
-                    console.warn('Notification listener does not have remove() method');
+        // Skip in Expo Go
+        if (!shouldEnableNotifications()) {
+            return;
+        }
+
+        const updateNotificationListener = async () => {
+            if (notificationListener.current) {
+                try {
+                    // Use the modern remove() method
+                    if (typeof notificationListener.current.remove === 'function') {
+                        notificationListener.current.remove();
+                    } else {
+                        console.warn('Notification listener does not have remove() method');
+                    }
+                } catch (error) {
+                    console.warn('Error removing notification listener:', error);
                 }
-            } catch (error) {
-                console.warn('Error removing notification listener:', error);
             }
-        }
-        if (onNotificationReceived) {
-            notificationListener.current = addNotificationReceivedListener(onNotificationReceived);
-        }
+            if (onNotificationReceived) {
+                notificationListener.current = await addNotificationReceivedListener(onNotificationReceived);
+            }
+        };
+
+        updateNotificationListener();
     }, [onNotificationReceived]);
 
     useEffect(() => {
-        if (responseListener.current) {
-            try {
-                // Use the modern remove() method
-                if (typeof responseListener.current.remove === 'function') {
-                    responseListener.current.remove();
-                } else {
-                    console.warn('Response listener does not have remove() method');
+        // Skip in Expo Go
+        if (!shouldEnableNotifications()) {
+            return;
+        }
+
+        const updateResponseListener = async () => {
+            if (responseListener.current) {
+                try {
+                    // Use the modern remove() method
+                    if (typeof responseListener.current.remove === 'function') {
+                        responseListener.current.remove();
+                    } else {
+                        console.warn('Response listener does not have remove() method');
+                    }
+                } catch (error) {
+                    console.warn('Error removing response listener:', error);
                 }
-            } catch (error) {
-                console.warn('Error removing response listener:', error);
             }
-        }
-        if (onNotificationResponse) {
-            responseListener.current = addNotificationResponseReceivedListener(onNotificationResponse);
-        }
+            if (onNotificationResponse) {
+                responseListener.current = await addNotificationResponseReceivedListener(onNotificationResponse);
+            }
+        };
+
+        updateResponseListener();
     }, [onNotificationResponse]);
 
     return {

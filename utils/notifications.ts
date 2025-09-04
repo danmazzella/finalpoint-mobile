@@ -1,6 +1,6 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import { shouldEnableNotifications } from './environment';
 // Note: Firebase config removed - using environment variables directly
 
 export interface PushNotificationToken {
@@ -13,7 +13,14 @@ export interface PushNotificationToken {
 async function setupAndroidNotificationChannel(): Promise<void> {
     if (Platform.OS !== 'android') return;
 
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Android notification channels disabled in Expo Go');
+        return;
+    }
+
     try {
+        const Notifications = await import('expo-notifications');
+
         // Create default channel first (matches app.json configuration)
         await Notifications.setNotificationChannelAsync('default', {
             name: 'Default',
@@ -98,9 +105,16 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
         return null;
     }
 
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Push notification registration disabled in Expo Go');
+        return null;
+    }
+
     let token = null;
 
     try {
+        const Notifications = await import('expo-notifications');
+
         // Setup Android notification channels first
         if (Platform.OS === 'android') {
             await setupAndroidNotificationChannel();
@@ -154,6 +168,12 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
  * Get Expo push token
  */
 async function getExpoPushToken(): Promise<string> {
+    if (!shouldEnableNotifications()) {
+        throw new Error('Push notifications not supported in Expo Go');
+    }
+
+    const Notifications = await import('expo-notifications');
+
     // Get project ID from environment variables
     const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 
@@ -184,18 +204,30 @@ export async function sendPushTokenToServer(token: string, userId?: string): Pro
 /**
  * Handle notification received while app is running
  */
-export function addNotificationReceivedListener(
-    listener: (notification: Notifications.Notification) => void
-): Notifications.EventSubscription {
+export async function addNotificationReceivedListener(
+    listener: (notification: any) => void
+): Promise<any> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Notification received listener disabled in Expo Go');
+        return { remove: () => { } }; // Return a dummy subscription
+    }
+
+    const Notifications = await import('expo-notifications');
     return Notifications.addNotificationReceivedListener(listener);
 }
 
 /**
  * Handle notification response (when user taps notification)
  */
-export function addNotificationResponseReceivedListener(
-    listener: (response: Notifications.NotificationResponse) => void
-): Notifications.EventSubscription {
+export async function addNotificationResponseReceivedListener(
+    listener: (response: any) => void
+): Promise<any> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Notification response listener disabled in Expo Go');
+        return { remove: () => { } }; // Return a dummy subscription
+    }
+
+    const Notifications = await import('expo-notifications');
     return Notifications.addNotificationResponseReceivedListener(listener);
 }
 
@@ -213,8 +245,14 @@ export async function scheduleLocalNotification(
     title: string,
     body: string,
     data: any = {},
-    trigger: Notifications.NotificationTriggerInput = null
+    trigger: any = null
 ): Promise<string> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Local notification scheduling disabled in Expo Go');
+        return 'disabled';
+    }
+
+    const Notifications = await import('expo-notifications');
     const identifier = await Notifications.scheduleNotificationAsync({
         content: {
             title,
@@ -232,6 +270,12 @@ export async function scheduleLocalNotification(
  * Cancel a scheduled notification
  */
 export async function cancelScheduledNotification(identifier: string): Promise<void> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Cancel scheduled notification disabled in Expo Go');
+        return;
+    }
+
+    const Notifications = await import('expo-notifications');
     await Notifications.cancelScheduledNotificationAsync(identifier);
 }
 
@@ -239,13 +283,25 @@ export async function cancelScheduledNotification(identifier: string): Promise<v
  * Cancel all scheduled notifications
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Cancel all scheduled notifications disabled in Expo Go');
+        return;
+    }
+
+    const Notifications = await import('expo-notifications');
     await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 /**
  * Get all scheduled notifications
  */
-export async function getAllScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+export async function getAllScheduledNotifications(): Promise<any[]> {
+    if (!shouldEnableNotifications()) {
+        console.log('🚫 Get all scheduled notifications disabled in Expo Go');
+        return [];
+    }
+
+    const Notifications = await import('expo-notifications');
     return await Notifications.getAllScheduledNotificationsAsync();
 }
 
@@ -254,6 +310,9 @@ export async function getAllScheduledNotifications(): Promise<Notifications.Noti
  */
 export async function getBadgeCountAsync(): Promise<number> {
     if (Platform.OS !== 'ios') return 0;
+    if (!shouldEnableNotifications()) return 0;
+
+    const Notifications = await import('expo-notifications');
     return await Notifications.getBadgeCountAsync();
 }
 
@@ -262,6 +321,9 @@ export async function getBadgeCountAsync(): Promise<number> {
  */
 export async function setBadgeCountAsync(count: number): Promise<void> {
     if (Platform.OS !== 'ios') return;
+    if (!shouldEnableNotifications()) return;
+
+    const Notifications = await import('expo-notifications');
     await Notifications.setBadgeCountAsync(count);
 }
 
@@ -270,6 +332,9 @@ export async function setBadgeCountAsync(count: number): Promise<void> {
  */
 export async function clearBadgeAsync(): Promise<void> {
     if (Platform.OS !== 'ios') return;
+    if (!shouldEnableNotifications()) return;
+
+    const Notifications = await import('expo-notifications');
     await Notifications.setBadgeCountAsync(0);
 }
 
@@ -278,6 +343,9 @@ export async function clearBadgeAsync(): Promise<void> {
  */
 export async function decrementBadgeAsync(): Promise<void> {
     if (Platform.OS !== 'ios') return;
+    if (!shouldEnableNotifications()) return;
+
+    const Notifications = await import('expo-notifications');
     const currentCount = await Notifications.getBadgeCountAsync();
     const newCount = Math.max(0, currentCount - 1);
     await Notifications.setBadgeCountAsync(newCount);
@@ -289,6 +357,9 @@ export async function decrementBadgeAsync(): Promise<void> {
  */
 export async function getAndClearBadgeAsync(): Promise<number> {
     if (Platform.OS !== 'ios') return 0;
+    if (!shouldEnableNotifications()) return 0;
+
+    const Notifications = await import('expo-notifications');
     const currentCount = await Notifications.getBadgeCountAsync();
     if (currentCount > 0) {
         await Notifications.setBadgeCountAsync(0);
@@ -321,6 +392,9 @@ export async function handleBackgroundNotification(notification: any): Promise<v
  */
 export async function resetBadgeAsync(): Promise<void> {
     if (Platform.OS !== 'ios') return;
+    if (!shouldEnableNotifications()) return;
+
+    const Notifications = await import('expo-notifications');
     await Notifications.setBadgeCountAsync(0);
 }
 
@@ -353,8 +427,10 @@ export async function debugBadgeAsync(): Promise<void> {
  */
 export async function smartClearBadgeAsync(): Promise<boolean> {
     if (Platform.OS !== 'ios') return false;
+    if (!shouldEnableNotifications()) return false;
 
     try {
+        const Notifications = await import('expo-notifications');
         const currentCount = await Notifications.getBadgeCountAsync();
         if (currentCount === 0) return false;
 
@@ -381,8 +457,10 @@ export async function smartClearBadgeAsync(): Promise<boolean> {
  */
 export async function forceClearBadgeAsync(): Promise<void> {
     if (Platform.OS !== 'ios') return;
+    if (!shouldEnableNotifications()) return;
 
     try {
+        const Notifications = await import('expo-notifications');
         const currentCount = await Notifications.getBadgeCountAsync();
         if (currentCount > 0) {
             await Notifications.setBadgeCountAsync(0);

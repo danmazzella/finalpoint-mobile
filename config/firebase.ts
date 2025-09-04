@@ -23,14 +23,16 @@ if (!isExpoGo() && !isWebBrowser()) {
     console.log('🚫 Firebase Analytics disabled in Expo Go or web browser');
 }
 
-// Initialize FCM for Android only
+// Initialize FCM for Android only - but not in Expo Go
 let messaging: any = null;
-if (Platform.OS === 'android') {
+if (Platform.OS === 'android' && !isExpoGo() && !isWebBrowser()) {
     try {
         messaging = getMessaging(app);
     } catch (error) {
         console.error('Firebase FCM initialization failed:', error);
     }
+} else if (Platform.OS === 'android' && isExpoGo()) {
+    console.log('🚫 Firebase FCM disabled in Expo Go');
 }
 
 

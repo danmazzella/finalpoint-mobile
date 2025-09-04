@@ -747,10 +747,19 @@ const LeagueDetailScreen = () => {
 
                 // Only process chat data if chat feature is enabled and response exists
                 if (isChatFeatureEnabled && unreadCountResponse?.data?.success) {
-                    setUnreadCount(unreadCountResponse.data.unreadCount);
+                    const unreadCount = unreadCountResponse.data.unreadCount;
+                    console.log('🔍 LeagueDetail: Unread count loaded:', {
+                        leagueId,
+                        unreadCount,
+                        response: unreadCountResponse.data
+                    });
+                    setUnreadCount(unreadCount);
                 } else if (!isChatFeatureEnabled) {
                     // Clear unread count if chat feature is disabled
+                    console.log('🔍 LeagueDetail: Chat feature disabled, clearing unread count');
                     setUnreadCount(0);
+                } else {
+                    console.log('⚠️ LeagueDetail: Unread count response not successful:', unreadCountResponse?.data);
                 }
             } else {
                 // For unauthenticated users, set empty/default values

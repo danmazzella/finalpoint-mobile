@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SimpleToastProvider, useSimpleToast } from '../src/context/SimpleToastContext';
 import { ThemeProvider as AppThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { FeatureFlagProvider, useFeatureFlags } from '../src/context/FeatureFlagContext';
+import { UnreadCountProvider } from '../src/context/UnreadCountContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 
 import { NotificationProvider } from '../components/NotificationProvider';
@@ -373,21 +374,23 @@ export default function RootLayout() {
         <SimpleToastProvider>
           <AppThemeProvider>
             <FeatureFlagProvider>
-              {shouldEnableNotifications() ? (
-                <NotificationProvider
-                  autoRegister={false}
-                  onNotificationReceived={(notification) => {
-                    // console.log('Notification received globally:', notification);
-                  }}
-                  onNotificationResponse={(response) => {
-                    // console.log('Notification response globally:', response);
-                  }}
-                >
+              <UnreadCountProvider>
+                {shouldEnableNotifications() ? (
+                  <NotificationProvider
+                    autoRegister={false}
+                    onNotificationReceived={(notification) => {
+                      // console.log('Notification received globally:', notification);
+                    }}
+                    onNotificationResponse={(response) => {
+                      // console.log('Notification response globally:', response);
+                    }}
+                  >
+                    <RootLayoutNav />
+                  </NotificationProvider>
+                ) : (
                   <RootLayoutNav />
-                </NotificationProvider>
-              ) : (
-                <RootLayoutNav />
-              )}
+                )}
+              </UnreadCountProvider>
             </FeatureFlagProvider>
           </AppThemeProvider>
         </SimpleToastProvider>

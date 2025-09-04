@@ -180,6 +180,7 @@ export class SecureChatService {
     static async getUnreadCount(leagueId: string): Promise<number> {
         try {
             const response = await apiService.get(`/chat/unread-count/${leagueId}`);
+
             if (!response.data.success) {
                 throw new Error(response.data.message || 'Failed to get unread count');
             }
@@ -196,6 +197,7 @@ export class SecureChatService {
     static async getAllUnreadCounts(): Promise<{ leagueId: number, leagueName: string, unreadCount: number }[]> {
         try {
             const response = await apiService.get('/chat/unread-counts');
+
             if (!response.data.success) {
                 throw new Error(response.data.message || 'Failed to get unread counts');
             }

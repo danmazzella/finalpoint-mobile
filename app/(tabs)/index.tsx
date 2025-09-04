@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useUnreadCounts } from '../../src/context/UnreadCountContext';
 import { leaguesAPI, authAPI, getBaseUrl, chatAPI } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router, useFocusEffect } from 'expo-router';
@@ -24,6 +25,7 @@ const HomeScreen = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useSimpleToast();
   const { resolvedTheme } = useTheme();
+  const { unreadCounts, refreshUnreadCounts } = useUnreadCounts();
 
   // Get current theme colors from universal palette
   const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -477,7 +479,6 @@ const HomeScreen = () => {
     weekAccuracy: 0,
     weekAvgDistance: 0
   });
-  const [unreadCounts, setUnreadCounts] = useState<{ [leagueId: number]: number }>({});
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -502,11 +503,10 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       setError(null);
-      const [leaguesResponse, statsResponse, globalStatsResponse, unreadCountsResponse] = await Promise.all([
+      const [leaguesResponse, statsResponse, globalStatsResponse] = await Promise.all([
         leaguesAPI.getLeagues(),
         authAPI.getUserStats(),
-        authAPI.getGlobalStats(),
-        chatAPI.getAllUnreadCounts()
+        authAPI.getGlobalStats()
       ]);
 
       if (leaguesResponse.data.success) {
@@ -521,13 +521,8 @@ const HomeScreen = () => {
         setGlobalStats(globalStatsResponse.data.data);
       }
 
-      if (unreadCountsResponse.data.success) {
-        const counts: { [leagueId: number]: number } = {};
-        unreadCountsResponse.data.unreadCounts.forEach((item: { leagueId: number; unreadCount: number }) => {
-          counts[item.leagueId] = item.unreadCount;
-        });
-        setUnreadCounts(counts);
-      }
+      // Refresh unread counts using the context
+      await refreshUnreadCounts();
     } catch (error: any) {
       console.error('Error loading data:', error);
 

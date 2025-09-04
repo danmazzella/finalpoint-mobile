@@ -25,6 +25,7 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
             // We just need to update our local state based on the current user data
             if (user?.chatFeatureEnabled !== undefined) {
                 setIsChatFeatureEnabled(user.chatFeatureEnabled);
+                setIsLoading(false);
             }
         } catch (error) {
             console.error('❌ Failed to refresh mobile feature flags:', error);
@@ -39,16 +40,41 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
 
     // Update chat feature status when user changes
     useEffect(() => {
+        console.log('🔍 FeatureFlagContext: User changed:', {
+            user: !!user,
+            chatFeatureEnabled: user?.chatFeatureEnabled,
+            userType: typeof user?.chatFeatureEnabled,
+            userId: user?.id
+        });
+
         if (user?.chatFeatureEnabled !== undefined) {
+            console.log('✅ FeatureFlagContext: Setting chat feature enabled to:', user.chatFeatureEnabled);
             setIsChatFeatureEnabled(user.chatFeatureEnabled);
             setIsLoading(false);
         } else if (user === null) {
             // User is not logged in
+            console.log('❌ FeatureFlagContext: User not logged in, disabling chat feature');
             setIsChatFeatureEnabled(false);
             setIsLoading(false);
+        } else if (user && user.chatFeatureEnabled === undefined) {
+            // User is logged in but chatFeatureEnabled is undefined - this might be cached data
+            console.log('⚠️ FeatureFlagContext: User logged in but chatFeatureEnabled is undefined - waiting for fresh data');
+            // Keep loading state true to wait for fresh user data
         }
         // If user is undefined, we're still loading, so keep isLoading true
     }, [user]);
+
+    // Add a timeout to handle cases where feature flags don't load properly
+    useEffect(() => {
+        if (isLoading && user) {
+            const timeout = setTimeout(() => {
+                console.log('⚠️ FeatureFlagContext: Timeout reached, forcing refresh of flags');
+                refreshFlags();
+            }, 5000); // 5 second timeout
+
+            return () => clearTimeout(timeout);
+        }
+    }, [isLoading, user, refreshFlags]);
 
     const value: FeatureFlagContextType = {
         isChatFeatureEnabled,

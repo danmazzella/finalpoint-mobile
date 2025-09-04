@@ -309,9 +309,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (storedUser && storedToken) {
                     try {
                         const userData = JSON.parse(storedUser);
-                        setUser(userData);
 
-                        // Try to refresh user data from API to get latest feature flags
+                        // Try to refresh user data from API to get latest feature flags first
                         try {
                             const response = await authAPI.getProfile();
                             if (response.data.success && response.data.data) {
@@ -320,9 +319,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                 await AsyncStorage.setItem('user', JSON.stringify(freshUserData));
                             } else {
                                 console.log('⚠️ Mobile AuthContext: Failed to refresh user data from API, using cached data');
+                                // Fallback to cached data if API fails
+                                setUser(userData);
                             }
                         } catch (refreshError) {
-                            console.log('⚠️ Mobile AuthContext: Error refreshing user data, using cached data:', refreshError);
+                            setUser(userData);
                         }
 
                         // Initialize WebSocket connection for chat

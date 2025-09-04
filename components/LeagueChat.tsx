@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Alert, Text, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IMessage } from 'react-native-gifted-chat';
 import { SecureChatService } from '../src/services/secureChatService';
 import { ChatMessage } from '../src/types/chat';
@@ -22,12 +23,25 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
 }) => {
     const { user } = useAuth();
     const { resolvedTheme } = useTheme();
+    const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState<IMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [inputText, setInputText] = useState('');
+    const [isInputFocused, setIsInputFocused] = useState(false);
+    const [contentHeight, setContentHeight] = useState(0);
+    const [scrollViewHeight, setScrollViewHeight] = useState(0);
     const messagesEndRef = useRef<ScrollView>(null);
+
+    // Function to scroll to bottom with proper positioning
+    const scrollToBottom = useCallback(() => {
+        if (contentHeight > scrollViewHeight) {
+            // Calculate the proper scroll position to show the last message without empty space
+            const scrollOffset = Math.max(0, contentHeight - scrollViewHeight + 20); // 20px buffer
+            messagesEndRef.current?.scrollTo({ y: scrollOffset, animated: true });
+        }
+    }, [contentHeight, scrollViewHeight]);
 
     // Get screen width for proper bubble sizing
     const screenWidth = Dimensions.get('window').width;
@@ -284,14 +298,36 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
         };
     }, [user, leagueId]);
 
+    // Keyboard event listeners - temporarily disabled to fix empty screen issue
+    // useEffect(() => {
+    //     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    //         setIsKeyboardVisible(true);
+    //         // Scroll to bottom when keyboard appears
+    //         setTimeout(() => {
+    //             messagesEndRef.current?.scrollToEnd({ animated: true });
+    //         }, 300);
+    //     });
+
+    //     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+    //         setIsKeyboardVisible(false);
+    //     });
+
+    //     return () => {
+    //         keyboardDidShowListener?.remove();
+    //         keyboardDidHideListener?.remove();
+    //     };
+    // }, []);
+
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         if (messages.length > 0) {
+            // Use shorter delays to prevent over-scrolling
+            const delay = isInputFocused ? 200 : 50;
             setTimeout(() => {
-                messagesEndRef.current?.scrollToEnd({ animated: true });
-            }, 100);
+                scrollToBottom();
+            }, delay);
         }
-    }, [messages]);
+    }, [messages, isInputFocused, scrollToBottom]);
 
     // Send a new message
     // Function to refresh online users list
@@ -359,12 +395,18 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
 
             // Refresh online users list after sending message to ensure up-to-date status
             await refreshOnlineUsers();
+
+            // Ensure scroll to bottom after sending message with appropriate delay
+            const scrollDelay = isInputFocused ? 150 : 50;
+            setTimeout(() => {
+                scrollToBottom();
+            }, scrollDelay);
         } catch (error) {
             console.error('Error sending message:', error);
             Alert.alert('Error', 'Failed to send message. Please try again.');
             setInputText(messageText); // Restore text on error
         }
-    }, [user, leagueId, channelId, inputText, refreshOnlineUsers]);
+    }, [user, leagueId, channelId, inputText, refreshOnlineUsers, isInputFocused, scrollToBottom]);
 
     // Render a single message
     const renderMessage = (message: IMessage) => {
@@ -465,7 +507,8 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             borderTopWidth: 1,
             borderTopColor: currentColors.borderLight,
             paddingHorizontal: 16,
-            paddingVertical: 12,
+            paddingTop: 12,
+            paddingBottom: Math.max(12, insets.bottom),
         },
         loadingContainer: {
             flex: 1,
@@ -777,13 +820,24 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             <KeyboardAvoidingView
                 style={themeStyles.chatContainer}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={90}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
             >
                 <ScrollView
                     ref={messagesEndRef}
                     style={themeStyles.messagesList}
                     contentContainerStyle={themeStyles.messagesContent}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                    automaticallyAdjustKeyboardInsets={true}
+                    contentInsetAdjustmentBehavior="automatic"
+                    onContentSizeChange={(contentWidth, contentHeight) => {
+                        setContentHeight(contentHeight);
+                    }}
+                    onLayout={(event) => {
+                        const { height } = event.nativeEvent.layout;
+                        setScrollViewHeight(height);
+                    }}
                 >
                     {messages.map(renderMessage)}
                 </ScrollView>
@@ -799,6 +853,16 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                             placeholderTextColor={currentColors.textSecondary}
                             multiline
                             maxLength={1000}
+                            onFocus={() => {
+                                setIsInputFocused(true);
+                                // Scroll to bottom when input is focused
+                                setTimeout(() => {
+                                    scrollToBottom();
+                                }, 150);
+                            }}
+                            onBlur={() => {
+                                setIsInputFocused(false);
+                            }}
                             onSubmitEditing={() => {
                                 if (inputText.trim()) {
                                     sendMessage();
@@ -807,13 +871,6 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                             blurOnSubmit={false}
                             returnKeyType="send"
                             enablesReturnKeyAutomatically={true}
-                        // onKeyPress={({ nativeEvent }) => {
-                        //     if (nativeEvent.key === 'Enter') {
-                        //         if (inputText.trim()) {
-                        //             sendMessage();
-                        //         }
-                        //     }
-                        // }}
                         />
                         <TouchableOpacity
                             style={[

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, Alert, Text, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, StyleSheet, Alert, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IMessage } from 'react-native-gifted-chat';
 import { SecureChatService } from '../src/services/secureChatService';
@@ -29,19 +29,21 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [inputText, setInputText] = useState('');
-    const [isInputFocused, setIsInputFocused] = useState(false);
-    const [contentHeight, setContentHeight] = useState(0);
-    const [scrollViewHeight, setScrollViewHeight] = useState(0);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [, setKeyboardHeight] = useState(0);
     const messagesEndRef = useRef<ScrollView>(null);
 
-    // Function to scroll to bottom with proper positioning
-    const scrollToBottom = useCallback(() => {
-        if (contentHeight > scrollViewHeight) {
-            // Calculate the proper scroll position to show the last message without empty space
-            const scrollOffset = Math.max(0, contentHeight - scrollViewHeight + 20); // 20px buffer
-            messagesEndRef.current?.scrollTo({ y: scrollOffset, animated: true });
+    // Enhanced function to scroll to bottom with keyboard awareness
+    const scrollToBottom = useCallback((animated = true) => {
+        if (messagesEndRef.current) {
+            // Use a small delay to ensure the layout has updated
+            setTimeout(() => {
+                messagesEndRef.current?.scrollToEnd({ animated });
+            }, 100);
         }
-    }, [contentHeight, scrollViewHeight]);
+    }, []);
+
+
 
     // Get screen width for proper bubble sizing
     const screenWidth = Dimensions.get('window').width;
@@ -298,36 +300,43 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
         };
     }, [user, leagueId]);
 
-    // Keyboard event listeners - temporarily disabled to fix empty screen issue
-    // useEffect(() => {
-    //     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-    //         setIsKeyboardVisible(true);
-    //         // Scroll to bottom when keyboard appears
-    //         setTimeout(() => {
-    //             messagesEndRef.current?.scrollToEnd({ animated: true });
-    //         }, 300);
-    //     });
+    // Keyboard event listeners for proper scroll behavior
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
+            setIsKeyboardVisible(true);
+            setKeyboardHeight(event.endCoordinates.height);
+            // Scroll to bottom when keyboard appears with a longer delay for iOS
+            setTimeout(() => {
+                scrollToBottom(true);
+            }, Platform.OS === 'ios' ? 300 : 100);
+        });
 
-    //     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-    //         setIsKeyboardVisible(false);
-    //     });
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setIsKeyboardVisible(false);
+            setKeyboardHeight(0);
+            // Scroll to bottom when keyboard hides
+            setTimeout(() => {
+                scrollToBottom(true);
+            }, 100);
+        });
 
-    //     return () => {
-    //         keyboardDidShowListener?.remove();
-    //         keyboardDidHideListener?.remove();
-    //     };
-    // }, []);
+        return () => {
+            keyboardDidShowListener?.remove();
+            keyboardDidHideListener?.remove();
+        };
+    }, [scrollToBottom]);
 
-    // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom when messages are loaded or new messages arrive
     useEffect(() => {
         if (messages.length > 0) {
-            // Use shorter delays to prevent over-scrolling
-            const delay = isInputFocused ? 200 : 50;
+            // Scroll to bottom for new messages, with longer delay if keyboard is visible
+            const delay = isKeyboardVisible ? 200 : 100;
             setTimeout(() => {
-                scrollToBottom();
+                scrollToBottom(true);
             }, delay);
         }
-    }, [messages, isInputFocused, scrollToBottom]);
+    }, [messages, scrollToBottom, isKeyboardVisible]);
+
 
     // Send a new message
     // Function to refresh online users list
@@ -396,17 +405,16 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             // Refresh online users list after sending message to ensure up-to-date status
             await refreshOnlineUsers();
 
-            // Ensure scroll to bottom after sending message with appropriate delay
-            const scrollDelay = isInputFocused ? 150 : 50;
+            // Scroll to bottom after sending message
             setTimeout(() => {
-                scrollToBottom();
-            }, scrollDelay);
+                scrollToBottom(true);
+            }, isKeyboardVisible ? 200 : 100);
         } catch (error) {
             console.error('Error sending message:', error);
             Alert.alert('Error', 'Failed to send message. Please try again.');
             setInputText(messageText); // Restore text on error
         }
-    }, [user, leagueId, channelId, inputText, refreshOnlineUsers, isInputFocused, scrollToBottom]);
+    }, [user, leagueId, channelId, inputText, refreshOnlineUsers, scrollToBottom, isKeyboardVisible]);
 
     // Render a single message
     const renderMessage = (message: IMessage) => {
@@ -507,8 +515,8 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             borderTopWidth: 1,
             borderTopColor: currentColors.borderLight,
             paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: Math.max(12, insets.bottom),
+            paddingVertical: 12,
+            paddingBottom: Platform.OS === 'ios' ? Math.max(12, insets.bottom) : Math.max(40, insets.bottom),
         },
         loadingContainer: {
             flex: 1,
@@ -817,78 +825,127 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             )}
 
             {/* Chat Messages */}
-            <KeyboardAvoidingView
-                style={themeStyles.chatContainer}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
-            >
-                <ScrollView
-                    ref={messagesEndRef}
-                    style={themeStyles.messagesList}
-                    contentContainerStyle={themeStyles.messagesContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    automaticallyAdjustKeyboardInsets={true}
-                    contentInsetAdjustmentBehavior="automatic"
-                    onContentSizeChange={(contentWidth, contentHeight) => {
-                        setContentHeight(contentHeight);
-                    }}
-                    onLayout={(event) => {
-                        const { height } = event.nativeEvent.layout;
-                        setScrollViewHeight(height);
-                    }}
+            {Platform.OS === 'ios' ? (
+                <KeyboardAvoidingView
+                    style={themeStyles.chatContainer}
+                    behavior="padding"
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 >
-                    {messages.map(renderMessage)}
-                </ScrollView>
+                    <ScrollView
+                        ref={messagesEndRef}
+                        style={themeStyles.messagesList}
+                        contentContainerStyle={themeStyles.messagesContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={false}
+                        contentInsetAdjustmentBehavior="never"
+                    >
+                        {messages.map(renderMessage)}
+                    </ScrollView>
 
-                {/* Input Area */}
-                <View style={themeStyles.inputArea}>
-                    <View style={themeStyles.inputContainer}>
-                        <TextInput
-                            style={themeStyles.textInput}
-                            value={inputText}
-                            onChangeText={setInputText}
-                            placeholder={`Message ${leagueName}...`}
-                            placeholderTextColor={currentColors.textSecondary}
-                            multiline
-                            maxLength={1000}
-                            onFocus={() => {
-                                setIsInputFocused(true);
-                                // Scroll to bottom when input is focused
-                                setTimeout(() => {
-                                    scrollToBottom();
-                                }, 150);
-                            }}
-                            onBlur={() => {
-                                setIsInputFocused(false);
-                            }}
-                            onSubmitEditing={() => {
-                                if (inputText.trim()) {
-                                    sendMessage();
-                                }
-                            }}
-                            blurOnSubmit={false}
-                            returnKeyType="send"
-                            enablesReturnKeyAutomatically={true}
-                        />
-                        <TouchableOpacity
-                            style={[
-                                themeStyles.sendButton,
-                                inputText.trim().length > 0 ? themeStyles.sendButtonEnabled : themeStyles.sendButtonDisabled
-                            ]}
-                            onPress={inputText.trim().length > 0 ? sendMessage : undefined}
-                            disabled={inputText.trim().length === 0}
-                        >
-                            <Ionicons
-                                name="send"
-                                size={20}
-                                color={inputText.trim().length > 0 ? "white" : currentColors.textSecondary}
+                    {/* Input Area */}
+                    <View style={themeStyles.inputArea}>
+                        <View style={themeStyles.inputContainer}>
+                            <TextInput
+                                style={themeStyles.textInput}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholder={`Message ${leagueName}...`}
+                                placeholderTextColor={currentColors.textSecondary}
+                                multiline
+                                maxLength={1000}
+                                onFocus={() => {
+                                    // Scroll to bottom when input is focused
+                                    setTimeout(() => {
+                                        scrollToBottom(true);
+                                    }, 300);
+                                }}
+                                onSubmitEditing={() => {
+                                    if (inputText.trim()) {
+                                        sendMessage();
+                                    }
+                                }}
+                                blurOnSubmit={false}
+                                returnKeyType="send"
+                                enablesReturnKeyAutomatically={true}
                             />
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    themeStyles.sendButton,
+                                    inputText.trim().length > 0 ? themeStyles.sendButtonEnabled : themeStyles.sendButtonDisabled
+                                ]}
+                                onPress={inputText.trim().length > 0 ? sendMessage : undefined}
+                                disabled={inputText.trim().length === 0}
+                            >
+                                <Ionicons
+                                    name="send"
+                                    size={20}
+                                    color={inputText.trim().length > 0 ? "white" : currentColors.textSecondary}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            ) : (
+                <View style={themeStyles.chatContainer}>
+                    <ScrollView
+                        ref={messagesEndRef}
+                        style={themeStyles.messagesList}
+                        contentContainerStyle={themeStyles.messagesContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={false}
+                        contentInsetAdjustmentBehavior="never"
+                    >
+                        {messages.map(renderMessage)}
+                    </ScrollView>
+
+                    {/* Input Area */}
+                    <View style={themeStyles.inputArea}>
+                        <View style={themeStyles.inputContainer}>
+                            <TextInput
+                                style={themeStyles.textInput}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholder={`Message ${leagueName}...`}
+                                placeholderTextColor={currentColors.textSecondary}
+                                multiline
+                                maxLength={1000}
+                                onFocus={() => {
+                                    // Scroll to bottom when input is focused
+                                    setTimeout(() => {
+                                        scrollToBottom(true);
+                                    }, 300);
+                                }}
+                                onSubmitEditing={() => {
+                                    if (inputText.trim()) {
+                                        sendMessage();
+                                    }
+                                }}
+                                blurOnSubmit={false}
+                                returnKeyType="send"
+                                enablesReturnKeyAutomatically={true}
+                            />
+                            <TouchableOpacity
+                                style={[
+                                    themeStyles.sendButton,
+                                    inputText.trim().length > 0 ? themeStyles.sendButtonEnabled : themeStyles.sendButtonDisabled
+                                ]}
+                                onPress={inputText.trim().length > 0 ? sendMessage : undefined}
+                                disabled={inputText.trim().length === 0}
+                            >
+                                <Ionicons
+                                    name="send"
+                                    size={20}
+                                    color={inputText.trim().length > 0 ? "white" : currentColors.textSecondary}
+                                />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-            </KeyboardAvoidingView>
+            )}
         </View>
     );
 };

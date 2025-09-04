@@ -291,6 +291,28 @@ export class SecureWebSocketService {
                 // Handle ping/pong for connection health
                 break;
 
+            case 'user_status_updated':
+                // Handle user status update confirmation from server
+                if (data.userId && typeof data.isOnline === 'boolean') {
+                    // Create a user object for the status update
+                    const user: ChatUser = {
+                        id: data.userId,
+                        name: (data.userName as string) || 'Unknown User',
+                        email: '',
+                        isOnline: data.isOnline,
+                        lastSeen: new Date(),
+                        leagues: []
+                    };
+
+                    // Notify callbacks about the user status change
+                    if (data.isOnline) {
+                        this.callbacks.onUserJoined?.(user);
+                    } else {
+                        this.callbacks.onUserLeft?.(data.userId);
+                    }
+                }
+                break;
+
             default:
                 console.warn('Unknown WebSocket message type:', data.type);
         }

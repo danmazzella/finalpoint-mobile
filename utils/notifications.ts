@@ -14,6 +14,18 @@ async function setupAndroidNotificationChannel(): Promise<void> {
     if (Platform.OS !== 'android') return;
 
     try {
+        // Create default channel first (matches app.json configuration)
+        await Notifications.setNotificationChannelAsync('default', {
+            name: 'Default',
+            description: 'Default notifications for FinalPoint',
+            importance: Notifications.AndroidImportance.DEFAULT,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#1e3a8a',
+            sound: 'default',
+            enableVibrate: true,
+            showBadge: true,
+        });
+
         // Create Pick Reminders channel
         await Notifications.setNotificationChannelAsync('finalpoint_pick_reminders', {
             name: 'Pick Reminders',

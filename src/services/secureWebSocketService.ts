@@ -75,7 +75,11 @@ export class SecureWebSocketService {
             const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:6075';
             // Remove /api suffix if it exists to avoid double /api/api
             const baseUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.slice(0, -4) : apiBaseUrl;
-            const wsUrl = baseUrl.replace('http', 'ws') + '/api/chat/ws?token=' + encodeURIComponent(this.token);
+            // Convert to WebSocket URL and ensure proper path construction
+            const wsBaseUrl = baseUrl.replace('http', 'ws');
+            const wsUrl = `${wsBaseUrl}/api/chat/ws?token=${encodeURIComponent(this.token)}`;
+
+
 
             this.ws = new WebSocket(wsUrl);
 
@@ -118,7 +122,7 @@ export class SecureWebSocketService {
 
             this.ws.onerror = (error) => {
                 this.isConnecting = false;
-                console.error('WebSocket error:', error);
+                console.error('Mobile WebSocket error:', error);
                 this.callbacks.onError?.('WebSocket connection error');
             };
 
@@ -228,6 +232,14 @@ export class SecureWebSocketService {
     private handleMessage(data: WebSocketMessage): void {
         switch (data.type) {
             case 'authenticated':
+                // Handle token migration if new token is provided
+                if (data.newToken && data.tokenMigration && typeof data.newToken === 'string') {
+                    AsyncStorage.setItem('token', data.newToken).then(() => {
+                        this.token = data.newToken as string;
+                    }).catch(error => {
+                        console.error('Failed to update token:', error);
+                    });
+                }
                 break;
 
             case 'league_joined':

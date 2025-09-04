@@ -7,7 +7,10 @@ export default function ScreenTracker() {
     const analytics = useAnalytics();
 
     useEffect(() => {
-        if (!pathname) return;
+        if (!pathname) {
+            console.log('📱 ScreenTracker: No pathname available');
+            return;
+        }
 
         // Map pathname to screen name (matching web app page names)
         const getScreenName = (path: string) => {
@@ -27,6 +30,8 @@ export default function ScreenTracker() {
         };
 
         const screenName = getScreenName(pathname);
+
+        // Track the screen view
         analytics.screenView(screenName, pathname);
     }, [pathname, analytics]);
 

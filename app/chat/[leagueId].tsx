@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Alert, Switch, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LeagueChat } from '../../components/LeagueChat';
 import { SecureChatService } from '../../src/services/secureChatService';
 import { useAuth } from '../../src/context/AuthContext';
@@ -16,6 +17,7 @@ export default function LeagueChatScreen() {
     const { user } = useAuth();
     const { resolvedTheme } = useTheme();
     const { isChatFeatureEnabled, isLoading: featureFlagLoading } = useChatFeature();
+    const insets = useSafeAreaInsets();
     const [leagueName, setLeagueName] = useState('League Chat');
     const [hasAccess, setHasAccess] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -284,7 +286,8 @@ export default function LeagueChatScreen() {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 16,
-            paddingVertical: 12,
+            paddingTop: insets.top + 12,
+            paddingBottom: 12,
             backgroundColor: currentColors.cardBackground,
             borderBottomWidth: 1,
             borderBottomColor: currentColors.borderLight,

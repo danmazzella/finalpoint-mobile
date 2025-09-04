@@ -7,18 +7,28 @@ export const analyticsUtils = {
     // Log custom events
     logEvent: (eventName: string, parameters?: Record<string, any>) => {
         try {
-            firebaseLogEvent(analytics, eventName, parameters);
+            if (analytics) {
+                firebaseLogEvent(analytics, eventName, parameters);
+            } else {
+                // Fallback to console logging when analytics is not available
+                console.log(`📊 Analytics Event (fallback): ${eventName}`, parameters);
+            }
         } catch (error) {
-            console.error('Firebase Analytics error:', error);
+            console.error('❌ Firebase Analytics error:', error);
             // Fallback to console logging
-            console.log('Analytics Event:', eventName, parameters);
+            console.log(`📊 Analytics Event (error fallback): ${eventName}`, parameters);
         }
     },
 
     // Set user properties
     setUserProperties: (properties: Record<string, any>) => {
         try {
-            firebaseSetUserProperties(analytics, properties);
+            if (analytics) {
+                firebaseSetUserProperties(analytics, properties);
+            } else {
+                // Fallback to console logging when analytics is not available
+                console.log('Analytics User Properties:', properties);
+            }
         } catch (error) {
             console.error('Firebase Analytics error:', error);
             // Fallback to console logging
@@ -29,7 +39,12 @@ export const analyticsUtils = {
     // Set user ID
     setUserId: (userId: string) => {
         try {
-            firebaseSetUserId(analytics, userId);
+            if (analytics) {
+                firebaseSetUserId(analytics, userId);
+            } else {
+                // Fallback to console logging when analytics is not available
+                console.log('Analytics User ID:', userId);
+            }
         } catch (error) {
             console.error('Firebase Analytics error:', error);
             // Fallback to console logging

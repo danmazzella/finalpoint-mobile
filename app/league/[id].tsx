@@ -20,7 +20,7 @@ import { lightColors, darkColors } from '../../src/constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { useChatFeature } from '../../src/context/FeatureFlagContext';
+import { useChatFeature, usePositionChanges } from '../../src/context/FeatureFlagContext';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
@@ -29,6 +29,7 @@ const LeagueDetailScreen = () => {
     const { user } = useAuth();
     const { resolvedTheme } = useTheme();
     const { isChatFeatureEnabled } = useChatFeature();
+    const { isPositionChangesEnabled } = usePositionChanges();
 
     // Get current theme colors
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -663,6 +664,76 @@ const LeagueDetailScreen = () => {
             textAlign: 'center',
             marginBottom: spacing.md,
         },
+        // Position changes styles
+        positionGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: spacing.xs,
+            marginVertical: spacing.sm,
+        },
+        positionButton: {
+            width: 50,
+            height: 50,
+            borderRadius: borderRadius.md,
+            borderWidth: 1,
+            borderColor: currentColors.textTertiary,
+            backgroundColor: currentColors.backgroundSecondary,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        positionButtonSelected: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+        },
+        positionButtonText: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        positionButtonTextSelected: {
+            color: currentColors.textInverse,
+        },
+        positionButtonDisabled: {
+            backgroundColor: currentColors.backgroundTertiary,
+            borderColor: currentColors.borderLight,
+        },
+        positionButtonTextDisabled: {
+            color: currentColors.textTertiary,
+        },
+        positionCurrentText: {
+            fontSize: 12,
+            color: currentColors.textTertiary,
+            marginBottom: spacing.sm,
+        },
+        warningButton: {
+            backgroundColor: currentColors.warning,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.lg,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+        },
+        warningButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        affectedUsersContainer: {
+            marginVertical: spacing.sm,
+        },
+        affectedUsersTitle: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        affectedUsersList: {
+            maxHeight: 100,
+        },
+        affectedUserText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            marginBottom: 2,
+        },
     });
 
     const [league, setLeague] = useState<League | null>(null);
@@ -682,6 +753,12 @@ const LeagueDetailScreen = () => {
     const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    // Position changes state
+    const [editingPositions, setEditingPositions] = useState<number[]>([]);
+    const [updatingPositions, setUpdatingPositions] = useState(false);
+    const [showPositionChangeConfirm, setShowPositionChangeConfirm] = useState(false);
+    const [positionChangeConflict, setPositionChangeConflict] = useState<any>(null);
 
     useEffect(() => {
         loadLeagueData();
@@ -897,6 +974,48 @@ const LeagueDetailScreen = () => {
         }
     };
 
+    const updateLeaguePositions = async (forceChange = false) => {
+        if (!league || !editingPositions.length) return;
+
+        try {
+            setUpdatingPositions(true);
+            const response = await picksAPI.updateLeaguePositions(league.id, editingPositions);
+
+            if (response.data.success) {
+                setLeague({ ...league, requiredPositions: editingPositions });
+                setEditingPositions([]);
+                setShowSettings(false);
+                setShowPositionChangeConfirm(false);
+                setPositionChangeConflict(null);
+                Alert.alert('Success', 'League positions updated successfully');
+                loadLeagueData(); // Refresh league data
+            }
+        } catch (error: any) {
+            console.error('Error updating league positions:', error);
+
+            // Check if it's a conflict error
+            if (error.response?.data?.conflict) {
+                setPositionChangeConflict(error.response.data);
+                setShowPositionChangeConfirm(true);
+            } else {
+                Alert.alert('Error', error.response?.data?.message || 'Failed to update league positions. Please try again.');
+            }
+        } finally {
+            setUpdatingPositions(false);
+        }
+    };
+
+    const handlePositionToggle = (position: number) => {
+        setEditingPositions(prev => {
+            if (prev.includes(position)) {
+                return prev.filter(p => p !== position);
+            } else if (prev.length < 2) {
+                return [...prev, position].sort((a, b) => a - b);
+            }
+            return prev;
+        });
+    };
+
     const shareLeague = async () => {
         if (league?.joinCode) {
             const shareUrl = `https://finalpoint.app/joinleague/${league.joinCode}`;
@@ -1063,6 +1182,10 @@ const LeagueDetailScreen = () => {
                     <TouchableOpacity
                         style={styles.settingsButton}
                         onPress={() => {
+                            if (league?.userRole === 'Owner') {
+                                setEditingName(league.name);
+                                setEditingPositions(league.requiredPositions || []);
+                            }
                             setShowSettings(true);
                         }}
                     >
@@ -1472,6 +1595,55 @@ const LeagueDetailScreen = () => {
                                         </View>
                                     </View>
 
+                                    {/* League Position Requirements - Owner Only */}
+                                    {isPositionChangesEnabled && (
+                                        <View style={styles.settingSection}>
+                                            <Text style={styles.settingLabel}>Position Requirements</Text>
+                                            <Text style={styles.settingDescription}>
+                                                Select 1-2 positions that league members must predict for each race.
+                                            </Text>
+                                            <View style={styles.positionGrid}>
+                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((position) => (
+                                                    <TouchableOpacity
+                                                        key={position}
+                                                        style={[
+                                                            styles.positionButton,
+                                                            editingPositions.includes(position) && styles.positionButtonSelected,
+                                                            editingPositions.length >= 2 && !editingPositions.includes(position) && styles.positionButtonDisabled
+                                                        ]}
+                                                        onPress={() => handlePositionToggle(position)}
+                                                        disabled={editingPositions.length >= 2 && !editingPositions.includes(position)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.positionButtonText,
+                                                            editingPositions.includes(position) && styles.positionButtonTextSelected,
+                                                            editingPositions.length >= 2 && !editingPositions.includes(position) && styles.positionButtonTextDisabled
+                                                        ]}>
+                                                            P{position}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                            <Text style={styles.positionCurrentText}>
+                                                Current: P{league?.requiredPositions?.join(', P') || 'None selected'}
+                                            </Text>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.primaryButton,
+                                                    (updatingPositions || editingPositions.length === 0 ||
+                                                        JSON.stringify(editingPositions.sort()) === JSON.stringify((league?.requiredPositions || []).sort())) && styles.disabledButton
+                                                ]}
+                                                onPress={() => updateLeaguePositions()}
+                                                disabled={updatingPositions || editingPositions.length === 0 ||
+                                                    JSON.stringify(editingPositions.sort()) === JSON.stringify((league?.requiredPositions || []).sort())}
+                                            >
+                                                <Text style={styles.primaryButtonText}>
+                                                    {updatingPositions ? 'Updating...' : 'Update Positions'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+
                                     {/* Delete League - Owner Only */}
                                     <View style={styles.settingSection}>
                                         <Text style={styles.dangerLabel}>Danger Zone</Text>
@@ -1580,6 +1752,51 @@ const LeagueDetailScreen = () => {
                             >
                                 <Text style={styles.primaryButtonText}>
                                     {leaving ? 'Leaving...' : 'Leave League'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {/* Position Change Conflict Confirmation Modal */}
+            {showPositionChangeConfirm && positionChangeConflict && (
+                <View style={styles.modalOverlay}>
+                    <View style={styles.confirmationModal}>
+                        <View style={styles.confirmationIcon}>
+                            <Ionicons name="warning" size={48} color={currentColors.warning} />
+                        </View>
+                        <Text style={styles.confirmationTitle}>Position Change Conflict</Text>
+                        <Text style={styles.confirmationMessage}>
+                            Changing positions will affect existing picks. {positionChangeConflict.affectedUsers?.length || 0} users have picks that will be affected by this change.
+                        </Text>
+                        {positionChangeConflict.affectedUsers && positionChangeConflict.affectedUsers.length > 0 && (
+                            <View style={styles.affectedUsersContainer}>
+                                <Text style={styles.affectedUsersTitle}>Affected users:</Text>
+                                <ScrollView style={styles.affectedUsersList} nestedScrollEnabled>
+                                    {positionChangeConflict.affectedUsers.map((user: any, index: number) => (
+                                        <Text key={index} style={styles.affectedUserText}>• {user.name}</Text>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+                        <View style={styles.confirmationButtons}>
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => {
+                                    setShowPositionChangeConfirm(false);
+                                    setPositionChangeConflict(null);
+                                }}
+                            >
+                                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.warningButton}
+                                onPress={() => updateLeaguePositions()}
+                                disabled={updatingPositions}
+                            >
+                                <Text style={styles.warningButtonText}>
+                                    {updatingPositions ? 'Updating...' : 'Force Change'}
                                 </Text>
                             </TouchableOpacity>
                         </View>

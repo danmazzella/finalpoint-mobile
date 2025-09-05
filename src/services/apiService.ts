@@ -221,6 +221,11 @@ export const picksAPI = {
     getLeaguePositions: (leagueId: number) => apiService.get(`/picks/league/${leagueId}/positions`),
     updateLeaguePositions: (leagueId: number, positions: number[]) =>
         apiService.put(`/picks/league/${leagueId}/positions`, { positions }),
+
+    // League position history
+    getLeaguePositionHistory: (leagueId: number) => apiService.get(`/picks/league/${leagueId}/positions/history`),
+    getLeaguePositionsForWeek: (leagueId: number, weekNumber: number) =>
+        apiService.get(`/picks/league/${leagueId}/positions/week/${weekNumber}`),
 };
 
 export const driversAPI = {

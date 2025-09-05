@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PickV2, NotificationPreferences } from '../types';
 
 // API URL configuration
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
     // Use environment variable if available
     if (process.env.EXPO_PUBLIC_API_URL) {
         const baseUrl = process.env.EXPO_PUBLIC_API_URL;

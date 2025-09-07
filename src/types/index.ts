@@ -289,6 +289,8 @@ export interface F1Race {
     circuitName?: string;
     country?: string;
     showCountdown?: boolean;
+    // Sprint race support
+    hasSprint?: boolean;
 }
 
 // League member types

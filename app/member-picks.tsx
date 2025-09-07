@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { picksAPI, leaguesAPI } from '../src/services/apiService';
+import { picksAPI, leaguesAPI, f1racesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
@@ -70,6 +70,9 @@ const MemberPicksScreen = () => {
     const [leagueMembers, setLeagueMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>('race');
+    const [defaultEventTypeSet, setDefaultEventTypeSet] = useState(false);
+    const [currentRace, setCurrentRace] = useState<any>(null);
 
     const styles = StyleSheet.create({
         container: {
@@ -145,16 +148,6 @@ const MemberPicksScreen = () => {
         },
         subtitle: {
             fontSize: 16,
-            color: currentColors.textSecondary,
-            marginTop: spacing.xs,
-        },
-        weekInfo: {
-            fontSize: 14,
-            color: currentColors.textSecondary,
-            marginTop: spacing.xs,
-        },
-        userInfo: {
-            fontSize: 14,
             color: currentColors.textSecondary,
             marginTop: spacing.xs,
         },
@@ -368,6 +361,41 @@ const MemberPicksScreen = () => {
             paddingHorizontal: spacing.lg,
             paddingBottom: spacing.md,
         },
+        eventTypeSelector: {
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+        },
+        eventTypeContainer: {
+            flexDirection: 'row',
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.lg,
+            padding: 6,
+            borderWidth: 2,
+            borderColor: currentColors.borderLight,
+        },
+        eventTypeButton: {
+            flex: 1,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: 'transparent',
+        },
+        eventTypeButtonActive: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+            ...shadows.md,
+        },
+        eventTypeButtonText: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+        },
+        eventTypeButtonTextActive: {
+            color: currentColors.textInverse,
+            fontWeight: '700',
+        },
         navigationContainer: {
             flexDirection: 'row',
             justifyContent: 'space-between',
@@ -400,7 +428,8 @@ const MemberPicksScreen = () => {
             const response = await picksAPI.getMemberPicksV2(
                 leagueId,
                 weekNumber,
-                userId
+                userId,
+                selectedEventType
             );
 
             if (response.data.success) {
@@ -443,6 +472,18 @@ const MemberPicksScreen = () => {
             }
         }
     }, [leagueId, weekNumber]);
+
+    const loadCurrentRace = useCallback(async () => {
+        try {
+            const response = await f1racesAPI.getAllRaces();
+            if (response.data.success) {
+                const currentRaceData = response.data.data.find((race: any) => race.weekNumber === weekNumber);
+                setCurrentRace(currentRaceData);
+            }
+        } catch (error) {
+            console.error('Error loading current race:', error);
+        }
+    }, [weekNumber]);
 
     const navigateToMember = (newUserId: number, newUserName: string, memberIndex?: number) => {
         const baseParams = {
@@ -511,7 +552,20 @@ const MemberPicksScreen = () => {
     useEffect(() => {
         loadMemberPicks();
         loadLeagueMembers();
-    }, [loadMemberPicks, loadLeagueMembers]);
+        loadCurrentRace();
+    }, [loadMemberPicks, loadLeagueMembers, selectedEventType]);
+
+    // Set default event type based on whether it's a sprint weekend (only once when race is first loaded)
+    useEffect(() => {
+        if (currentRace && !defaultEventTypeSet) {
+            if (currentRace.hasSprint) {
+                setSelectedEventType('sprint');
+            } else {
+                setSelectedEventType('race');
+            }
+            setDefaultEventTypeSet(true);
+        }
+    }, [currentRace, defaultEventTypeSet]);
 
     const getPositionLabel = (position: number) => {
         const labels: { [key: number]: string } = {
@@ -581,7 +635,7 @@ const MemberPicksScreen = () => {
                             <Text style={styles.subtitle}>
                                 {leagueName || 'Loading...'}
                             </Text>
-                            <Text style={styles.userInfo}>
+                            <Text style={styles.subtitle}>
                                 {userName} - Week {weekNumber}
                             </Text>
                         </View>
@@ -663,6 +717,7 @@ const MemberPicksScreen = () => {
                     </View>
                 </View>
 
+
                 {/* Summary Stats */}
                 <View style={styles.summaryContainer}>
                     <View style={styles.summaryCard}>
@@ -682,6 +737,44 @@ const MemberPicksScreen = () => {
                         <Text style={styles.summaryValue}>{memberPicks.totalPoints}</Text>
                     </View>
                 </View>
+
+                {/* Event Type Selector */}
+                {currentRace?.hasSprint && (
+                    <View style={styles.eventTypeSelector}>
+                        <View style={styles.eventTypeContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('sprint')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Sprint Results
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'race' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('race')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'race' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Race Results
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {/* Picks List */}
                 <View style={styles.section}>

@@ -207,14 +207,29 @@ const LeaguesScreen = () => {
             fontStyle: 'italic',
         },
         positionsContainer: {
+            marginTop: 6,
+            marginBottom: 4,
+        },
+        positionsRow: {
             flexDirection: 'row',
+            flexWrap: 'wrap',
             gap: 4,
+            marginTop: 2,
+        },
+        eventTypeLabel: {
+            fontSize: 12,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+            marginBottom: 4,
+            marginTop: 2,
         },
         positionBadge: {
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
             backgroundColor: currentColors.secondary,
+            marginRight: 4,
+            marginBottom: 4,
         },
         positionBadgePicked: {
             backgroundColor: currentColors.success,
@@ -223,8 +238,8 @@ const LeaguesScreen = () => {
             backgroundColor: currentColors.secondary,
         },
         positionText: {
-            fontSize: 10,
-            fontWeight: '600',
+            fontSize: 11,
+            fontWeight: '700',
             color: currentColors.textInverse,
         },
         positionTextPicked: {
@@ -551,12 +566,20 @@ const LeaguesScreen = () => {
         setRefreshing(false);
     };
 
-    const hasPickForPosition = (league: League, position: number): boolean => {
-        if (!league.positionStatus || !league.positionStatus.positions) {
+    const hasPickForPosition = (league: League, position: number, eventType: 'race' | 'sprint' = 'race'): boolean => {
+        if (!league.positionStatus) {
             return false;
         }
-        const positionStatus = league.positionStatus.positions.find(p => p.position === position);
-        return positionStatus ? positionStatus.hasPick : false;
+
+        if (eventType === 'race' && league.positionStatus.race) {
+            const positionStatus = league.positionStatus.race.positions.find(p => p.position === position);
+            return positionStatus ? positionStatus.hasPick : false;
+        } else if (eventType === 'sprint' && league.positionStatus.sprint) {
+            const positionStatus = league.positionStatus.sprint.positions.find(p => p.position === position);
+            return positionStatus ? positionStatus.hasPick : false;
+        }
+
+        return false;
     };
 
     const createLeague = async () => {
@@ -648,12 +671,31 @@ const LeaguesScreen = () => {
                         {league.requiredPositions && league.requiredPositions.length > 0 && (
                             <View style={styles.statRow}>
                                 <Text style={styles.statLabel}>Positions:</Text>
-                                <View style={styles.positionsContainer}>
-                                    {league.requiredPositions.map((position, index) => (
-                                        <View key={position} style={styles.positionBadge}>
-                                            <Text style={styles.positionText}>P{position}</Text>
+
+                                {/* Sprint Positions (only show if this is a sprint weekend) */}
+                                {league.positionStatus?.hasSprint === true && (
+                                    <View style={styles.positionsContainer}>
+                                        <Text style={styles.eventTypeLabel}>Sprint:</Text>
+                                        <View style={styles.positionsRow}>
+                                            {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                                <View key={`sprint-${position}`} style={styles.positionBadge}>
+                                                    <Text style={styles.positionText}>P{position}</Text>
+                                                </View>
+                                            ))}
                                         </View>
-                                    ))}
+                                    </View>
+                                )}
+
+                                {/* Race Positions */}
+                                <View style={styles.positionsContainer}>
+                                    <Text style={styles.eventTypeLabel}>Race:</Text>
+                                    <View style={styles.positionsRow}>
+                                        {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                            <View key={`race-${position}`} style={styles.positionBadge}>
+                                                <Text style={styles.positionText}>P{position}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
                             </View>
                         )}
@@ -737,24 +779,55 @@ const LeaguesScreen = () => {
                         {league.requiredPositions && league.requiredPositions.length > 0 && (
                             <View style={styles.statRow}>
                                 <Text style={styles.statLabel}>Positions:</Text>
-                                <View style={styles.positionsContainer}>
-                                    {league.requiredPositions.map((position, index) => (
-                                        <View key={position} style={[
-                                            styles.positionBadge,
-                                            hasPickForPosition(league, position)
-                                                ? styles.positionBadgePicked
-                                                : styles.positionBadgeUnpicked
-                                        ]}>
-                                            <Text style={[
-                                                styles.positionText,
-                                                hasPickForPosition(league, position)
-                                                    ? styles.positionTextPicked
-                                                    : styles.positionTextUnpicked
-                                            ]}>
-                                                P{position}
-                                            </Text>
+
+                                {/* Sprint Positions (only show if this is a sprint weekend) */}
+                                {league.positionStatus?.hasSprint === true && (
+                                    <View style={styles.positionsContainer}>
+                                        <Text style={styles.eventTypeLabel}>Sprint:</Text>
+                                        <View style={styles.positionsRow}>
+                                            {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                                <View key={`sprint-${position}`} style={[
+                                                    styles.positionBadge,
+                                                    hasPickForPosition(league, position, 'sprint')
+                                                        ? styles.positionBadgePicked
+                                                        : styles.positionBadgeUnpicked
+                                                ]}>
+                                                    <Text style={[
+                                                        styles.positionText,
+                                                        hasPickForPosition(league, position, 'sprint')
+                                                            ? styles.positionTextPicked
+                                                            : styles.positionTextUnpicked
+                                                    ]}>
+                                                        P{position}
+                                                    </Text>
+                                                </View>
+                                            ))}
                                         </View>
-                                    ))}
+                                    </View>
+                                )}
+
+                                {/* Race Positions */}
+                                <View style={styles.positionsContainer}>
+                                    <Text style={styles.eventTypeLabel}>Race:</Text>
+                                    <View style={styles.positionsRow}>
+                                        {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                            <View key={`race-${position}`} style={[
+                                                styles.positionBadge,
+                                                hasPickForPosition(league, position, 'race')
+                                                    ? styles.positionBadgePicked
+                                                    : styles.positionBadgeUnpicked
+                                            ]}>
+                                                <Text style={[
+                                                    styles.positionText,
+                                                    hasPickForPosition(league, position, 'race')
+                                                        ? styles.positionTextPicked
+                                                        : styles.positionTextUnpicked
+                                                ]}>
+                                                    P{position}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
                             </View>
                         )}

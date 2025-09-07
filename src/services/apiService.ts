@@ -205,17 +205,19 @@ export const picksAPI = {
         apiService.post('/picks/make-v2', { leagueId, weekNumber, picks }),
     removePickV2: (leagueId: number, weekNumber: number, position: number) =>
         apiService.post('/picks/remove-v2', { leagueId, weekNumber, position }),
+    removeSprintPickV2: (leagueId: number, weekNumber: number, position: number) =>
+        apiService.post('/picks/sprint/remove-v2', { leagueId, weekNumber, position }),
     getUserPicksV2: (leagueId: number) => apiService.get(`/picks/user/${leagueId}/v2`),
     getLeaguePicksV2: (leagueId: number, weekNumber: number) =>
         apiService.get(`/picks/league/${leagueId}/week/${weekNumber}/v2`),
-    getRaceResultsV2: (leagueId: number, weekNumber: number) =>
-        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/v2`),
+    getRaceResultsV2: (leagueId: number, weekNumber: number, eventType: 'race' | 'sprint' = 'race') =>
+        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/v2?eventType=${eventType}`),
 
     // New V2 result views
-    getResultsByPositionV2: (leagueId: number, weekNumber: number, position: number) =>
-        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/position/${position}/v2`),
-    getMemberPicksV2: (leagueId: number, weekNumber: number, userId: number) =>
-        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/member/${userId}/v2`),
+    getResultsByPositionV2: (leagueId: number, weekNumber: number, position: number, eventType: 'race' | 'sprint' = 'race') =>
+        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/position/${position}/v2?eventType=${eventType}`),
+    getMemberPicksV2: (leagueId: number, weekNumber: number, userId: number, eventType: 'race' | 'sprint' = 'race') =>
+        apiService.get(`/picks/results/${leagueId}/week/${weekNumber}/member/${userId}/v2?eventType=${eventType}`),
 
     // League position management
     getLeaguePositions: (leagueId: number) => apiService.get(`/picks/league/${leagueId}/positions`),
@@ -226,6 +228,16 @@ export const picksAPI = {
     getLeaguePositionHistory: (leagueId: number) => apiService.get(`/picks/league/${leagueId}/positions/history`),
     getLeaguePositionsForWeek: (leagueId: number, weekNumber: number) =>
         apiService.get(`/picks/league/${leagueId}/positions/week/${weekNumber}`),
+
+    // Sprint race methods
+    makeSprintPickV2: (leagueId: number, weekNumber: number, picks: PickV2[]) =>
+        apiService.post('/picks/sprint/make-v2', { leagueId, weekNumber, picks }),
+    getUserPicksForEvent: (leagueId: number, eventType: 'race' | 'sprint') =>
+        apiService.get(`/picks/user/${leagueId}/event/${eventType}`),
+    getLeaguePicksForEvent: (leagueId: number, weekNumber: number, eventType: 'race' | 'sprint') =>
+        apiService.get(`/picks/league/${leagueId}/week/${weekNumber}/event/${eventType}`),
+    getUserPicksForWeekForEvent: (leagueId: number, weekNumber: number, eventType: 'race' | 'sprint') =>
+        apiService.get(`/picks/user/${leagueId}/week/${weekNumber}/event/${eventType}`),
 };
 
 export const driversAPI = {

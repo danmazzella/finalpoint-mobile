@@ -205,21 +205,13 @@ const PicksScreen = () => {
             textAlign: 'center',
         },
         header: {
-            padding: 16,
+            paddingHorizontal: 0,
             backgroundColor: currentColors.cardBackground,
             borderBottomWidth: 1,
             borderBottomColor: currentColors.borderLight,
-            marginBottom: 16,
-        },
-        headerTitle: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: currentColors.textPrimary,
-            marginBottom: 4,
-        },
-        headerSubtitle: {
-            fontSize: 16,
-            color: currentColors.textSecondary,
+            minHeight: 64,
+            flexDirection: 'row',
+            alignItems: 'center',
         },
         leagueSelector: {
             flexDirection: 'row',
@@ -293,15 +285,6 @@ const PicksScreen = () => {
             fontWeight: '600',
             color: currentColors.textPrimary,
         },
-        lockedBadge: {
-            fontSize: 10,
-            fontWeight: '500',
-            color: currentColors.textInverse,
-            backgroundColor: currentColors.secondary,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 8,
-        },
         currentPickCard: {
             backgroundColor: currentColors.backgroundSecondary,
             borderRadius: 6,
@@ -329,14 +312,6 @@ const PicksScreen = () => {
             justifyContent: 'center',
             alignItems: 'center',
             overflow: 'hidden',
-        },
-        removePickIconText: {
-            color: currentColors.textInverse,
-            fontSize: 18,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            lineHeight: 20,
-            includeFontPadding: false,
         },
         noPickContainer: {
             alignItems: 'center',
@@ -450,7 +425,7 @@ const PicksScreen = () => {
             fontSize: 24,
             fontWeight: 'bold',
             color: currentColors.textPrimary,
-            marginBottom: 8,
+            paddingHorizontal: 16,
         },
         description: {
             fontSize: 16,
@@ -572,6 +547,96 @@ const PicksScreen = () => {
         lockedStatus: {
             color: currentColors.warning,
         },
+        // Sprint race styles
+        sprintSection: {
+            marginBottom: 24,
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: 12,
+            padding: 16,
+        },
+        sprintHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        raceSection: {
+            marginBottom: 24,
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: 12,
+            padding: 16,
+        },
+        raceHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        sectionSubtitle: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+            marginBottom: 16,
+        },
+        lockedBadge: {
+            backgroundColor: currentColors.error,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+        },
+        lockedBadgeText: {
+            color: currentColors.textInverse,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        eventTypeSelector: {
+            flexDirection: 'row',
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: 8,
+            padding: 4,
+        },
+        eventTypeButton: {
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 6,
+        },
+        selectedEventTypeButton: {
+            backgroundColor: currentColors.primary,
+        },
+        eventTypeButtonText: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+        },
+        selectedEventTypeButtonText: {
+            color: currentColors.textInverse,
+        },
+        // Additional sprint race styles
+        positionNumber: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+        },
+        removePickButton: {
+            backgroundColor: currentColors.error,
+            borderRadius: 12,
+            width: 24,
+            height: 24,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        pickContainer: {
+            marginTop: 8,
+        },
+        pickDriverName: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+            marginBottom: 2,
+        },
+        pickDriverTeam: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+        },
     });
 
     const { leagueId: urlLeagueId } = useLocalSearchParams();
@@ -584,10 +649,14 @@ const PicksScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [currentRace, setCurrentRace] = useState<F1Race | null>(null);
     const [userPicks, setUserPicks] = useState<UserPickV2[]>([]);
+    const [sprintPicks, setSprintPicks] = useState<UserPickV2[]>([]);
     const [leaguePositions, setLeaguePositions] = useState<number[]>([]);
     const [selectedPicks, setSelectedPicks] = useState<PickV2[]>([]);
+    const [selectedSprintPicks, setSelectedSprintPicks] = useState<PickV2[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
+    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>('race');
+    const [defaultEventTypeSet, setDefaultEventTypeSet] = useState(false);
     const [showDriverModal, setShowDriverModal] = useState(false);
     const insets = useSafeAreaInsets();
 
@@ -602,8 +671,23 @@ const PicksScreen = () => {
         if (selectedLeague) {
             loadUserPicks();
             loadLeaguePositions();
+            if (currentRace?.hasSprint) {
+                loadSprintPicks();
+            }
         }
-    }, [selectedLeague, currentWeek]);
+    }, [selectedLeague, currentWeek, currentRace?.hasSprint]);
+
+    // Set default event type based on whether it's a sprint weekend (only once when race is first loaded)
+    useEffect(() => {
+        if (currentRace && !defaultEventTypeSet) {
+            if (currentRace.hasSprint) {
+                setSelectedEventType('sprint');
+            } else {
+                setSelectedEventType('race');
+            }
+            setDefaultEventTypeSet(true);
+        }
+    }, [currentRace, defaultEventTypeSet]);
 
     // Handle URL parameter changes for league selection
     useEffect(() => {
@@ -663,9 +747,11 @@ const PicksScreen = () => {
             if (currentRaceResponse.data.success && currentRaceResponse.data.data) {
                 setCurrentRace(currentRaceResponse.data.data);
                 setCurrentWeek(currentRaceResponse.data.data.weekNumber || 1);
+                setDefaultEventTypeSet(false); // Reset flag when week changes
             } else {
                 setCurrentRace(null);
                 setCurrentWeek(1);
+                setDefaultEventTypeSet(false); // Reset flag when week changes
             }
         } catch (error: any) {
             console.error('Error loading data:', error);
@@ -712,6 +798,39 @@ const PicksScreen = () => {
         }
     };
 
+    const loadSprintPicks = async () => {
+        if (!selectedLeague) return;
+
+        try {
+            const response = await picksAPI.getUserPicksForEvent(selectedLeague, 'sprint');
+            if (response.data.success && response.data.data) {
+                // Ensure data is an array and filter out any invalid entries
+                const validPicks = Array.isArray(response.data.data)
+                    ? response.data.data.filter((pick: any) => pick && typeof pick.position === 'number' && pick.driverId)
+                    : [];
+
+                // Filter picks by current week
+                const currentWeekPicks = validPicks.filter((pick: UserPickV2) => pick.weekNumber === currentWeek);
+
+                setSprintPicks(currentWeekPicks);
+
+                // Convert existing picks to selectedSprintPicks format
+                const picks = currentWeekPicks.map((pick: UserPickV2) => ({
+                    position: pick.position,
+                    driverId: pick.driverId
+                }));
+                setSelectedSprintPicks(picks);
+            } else {
+                setSprintPicks([]);
+                setSelectedSprintPicks([]);
+            }
+        } catch (error) {
+            console.error('Error loading sprint picks:', error);
+            setSprintPicks([]);
+            setSelectedSprintPicks([]);
+        }
+    };
+
     const loadLeaguePositions = async () => {
         if (!selectedLeague) return;
 
@@ -738,11 +857,14 @@ const PicksScreen = () => {
         if (selectedLeague) {
             await loadUserPicks();
             await loadLeaguePositions();
+            if (currentRace?.hasSprint) {
+                await loadSprintPicks();
+            }
         }
         setRefreshing(false);
     };
 
-    const makePick = async (position: number, driverId: number) => {
+    const makePick = async (position: number, driverId: number, eventType: 'race' | 'sprint' = 'race') => {
         if (!selectedLeague) {
             showToast('Please select a league first', 'error');
             return;
@@ -759,18 +881,35 @@ const PicksScreen = () => {
 
             // Update local state first
             const newPick: PickV2 = { position, driverId };
-            const updatedPicks = selectedPicks.filter(pick => pick.position !== position);
-            updatedPicks.push(newPick);
-            setSelectedPicks(updatedPicks);
+
+            if (eventType === 'race') {
+                const updatedPicks = selectedPicks.filter(pick => pick.position !== position);
+                updatedPicks.push(newPick);
+                setSelectedPicks(updatedPicks);
+            } else {
+                const updatedPicks = selectedSprintPicks.filter(pick => pick.position !== position);
+                updatedPicks.push(newPick);
+                setSelectedSprintPicks(updatedPicks);
+            }
 
             // Submit to API
-            const response = await picksAPI.makePickV2(selectedLeague, currentWeek, [newPick]);
+            const response = eventType === 'race'
+                ? await picksAPI.makePickV2(selectedLeague, currentWeek, [newPick])
+                : await picksAPI.makeSprintPickV2(selectedLeague, currentWeek, [newPick]);
+
             if (response.data.success) {
-                showToast(`P${position} pick submitted successfully!`, 'success', 2000);
+                showToast(`${eventType === 'race' ? 'Race' : 'Sprint'} P${position} pick submitted successfully!`, 'success', 2000);
                 await loadUserPicks(); // Refresh picks
+                if (eventType === 'sprint') {
+                    await loadSprintPicks(); // Refresh sprint picks
+                }
             } else {
                 // Revert local state if API call failed
-                setSelectedPicks(selectedPicks);
+                if (eventType === 'race') {
+                    setSelectedPicks(selectedPicks);
+                } else {
+                    setSelectedSprintPicks(selectedSprintPicks);
+                }
                 showToast('Failed to submit pick. Please try again.', 'error');
             }
         } catch (error) {
@@ -818,6 +957,45 @@ const PicksScreen = () => {
         }
     };
 
+    const removeSprintPick = async (position: number) => {
+        if (!selectedLeague) {
+            showToast('Please select a league first', 'error');
+            return;
+        }
+
+        // Check if picks are locked
+        if (currentRace && Boolean(currentRace.picksLocked)) {
+            showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            // Update local state first
+            const updatedPicks = selectedSprintPicks.filter(pick => pick.position !== position);
+            setSelectedSprintPicks(updatedPicks);
+
+            // Submit to API
+            const response = await picksAPI.removeSprintPickV2(selectedLeague, currentWeek, position);
+            if (response.data.success) {
+                showToast(`Sprint P${position} pick removed successfully!`, 'success', 2000);
+                await loadSprintPicks(); // Refresh sprint picks
+            } else {
+                // Revert local state if API call failed
+                setSelectedSprintPicks(selectedSprintPicks);
+                showToast('Failed to remove sprint pick. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error removing sprint pick:', error);
+            // Revert local state if API call failed
+            setSelectedSprintPicks(selectedSprintPicks);
+            showToast('Failed to remove sprint pick. Please try again.', 'error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handlePositionPress = (position: number) => {
         if ((currentRace && Boolean(currentRace.picksLocked)) || isRaceLocked()) {
             showToast('Picks are currently locked for this race.', 'warning');
@@ -829,7 +1007,7 @@ const PicksScreen = () => {
 
     const handleDriverSelect = (driver: Driver) => {
         if (selectedPosition) {
-            makePick(selectedPosition, driver.id);
+            makePick(selectedPosition, driver.id, selectedEventType);
         }
     };
 
@@ -838,14 +1016,16 @@ const PicksScreen = () => {
         setSelectedPosition(null);
     };
 
-    const getCurrentPickForPosition = (position: number) => {
-        if (!userPicks || !Array.isArray(userPicks)) return null;
-        return userPicks.find(pick => pick && pick.position === position);
+    const getCurrentPickForPosition = (position: number, eventType: 'race' | 'sprint' = 'race') => {
+        const picks = eventType === 'race' ? userPicks : sprintPicks;
+        if (!picks || !Array.isArray(picks)) return null;
+        return picks.find(pick => pick && pick.position === position);
     };
 
-    const getSelectedDriverForPosition = (position: number) => {
-        if (!selectedPicks || !Array.isArray(selectedPicks)) return null;
-        const pick = selectedPicks.find(pick => pick && pick.position === position);
+    const getSelectedDriverForPosition = (position: number, eventType: 'race' | 'sprint' = 'race') => {
+        const picks = eventType === 'race' ? selectedPicks : selectedSprintPicks;
+        if (!picks || !Array.isArray(picks)) return null;
+        const pick = picks.find(pick => pick && pick.position === position);
         return pick ? pick.driverId : null;
     };
 
@@ -887,11 +1067,16 @@ const PicksScreen = () => {
 
     return (
         <View style={universalStyles.container}>
+            {/* Header - outside ScrollView for edge-to-edge */}
+            <View style={[styles.header, { paddingTop: insets.top }]}>
+                <Text style={styles.title}>Make Your Picks</Text>
+            </View>
+
             <ScrollView
                 style={universalStyles.scrollView}
                 contentContainerStyle={[
                     styles.scrollContent,
-                    { paddingTop: insets.top, paddingBottom: insets.bottom + 70 }
+                    { paddingBottom: insets.bottom + 70 }
                 ]}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -979,10 +1164,6 @@ const PicksScreen = () => {
                     </>
                 ) : (
                     <>
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Make Your Picks</Text>
-                        </View>
-
                         <Text style={styles.description}>Week {currentWeek} - 2025 F1 Season</Text>
 
                         {/* League Selection */}
@@ -1100,64 +1281,6 @@ const PicksScreen = () => {
                             </View>
                         )}
 
-                        {/* Position Picks */}
-                        {selectedLeague && leaguePositions.length > 0 && (
-                            <View style={styles.picksSection}>
-                                <Text style={styles.sectionTitle}>Your Picks</Text>
-                                <View style={styles.positionsGrid}>
-                                    {leaguePositions.map((position) => {
-                                        const currentPick = getCurrentPickForPosition(position);
-                                        const selectedDriverId = getSelectedDriverForPosition(position);
-                                        const isLocked = isPositionLocked(position);
-                                        const isRaceLockedNow = isRaceLocked();
-
-                                        return (
-                                            <TouchableOpacity
-                                                key={position}
-                                                style={[
-                                                    styles.positionCard,
-                                                    !isLocked && !isRaceLockedNow && styles.clickablePositionCard
-                                                ]}
-                                                onPress={() => handlePositionPress(position)}
-                                                disabled={isLocked || isRaceLockedNow || submitting}
-                                                activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
-                                            >
-                                                <View style={styles.positionHeader}>
-                                                    <Text style={styles.positionTitle}>P{position}</Text>
-                                                    {isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
-                                                </View>
-
-                                                {currentPick && currentPick.driverName && currentPick.driverTeam ? (
-                                                    <View style={styles.currentPickCard}>
-                                                        <Text style={styles.currentPickDriver}>{currentPick.driverName}</Text>
-                                                        <Text style={styles.currentPickTeam}>{currentPick.driverTeam}</Text>
-                                                        {!isLocked && !isRaceLockedNow && (
-                                                            <TouchableOpacity
-                                                                style={styles.removePickIcon}
-                                                                onPress={(e) => {
-                                                                    e.stopPropagation();
-                                                                    removePick(position);
-                                                                }}
-                                                                disabled={submitting}
-                                                            >
-                                                                <Text style={styles.removePickIconText}>×</Text>
-                                                            </TouchableOpacity>
-                                                        )}
-                                                    </View>
-                                                ) : (
-                                                    <View style={styles.noPickContainer}>
-                                                        <Text style={styles.noPickText}>No pick made yet</Text>
-                                                        {!isLocked && !isRaceLockedNow && (
-                                                            <Text style={styles.tapToSelectText}>Tap to select driver</Text>
-                                                        )}
-                                                    </View>
-                                                )}
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
-                            </View>
-                        )}
 
                         {/* Legacy Single Pick Support */}
                         {selectedLeague && leaguePositions.length === 0 && (
@@ -1202,6 +1325,146 @@ const PicksScreen = () => {
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
+                            </View>
+                        )}
+
+                        {/* Sprint Race Picks Section */}
+                        {selectedLeague && currentRace?.hasSprint && (
+                            <View style={styles.sprintSection}>
+                                <View style={styles.sprintHeader}>
+                                    <Text style={styles.sectionTitle}>Sprint Race Picks</Text>
+                                    {currentRace?.picksLocked && (
+                                        <View style={styles.lockedBadge}>
+                                            <Text style={styles.lockedBadgeText}>Picks Locked</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.sectionSubtitle}>
+                                    Week {currentWeek} - {currentRace?.raceName}
+                                </Text>
+
+                                <View style={styles.positionsGrid}>
+                                    {leaguePositions.map((position) => {
+                                        const currentPick = getCurrentPickForPosition(position, 'sprint');
+                                        const isLocked = isPositionLocked(position);
+                                        const isRaceLockedNow = isRaceLocked();
+
+                                        return (
+                                            <TouchableOpacity
+                                                key={`sprint-${position}`}
+                                                style={[
+                                                    styles.positionCard,
+                                                    !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                                ]}
+                                                onPress={() => {
+                                                    if (!isLocked && !isRaceLockedNow) {
+                                                        setSelectedPosition(position);
+                                                        setSelectedEventType('sprint');
+                                                        setShowDriverModal(true);
+                                                    }
+                                                }}
+                                                disabled={isLocked || isRaceLockedNow}
+                                            >
+                                                <View style={styles.positionHeader}>
+                                                    <Text style={styles.positionNumber}>P{position}</Text>
+                                                    {currentPick && !isLocked && !isRaceLockedNow && (
+                                                        <TouchableOpacity
+                                                            style={styles.removePickButton}
+                                                            onPress={() => removeSprintPick(position)}
+                                                            disabled={submitting}
+                                                        >
+                                                            <Ionicons name="close" size={16} color={currentColors.textInverse} />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+
+                                                {currentPick ? (
+                                                    <View style={styles.pickContainer}>
+                                                        <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
+                                                        <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <View style={styles.noPickContainer}>
+                                                        <Text style={styles.noPickText}>No pick made yet</Text>
+                                                        {!isLocked && !isRaceLockedNow && (
+                                                            <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Main Race Picks Section */}
+                        {selectedLeague && (
+                            <View style={styles.raceSection}>
+                                <View style={styles.raceHeader}>
+                                    <Text style={styles.sectionTitle}>Grand Prix Picks</Text>
+                                    {currentRace?.picksLocked && (
+                                        <View style={styles.lockedBadge}>
+                                            <Text style={styles.lockedBadgeText}>Picks Locked</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.sectionSubtitle}>
+                                    Week {currentWeek} - {currentRace?.raceName}
+                                </Text>
+
+                                <View style={styles.positionsGrid}>
+                                    {leaguePositions.map((position) => {
+                                        const currentPick = getCurrentPickForPosition(position, 'race');
+                                        const isLocked = isPositionLocked(position);
+                                        const isRaceLockedNow = isRaceLocked();
+
+                                        return (
+                                            <TouchableOpacity
+                                                key={`race-${position}`}
+                                                style={[
+                                                    styles.positionCard,
+                                                    !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                                ]}
+                                                onPress={() => {
+                                                    if (!isLocked && !isRaceLockedNow) {
+                                                        setSelectedPosition(position);
+                                                        setSelectedEventType('race');
+                                                        setShowDriverModal(true);
+                                                    }
+                                                }}
+                                                disabled={isLocked || isRaceLockedNow}
+                                            >
+                                                <View style={styles.positionHeader}>
+                                                    <Text style={styles.positionNumber}>P{position}</Text>
+                                                    {currentPick && !isLocked && !isRaceLockedNow && (
+                                                        <TouchableOpacity
+                                                            style={styles.removePickButton}
+                                                            onPress={() => removePick(position)}
+                                                            disabled={submitting}
+                                                        >
+                                                            <Ionicons name="close" size={16} color={currentColors.textInverse} />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+
+                                                {currentPick ? (
+                                                    <View style={styles.pickContainer}>
+                                                        <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
+                                                        <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <View style={styles.noPickContainer}>
+                                                        <Text style={styles.noPickText}>No pick made yet</Text>
+                                                        {!isLocked && !isRaceLockedNow && (
+                                                            <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
                             </View>
                         )}
                     </>

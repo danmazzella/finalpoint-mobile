@@ -462,16 +462,16 @@ const UnscoredPositionPicksScreen = () => {
 
     const loadAvailablePositions = useCallback(async () => {
         try {
-            const response = await picksAPI.getLeaguePositions(leagueId);
+            const response = await picksAPI.getLeaguePositionsForWeek(leagueId, weekNumber);
             if (response.data.success) {
                 // Sort positions in ascending order (P1, P2, P3, etc.)
-                const sortedPositions = response.data.data.sort((a: number, b: number) => a - b);
+                const sortedPositions = (response.data.data.positions || []).sort((a: number, b: number) => a - b);
                 setAvailablePositions(sortedPositions);
             }
         } catch (error: any) {
             console.error('Error loading available positions:', error);
         }
-    }, [leagueId]);
+    }, [leagueId, weekNumber]);
 
     const navigateToPosition = (newPosition: number) => {
         // Use replace instead of push to avoid building up navigation stack

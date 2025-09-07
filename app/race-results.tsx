@@ -81,10 +81,25 @@ const RaceResultsScreen = () => {
     const [league, setLeague] = useState<League | null>(null);
     const [requiredPositions, setRequiredPositions] = useState<number[]>([10]);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>('race');
+    const [defaultEventTypeSet, setDefaultEventTypeSet] = useState(false);
+    const [currentRace, setCurrentRace] = useState<any>(null);
 
     useEffect(() => {
         loadData();
-    }, [leagueId, selectedWeek]);
+    }, [leagueId, selectedWeek, selectedEventType]);
+
+    // Set default event type based on whether it's a sprint weekend (only once when race is first loaded)
+    useEffect(() => {
+        if (currentRace && !defaultEventTypeSet) {
+            if (currentRace.hasSprint) {
+                setSelectedEventType('sprint');
+            } else {
+                setSelectedEventType('race');
+            }
+            setDefaultEventTypeSet(true);
+        }
+    }, [currentRace, defaultEventTypeSet]);
 
     const styles = StyleSheet.create({
         container: {
@@ -241,6 +256,41 @@ const RaceResultsScreen = () => {
             marginHorizontal: spacing.lg,
             marginBottom: spacing.md,
             ...shadows.md,
+        },
+        eventTypeSelector: {
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+        },
+        eventTypeContainer: {
+            flexDirection: 'row',
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.lg,
+            padding: 6,
+            borderWidth: 2,
+            borderColor: currentColors.borderLight,
+        },
+        eventTypeButton: {
+            flex: 1,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: 'transparent',
+        },
+        eventTypeButtonActive: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+            ...shadows.md,
+        },
+        eventTypeButtonText: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+        },
+        eventTypeButtonTextActive: {
+            color: currentColors.textInverse,
+            fontWeight: '700',
         },
         weekOption: {
             flexDirection: 'row',
@@ -897,8 +947,8 @@ const RaceResultsScreen = () => {
             const [leagueResponse, racesResponse, resultsResponse, positionsResponse] = await Promise.all([
                 leaguesAPI.getLeague(leagueId),
                 f1racesAPI.getAllRaces(),
-                picksAPI.getRaceResultsV2(leagueId, selectedWeek),
-                picksAPI.getLeaguePositions(leagueId)
+                picksAPI.getRaceResultsV2(leagueId, selectedWeek, selectedEventType),
+                picksAPI.getLeaguePositionsForWeek(leagueId, selectedWeek)
             ]);
 
             if (leagueResponse.data.success) {
@@ -908,6 +958,10 @@ const RaceResultsScreen = () => {
             if (racesResponse.data.success) {
                 const racesData = racesResponse.data.data;
                 setRaces(racesData);
+
+                // Set current race for the selected week
+                const currentRaceData = racesData.find((race: any) => race.weekNumber === selectedWeek);
+                setCurrentRace(currentRaceData);
 
                 // If no week was specified in URL, set to current week
                 if (!weekNumber || isNaN(weekNumber)) {
@@ -921,7 +975,7 @@ const RaceResultsScreen = () => {
             }
 
             if (positionsResponse.data.success) {
-                setRequiredPositions(positionsResponse.data.data);
+                setRequiredPositions(positionsResponse.data.data.positions || []);
             }
         } catch (error: any) {
             console.error('Error loading race results:', error);
@@ -945,6 +999,7 @@ const RaceResultsScreen = () => {
         // Optimistically update the week immediately
         setSelectedWeek(week);
         setShowWeekSelector(false);
+        setDefaultEventTypeSet(false); // Reset flag when week changes
 
         // Use a small delay to prevent rapid style changes
         setTimeout(() => {
@@ -1076,7 +1131,7 @@ const RaceResultsScreen = () => {
         );
     }
 
-    const currentRace = getCurrentRace();
+    const currentRaceData = getCurrentRace();
     const currentIndex = getCurrentRaceIndex();
     const canGoPrevious = currentIndex > 0;
     const canGoNext = currentIndex < races.length - 1;
@@ -1102,7 +1157,7 @@ const RaceResultsScreen = () => {
                         <View style={styles.headerContent}>
                             <Text style={styles.title}>Race Results</Text>
                             <Text style={styles.subtitle}>
-                                {league?.name || 'Loading...'} • {currentRace ? currentRace.raceName : `Week ${selectedWeek}`}
+                                {league?.name || 'Loading...'} • {currentRaceData ? currentRaceData.raceName : `Week ${selectedWeek}`}
                             </Text>
                         </View>
                     </View>
@@ -1112,8 +1167,8 @@ const RaceResultsScreen = () => {
                         <Ionicons name="trophy-outline" size={64} color={currentColors.textSecondary} />
                         <Text style={styles.emptyTitle}>No Results Available</Text>
                         <Text style={styles.emptyMessage}>
-                            {currentRace ? (
-                                `No results are available for ${currentRace.raceName} (Week ${selectedWeek}). The race may not have finished yet or results haven't been entered.`
+                            {currentRaceData ? (
+                                `No results are available for ${currentRaceData.raceName} (Week ${selectedWeek}). The race may not have finished yet or results haven't been entered.`
                             ) : (
                                 `No results are available for Week ${selectedWeek}. The race may not have finished yet or results haven't been entered.`
                             )}
@@ -1155,7 +1210,7 @@ const RaceResultsScreen = () => {
                 </View>
 
                 <Text style={styles.description}>
-                    {league?.name || 'Loading...'} • {currentRace ? currentRace.raceName : `Week ${selectedWeek}`}
+                    {league?.name || 'Loading...'} • {currentRaceData ? currentRaceData.raceName : `Week ${selectedWeek}`}
                 </Text>
 
                 {/* Week Navigation */}
@@ -1246,6 +1301,7 @@ const RaceResultsScreen = () => {
                         ))}
                     </View>
                 )}
+
 
                 {/* Summary Stats */}
                 <View style={styles.summaryContainer}>
@@ -1380,6 +1436,44 @@ const RaceResultsScreen = () => {
                                     </View>
                                 );
                             })}
+                        </View>
+                    </View>
+                )}
+
+                {/* Event Type Selector */}
+                {currentRace?.hasSprint && (
+                    <View style={styles.eventTypeSelector}>
+                        <View style={styles.eventTypeContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('sprint')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Sprint Results
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'race' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('race')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'race' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Race Results
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 )}

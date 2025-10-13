@@ -559,9 +559,9 @@ const LeagueStandingsScreen = () => {
                                     {(() => {
                                         const activeUsers = standings.filter(s => s.totalPicks > 0);
                                         if (activeUsers.length === 0) return '0.0';
-                                        const totalPicks = activeUsers.reduce((sum, s) => sum + (s.totalPicks || 0), 0);
+                                        const completedRacePicks = activeUsers.reduce((sum, s) => sum + (s.completedRacePicks || 0), 0);
                                         const totalPoints = activeUsers.reduce((sum, s) => sum + (s.totalPoints || 0), 0);
-                                        const maxPotentialPoints = totalPicks * 10;
+                                        const maxPotentialPoints = completedRacePicks * 10;
                                         return maxPotentialPoints > 0 ? Math.round((totalPoints / maxPotentialPoints) * 100) : 0;
                                     })()}%
                                 </Text>

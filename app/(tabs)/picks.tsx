@@ -1477,11 +1477,11 @@ const PicksScreen = () => {
                 onClose={closeDriverModal}
                 position={selectedPosition || 0}
                 drivers={drivers}
-                selectedDriverId={selectedPosition ? getSelectedDriverForPosition(selectedPosition) || undefined : undefined}
+                selectedDriverId={selectedPosition ? getSelectedDriverForPosition(selectedPosition, selectedEventType) || undefined : undefined}
                 onDriverSelect={handleDriverSelect}
                 disabled={(currentRace ? Boolean(currentRace.picksLocked) : false) || isRaceLocked()}
                 submitting={submitting}
-                userPicks={new Map(selectedPicks.map(pick => [pick.position, pick.driverId]))}
+                userPicks={new Map((selectedEventType === 'race' ? selectedPicks : selectedSprintPicks).map(pick => [pick.position, pick.driverId]))}
             />
         </View>
     );

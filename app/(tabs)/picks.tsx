@@ -769,7 +769,7 @@ const PicksScreen = () => {
         if (!selectedLeague) return;
 
         try {
-            const response = await picksAPI.getUserPicksV2(selectedLeague);
+            const response = await picksAPI.getUserPicksForEvent(selectedLeague, 'race');
             if (response.data.success && response.data.data) {
                 // Ensure data is an array and filter out any invalid entries
                 const validPicks = Array.isArray(response.data.data)

@@ -11,11 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { picksAPI } from '../src/services/apiService';
+import { picksAPI, f1racesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
-import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
 
@@ -56,17 +55,18 @@ const UnscoredPositionPicksScreen = () => {
     const weekNumber = Number(params.weekNumber);
     const position = Number(params.position);
     const leagueName = params.leagueName as string;
+    const eventType = (params.eventType as 'race' | 'sprint') || 'race';
 
     // Get current theme colors from universal palette
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
-
-    // Create universal styles with current theme colors
-    const universalStyles = createThemeStyles(currentColors);
 
     const [results, setResults] = useState<PositionResultV2 | null>(null);
     const [availablePositions, setAvailablePositions] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>(eventType);
+    const [defaultEventTypeSet, setDefaultEventTypeSet] = useState(false);
+    const [currentRace, setCurrentRace] = useState<any>(null);
 
     const styles = StyleSheet.create({
         container: {
@@ -433,6 +433,136 @@ const UnscoredPositionPicksScreen = () => {
         bottomSpacing: {
             height: spacing.xl,
         },
+        // Event type selector styles
+        eventTypeSelector: {
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+        },
+        eventTypeContainer: {
+            flexDirection: 'row',
+            backgroundColor: currentColors.backgroundSecondary,
+            borderRadius: borderRadius.lg,
+            padding: 4,
+        },
+        eventTypeButton: {
+            flex: 1,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+        },
+        eventTypeButtonActive: {
+            backgroundColor: currentColors.primary,
+        },
+        eventTypeButtonText: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+        },
+        eventTypeButtonTextActive: {
+            color: currentColors.textInverse,
+        },
+        // Scoring display styles
+        correctBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: currentColors.success + '20',
+            paddingHorizontal: spacing.xs,
+            paddingVertical: 2,
+            borderRadius: borderRadius.sm,
+        },
+        correctText: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: currentColors.success,
+            marginLeft: 2,
+        },
+        incorrectBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: currentColors.error + '20',
+            paddingHorizontal: spacing.xs,
+            paddingVertical: 2,
+            borderRadius: borderRadius.sm,
+        },
+        incorrectText: {
+            fontSize: 10,
+            fontWeight: '600',
+            color: currentColors.error,
+            marginLeft: 2,
+        },
+        scoreInfo: {
+            alignItems: 'flex-end',
+            marginLeft: 'auto',
+        },
+        pointsLabel: {
+            fontSize: 8,
+            fontWeight: '600',
+            color: currentColors.textSecondary,
+            letterSpacing: 0.5,
+        },
+        pointsText: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: currentColors.primary,
+        },
+        actualResultSection: {
+            marginTop: spacing.sm,
+            paddingTop: spacing.sm,
+            borderTopWidth: 1,
+            borderTopColor: currentColors.borderLight,
+        },
+        actualResultLabel: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            marginBottom: spacing.xs,
+        },
+        actualResultText: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        actualFinishText: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            marginTop: 2,
+        },
+        // Actual result styles
+        actualResultCard: {
+            backgroundColor: currentColors.cardBackground,
+            borderRadius: borderRadius.lg,
+            padding: spacing.lg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            ...shadows.sm,
+        },
+        actualResultBadge: {
+            backgroundColor: currentColors.primary,
+            borderRadius: borderRadius.full,
+            width: 60,
+            height: 60,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: spacing.md,
+        },
+        actualResultPosition: {
+            color: currentColors.textInverse,
+            fontSize: 18,
+            fontWeight: 'bold',
+        },
+        actualResultInfo: {
+            flex: 1,
+        },
+        actualResultDriver: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: spacing.xs,
+        },
+        actualResultTeam: {
+            fontSize: 14,
+            color: currentColors.textSecondary,
+        },
     });
 
     const loadResults = useCallback(async () => {
@@ -443,7 +573,8 @@ const UnscoredPositionPicksScreen = () => {
             const response = await picksAPI.getResultsByPositionV2(
                 leagueId,
                 weekNumber,
-                position
+                position,
+                selectedEventType
             );
 
             if (response.data.success) {
@@ -458,7 +589,7 @@ const UnscoredPositionPicksScreen = () => {
         } finally {
             setLoading(false);
         }
-    }, [leagueId, weekNumber, position, showToast]);
+    }, [leagueId, weekNumber, position, selectedEventType, showToast]);
 
     const loadAvailablePositions = useCallback(async () => {
         try {
@@ -473,6 +604,18 @@ const UnscoredPositionPicksScreen = () => {
         }
     }, [leagueId, weekNumber]);
 
+    const loadCurrentRace = useCallback(async () => {
+        try {
+            const response = await f1racesAPI.getAllRaces();
+            if (response.data.success) {
+                const currentRaceData = response.data.data.find((race: any) => race.weekNumber === weekNumber);
+                setCurrentRace(currentRaceData);
+            }
+        } catch (error) {
+            console.error('Error loading current race:', error);
+        }
+    }, [weekNumber]);
+
     const navigateToPosition = (newPosition: number) => {
         // Use replace instead of push to avoid building up navigation stack
         router.replace({
@@ -482,9 +625,36 @@ const UnscoredPositionPicksScreen = () => {
                 weekNumber: weekNumber.toString(),
                 position: newPosition.toString(),
                 leagueName: leagueName,
+                eventType: selectedEventType,
             },
         });
     };
+
+    useEffect(() => {
+        loadResults();
+        loadAvailablePositions();
+        loadCurrentRace();
+    }, [loadResults, loadAvailablePositions, loadCurrentRace]);
+
+    // Set default event type based on whether it's a sprint weekend (only once when race is first loaded)
+    useEffect(() => {
+        if (currentRace && !defaultEventTypeSet) {
+            // Only set default if this is the initial load and no eventType was specified in URL
+            if (!params.eventType) {
+                if (currentRace.hasSprint) {
+                    setSelectedEventType('sprint');
+                } else {
+                    setSelectedEventType('race');
+                }
+            }
+            setDefaultEventTypeSet(true);
+        }
+    }, [currentRace, defaultEventTypeSet]);
+
+    // Update selectedEventType when URL params change (when navigating between positions)
+    useEffect(() => {
+        setSelectedEventType(eventType);
+    }, [eventType]);
 
     const getCurrentPositionIndex = () => {
         return availablePositions.findIndex(pos => pos === position);
@@ -647,13 +817,55 @@ const UnscoredPositionPicksScreen = () => {
                     </View>
                 </View>
 
-                {/* Race Not Scored Notice */}
-                <View style={styles.noticeSection}>
-                    <View style={styles.statusCard}>
-                        <Ionicons name="time-outline" size={16} color={currentColors.warning} />
-                        <Text style={styles.statusTitle}>Race not scored yet</Text>
+                {/* Event Type Selector */}
+                {currentRace?.hasSprint && (
+                    <View style={styles.eventTypeSelector}>
+                        <View style={styles.eventTypeContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('sprint')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'sprint' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Sprint Results
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.eventTypeButton,
+                                    selectedEventType === 'race' && styles.eventTypeButtonActive
+                                ]}
+                                onPress={() => setSelectedEventType('race')}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.eventTypeButtonText,
+                                    selectedEventType === 'race' && styles.eventTypeButtonTextActive
+                                ]}>
+                                    Race Results
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                )}
+
+                {/* Race Not Scored Notice - only show if no results */}
+                {!results.actualResult && results.picks.length > 0 && results.picks.every(pick => pick.isCorrect === null) && (
+                    <View style={styles.noticeSection}>
+                        <View style={styles.statusCard}>
+                            <Ionicons name="time-outline" size={16} color={currentColors.warning} />
+                            <Text style={styles.statusTitle}>
+                                {selectedEventType === 'sprint' ? 'Sprint not scored yet' : 'Race not scored yet'}
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 {/* Summary Stats */}
                 <View style={styles.summaryContainer}>
@@ -661,11 +873,51 @@ const UnscoredPositionPicksScreen = () => {
                         <Text style={styles.summaryLabel}>Participants</Text>
                         <Text style={styles.summaryValue}>{results.totalParticipants}</Text>
                     </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Race Status</Text>
-                        <Text style={styles.summaryValue}>Not Scored</Text>
-                    </View>
+                    {results.actualResult || (results.picks.length > 0 && results.picks.some(pick => pick.isCorrect !== null)) ? (
+                        <>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Correct Picks</Text>
+                                <Text style={styles.summaryValue}>{results.correctPicks}</Text>
+                            </View>
+                            <View style={styles.summaryCard}>
+                                <Text style={styles.summaryLabel}>Accuracy</Text>
+                                <Text style={styles.summaryValue}>
+                                    {results.totalParticipants > 0
+                                        ? Math.round((results.correctPicks / results.totalParticipants) * 100)
+                                        : 0}%
+                                </Text>
+                            </View>
+                        </>
+                    ) : (
+                        <View style={styles.summaryCard}>
+                            <Text style={styles.summaryLabel}>
+                                {selectedEventType === 'sprint' ? 'Sprint Status' : 'Race Status'}
+                            </Text>
+                            <Text style={styles.summaryValue}>Not Scored</Text>
+                        </View>
+                    )}
                 </View>
+
+                {/* Actual Result */}
+                {results.actualResult && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <View style={styles.sectionTitleContainer}>
+                                <Ionicons name="trophy" size={20} color={currentColors.primary} />
+                                <Text style={styles.sectionTitle}>Actual Result</Text>
+                            </View>
+                        </View>
+                        <View style={styles.actualResultCard}>
+                            <View style={styles.actualResultBadge}>
+                                <Text style={styles.actualResultPosition}>P{results.position}</Text>
+                            </View>
+                            <View style={styles.actualResultInfo}>
+                                <Text style={styles.actualResultDriver}>{results.actualResult.driverName}</Text>
+                                <Text style={styles.actualResultTeam}>{results.actualResult.driverTeam}</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 {/* All Picks */}
                 <View style={styles.section}>
@@ -691,10 +943,24 @@ const UnscoredPositionPicksScreen = () => {
                                     </View>
                                     <Text style={styles.pickUser}>{pick.userName}</Text>
                                     <View style={styles.pickStatusContainer}>
-                                        <View style={styles.awaitingBadge}>
-                                            <Ionicons name="time-outline" size={10} color={currentColors.warning} />
-                                            <Text style={styles.pickStatusText}>Pending</Text>
-                                        </View>
+                                        {pick.isCorrect === true && (
+                                            <View style={styles.correctBadge}>
+                                                <Ionicons name="checkmark-circle" size={10} color={currentColors.success} />
+                                                <Text style={styles.correctText}>Correct</Text>
+                                            </View>
+                                        )}
+                                        {pick.isCorrect === false && (
+                                            <View style={styles.incorrectBadge}>
+                                                <Ionicons name="close-circle" size={10} color={currentColors.error} />
+                                                <Text style={styles.incorrectText}>Incorrect</Text>
+                                            </View>
+                                        )}
+                                        {pick.isCorrect === null && (
+                                            <View style={styles.awaitingBadge}>
+                                                <Ionicons name="time-outline" size={10} color={currentColors.warning} />
+                                                <Text style={styles.pickStatusText}>Pending</Text>
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
 
@@ -710,7 +976,28 @@ const UnscoredPositionPicksScreen = () => {
                                             {pick.driverTeam}
                                         </Text>
                                     </View>
+                                    {pick.points !== null && (
+                                        <View style={styles.scoreInfo}>
+                                            <Text style={styles.pointsLabel}>POINTS</Text>
+                                            <Text style={styles.pointsText}>{pick.points}</Text>
+                                        </View>
+                                    )}
                                 </View>
+
+                                {/* Actual Result Information */}
+                                {pick.actualDriverName && (
+                                    <View style={styles.actualResultSection}>
+                                        <Text style={styles.actualResultLabel}>Actual Result:</Text>
+                                        <Text style={styles.actualResultText}>
+                                            {pick.actualDriverName} ({pick.actualDriverTeam})
+                                        </Text>
+                                        {pick.actualFinishPosition && (
+                                            <Text style={styles.actualFinishText}>
+                                                Finished P{pick.actualFinishPosition}
+                                            </Text>
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         ))}
                     </View>

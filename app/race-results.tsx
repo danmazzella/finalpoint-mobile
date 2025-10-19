@@ -1076,11 +1076,11 @@ const RaceResultsScreen = () => {
     };
 
     const navigateToUnscoredPositionPicks = (position: number) => {
-        router.push(`/unscored-position-picks?leagueId=${leagueId}&weekNumber=${selectedWeek}&position=${position}&leagueName=${league?.name}` as any);
+        router.push(`/unscored-position-picks?leagueId=${leagueId}&weekNumber=${selectedWeek}&position=${position}&leagueName=${league?.name}&eventType=${selectedEventType}` as any);
     };
 
     const navigateToMemberPicks = (userId: number, userName: string, memberIndex?: number) => {
-        const baseUrl = `/member-picks?leagueId=${leagueId}&weekNumber=${selectedWeek}&userId=${userId}&userName=${userName}&leagueName=${league?.name}`;
+        const baseUrl = `/member-picks?leagueId=${leagueId}&weekNumber=${selectedWeek}&userId=${userId}&userName=${userName}&leagueName=${league?.name}&eventType=${selectedEventType}`;
         const finalUrl = memberIndex !== undefined ? `${baseUrl}&memberIndex=${memberIndex}` : baseUrl;
         router.push(finalUrl as any);
     };
@@ -1302,7 +1302,6 @@ const RaceResultsScreen = () => {
                     </View>
                 )}
 
-
                 {/* Summary Stats */}
                 <View style={styles.summaryContainer}>
                     {hasScoredResults && (
@@ -1326,17 +1325,23 @@ const RaceResultsScreen = () => {
                 {/* Position Results Grid */}
                 {hasScoredResults && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>View Results by Position</Text>
+                        <Text style={styles.sectionTitle}>
+                            {selectedEventType === 'sprint' ? 'View Picks by Position' : 'View Results by Position'}
+                        </Text>
                         <View style={styles.positionsGrid}>
                             {requiredPositions.map((position) => (
                                 <TouchableOpacity
                                     key={position}
                                     style={styles.positionCard}
-                                    onPress={() => navigateToPositionResults(position)}
+                                    onPress={() => selectedEventType === 'sprint'
+                                        ? navigateToUnscoredPositionPicks(position)
+                                        : navigateToPositionResults(position)
+                                    }
                                 >
                                     <Text style={styles.positionNumber}>P{position}</Text>
-
-                                    <Text style={styles.viewResultsText}>View Results</Text>
+                                    <Text style={styles.viewResultsText}>
+                                        {selectedEventType === 'sprint' ? 'View Picks' : 'View Results'}
+                                    </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>

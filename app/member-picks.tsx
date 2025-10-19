@@ -59,6 +59,7 @@ const MemberPicksScreen = () => {
     const userId = Number(params.userId);
     const userName = params.userName as string;
     const leagueName = params.leagueName as string;
+    const eventType = (params.eventType as 'race' | 'sprint') || 'race';
 
     // Get current theme colors from universal palette
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -70,7 +71,7 @@ const MemberPicksScreen = () => {
     const [leagueMembers, setLeagueMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>('race');
+    const [selectedEventType, setSelectedEventType] = useState<'race' | 'sprint'>(eventType);
     const [defaultEventTypeSet, setDefaultEventTypeSet] = useState(false);
     const [currentRace, setCurrentRace] = useState<any>(null);
 
@@ -444,7 +445,7 @@ const MemberPicksScreen = () => {
         } finally {
             setLoading(false);
         }
-    }, [leagueId, weekNumber, userId, showToast]);
+    }, [leagueId, weekNumber, userId, selectedEventType, showToast]);
 
     const loadLeagueMembers = useCallback(async () => {
         try {
@@ -492,6 +493,7 @@ const MemberPicksScreen = () => {
             userId: newUserId.toString(),
             userName: newUserName,
             leagueName: leagueName,
+            eventType: selectedEventType,
         };
 
         const finalParams = memberIndex !== undefined
@@ -558,14 +560,22 @@ const MemberPicksScreen = () => {
     // Set default event type based on whether it's a sprint weekend (only once when race is first loaded)
     useEffect(() => {
         if (currentRace && !defaultEventTypeSet) {
-            if (currentRace.hasSprint) {
-                setSelectedEventType('sprint');
-            } else {
-                setSelectedEventType('race');
+            // Only set default if this is the initial load and no eventType was specified in URL
+            if (!params.eventType) {
+                if (currentRace.hasSprint) {
+                    setSelectedEventType('sprint');
+                } else {
+                    setSelectedEventType('race');
+                }
             }
             setDefaultEventTypeSet(true);
         }
     }, [currentRace, defaultEventTypeSet]);
+
+    // Update selectedEventType when URL params change (when navigating between members)
+    useEffect(() => {
+        setSelectedEventType(eventType);
+    }, [eventType]);
 
     const getPositionLabel = (position: number) => {
         const labels: { [key: number]: string } = {
@@ -851,7 +861,7 @@ const MemberPicksScreen = () => {
                                 {!pick.actualDriverName && (
                                     <View style={styles.noResult}>
                                         <Text style={styles.noResultText}>
-                                            Race not scored yet
+                                            {selectedEventType === 'sprint' ? 'Sprint not scored yet' : 'Race not scored yet'}
                                         </Text>
                                     </View>
                                 )}

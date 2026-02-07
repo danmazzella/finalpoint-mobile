@@ -15,7 +15,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useUnreadCounts } from '../../src/context/UnreadCountContext';
-import { leaguesAPI, authAPI, getBaseUrl, chatAPI } from '../../src/services/apiService';
+import { leaguesAPI, authAPI, getBaseUrl, chatAPI, seasonsAPI } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
@@ -111,6 +111,21 @@ const HomeScreen = () => {
     actionButtonText: {
       marginLeft: 8,
       fontSize: 14,
+      fontWeight: '500',
+      color: currentColors.textSecondary,
+    },
+    seasonChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: currentColors.backgroundSecondary,
+      borderWidth: 1,
+      borderColor: currentColors.borderLight,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+    },
+    seasonChipText: {
+      fontSize: 12,
       fontWeight: '500',
       color: currentColors.textSecondary,
     },
@@ -498,13 +513,30 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [seasons, setSeasons] = useState<{ year: number; displayLabel: string }[]>([]);
+  const [leagueSeasonFilter, setLeagueSeasonFilter] = useState<number | 'all'>('all');
+  const [userStatsSeason, setUserStatsSeason] = useState<number | 'all'>('all');
+  const [globalStatsSeason, setGlobalStatsSeason] = useState<number | 'all'>('all');
 
   useEffect(() => {
-    // Only load data when auth is complete and user is authenticated
+    const load = async () => {
+      try {
+        const res = await seasonsAPI.getSeasons();
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          setSeasons(res.data.data);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
     if (!authLoading && user) {
       loadLeagues();
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, userStatsSeason, globalStatsSeason]);
 
   // Reload data when the tab comes into focus
   useFocusEffect(
@@ -519,10 +551,12 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       setError(null);
+      const userSeason = userStatsSeason === 'all' ? undefined : userStatsSeason;
+      const globalSeason = globalStatsSeason === 'all' ? undefined : globalStatsSeason;
       const [leaguesResponse, statsResponse, globalStatsResponse] = await Promise.all([
         leaguesAPI.getLeagues(),
-        authAPI.getUserStats(),
-        authAPI.getGlobalStats()
+        authAPI.getUserStats(userSeason),
+        authAPI.getGlobalStats(globalSeason)
       ]);
 
       if (leaguesResponse.data.success) {
@@ -816,7 +850,26 @@ const HomeScreen = () => {
             </View>
           ) : (
             <View style={styles.leaguesList}>
-              {leagues.map((league) => (
+              {seasons.length > 0 && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setLeagueSeasonFilter('all')}
+                    style={[styles.seasonChip, leagueSeasonFilter === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}
+                  >
+                    <Text style={[styles.seasonChipText, leagueSeasonFilter === 'all' && { color: currentColors.textInverse }]}>All</Text>
+                  </TouchableOpacity>
+                  {seasons.map((s) => (
+                    <TouchableOpacity
+                      key={s.year}
+                      onPress={() => setLeagueSeasonFilter(s.year)}
+                      style={[styles.seasonChip, leagueSeasonFilter === s.year && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}
+                    >
+                      <Text style={[styles.seasonChipText, leagueSeasonFilter === s.year && { color: currentColors.textInverse }]}>{s.displayLabel || s.year}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {(leagueSeasonFilter === 'all' ? leagues : leagues.filter((l) => l.seasonYear === leagueSeasonFilter)).map((league) => (
                 <TouchableOpacity
                   key={league.id}
                   style={styles.leagueCard}
@@ -825,8 +878,9 @@ const HomeScreen = () => {
                   <View style={styles.leagueInfo}>
                     <View style={styles.leagueNameContainer}>
                       <Text style={styles.leagueName}>{league.name}</Text>
+                      <Text style={[styles.leagueDetails, { marginLeft: 8, fontSize: 12 }]}>({league.seasonYear})</Text>
                       {unreadCounts[league.id] > 0 && (
-                        <View style={styles.chatIconContainer}>
+                        <View style={[styles.chatIconContainer, { marginLeft: 8 }]}>
                           <Ionicons name="chatbubbles-outline" size={20} color={currentColors.textSecondary} />
                           <View style={styles.unreadBadge}>
                             <Text style={styles.unreadBadgeText}>{unreadCounts[league.id]}</Text>
@@ -853,6 +907,18 @@ const HomeScreen = () => {
         {/* User Stats Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Statistics</Text>
+          {seasons.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, marginBottom: 10 }}>
+              <TouchableOpacity onPress={() => setUserStatsSeason('all')} style={[styles.seasonChip, userStatsSeason === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
+                <Text style={[styles.seasonChipText, userStatsSeason === 'all' && { color: currentColors.textInverse }]}>All-Time</Text>
+              </TouchableOpacity>
+              {seasons.map((s) => (
+                <TouchableOpacity key={s.year} onPress={() => setUserStatsSeason(s.year)} style={[styles.seasonChip, userStatsSeason === s.year && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
+                  <Text style={[styles.seasonChipText, userStatsSeason === s.year && { color: currentColors.textInverse }]}>{s.displayLabel || s.year}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{userStats.totalPicks}</Text>
@@ -885,14 +951,23 @@ const HomeScreen = () => {
         <View style={styles.section}>
           <View style={styles.cardHeader}>
             <Text style={styles.sectionTitle}>Platform Statistics</Text>
-            <TouchableOpacity
-              style={styles.statsButton}
-              onPress={() => router.push('/stats')}
-            >
+            <TouchableOpacity style={styles.statsButton} onPress={() => router.push('/stats')}>
               <Ionicons name="stats-chart" size={16} color={currentColors.primary} />
               <Text style={styles.statsButtonText}>Driver Position Stats</Text>
             </TouchableOpacity>
           </View>
+          {seasons.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <TouchableOpacity onPress={() => setGlobalStatsSeason('all')} style={[styles.seasonChip, globalStatsSeason === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
+                <Text style={[styles.seasonChipText, globalStatsSeason === 'all' && { color: currentColors.textInverse }]}>All-Time</Text>
+              </TouchableOpacity>
+              {seasons.map((s) => (
+                <TouchableOpacity key={s.year} onPress={() => setGlobalStatsSeason(s.year)} style={[styles.seasonChip, globalStatsSeason === s.year && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
+                  <Text style={[styles.seasonChipText, globalStatsSeason === s.year && { color: currentColors.textInverse }]}>{s.displayLabel || s.year}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* Lifetime Performance */}
           <View style={styles.globalStatsSubsection}>

@@ -2,16 +2,11 @@
   "expo": {
     "name": "FinalPoint",
     "slug": "finalpoint-mobile",
-    "version": "1.0.17",
+    "version": "1.0.18",
     "orientation": "default",
     "scheme": "finalpoint",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "statusBar": {
-      "style": "dark",
-      "backgroundColor": "#f8fafc",
-      "translucent": true
-    },
     "extra": {
       "eas": {
         "projectId": "fd837ab0-bf92-40de-8205-9bcf247994ef"
@@ -20,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finalpoint.mobile",
-      "buildNumber": "56",
+      "buildNumber": "57",
       "icon": "./assets/ios-icons/ItunesArtwork@2x.png",
       "infoPlist": {
         "CFBundleDisplayName": "FinalPoint",
@@ -40,10 +35,8 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
-      "enableHermes": true,
-      "enableProguardInReleaseBuilds": false,
       "package": "com.finalpoint.mobile",
-      "versionCode": 31,
+      "versionCode": 32,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

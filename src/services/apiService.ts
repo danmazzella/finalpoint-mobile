@@ -132,8 +132,10 @@ export const authAPI = {
     deleteAccount: (data: { password: string }) =>
         apiService.delete('/users/account', { data }),
     getProfile: () => apiService.get('/users/profile'),
-    getUserStats: () => apiService.get('/users/stats'),
-    getGlobalStats: () => apiService.get('/users/global-stats'),
+    getUserStats: (seasonYear?: number | 'all' | null) =>
+        apiService.get('/users/stats', { params: seasonYear != null && seasonYear !== 'all' ? { seasonYear } : {} }),
+    getGlobalStats: (seasonYear?: number | 'all' | null) =>
+        apiService.get('/users/global-stats', { params: seasonYear != null && seasonYear !== 'all' ? { seasonYear } : {} }),
     getMonthlyStats: () => apiService.get('/users/monthly-stats'),
     updateProfile: (data: { name: string }) => apiService.put('/users/profile', data),
     updateAvatar: (data: FormData) => apiService.put('/users/avatar', data, {
@@ -146,12 +148,14 @@ export const authAPI = {
 };
 
 export const adminAPI = {
-    getDashboardStats: () => apiService.get('/admin/dashboard-stats'),
+    getDashboardStats: (seasonYear?: number | null) =>
+        apiService.get('/admin/dashboard-stats', { params: seasonYear != null ? { seasonYear } : {} }),
     getAllUsers: () => apiService.get('/admin/users'),
     updateUserRole: (userId: number, role: 'user' | 'admin') =>
         apiService.put(`/admin/users/${userId}/role`, { role }),
     getAllLeagues: () => apiService.get('/admin/leagues'),
-    getPickStatsByWeek: () => apiService.get('/admin/pick-stats-by-week'),
+    getPickStatsByWeek: (seasonYear?: number | null) =>
+        apiService.get('/admin/pick-stats-by-week', { params: seasonYear != null ? { seasonYear } : {} }),
     getAvailableRacesForResults: () => apiService.get('/admin/available-races-for-results'),
     enterRaceResults: (weekNumber: number, results: { driverId: number; finishingPosition: number }[]) =>
         apiService.post('/admin/enter-race-results', { weekNumber, results })
@@ -245,7 +249,16 @@ export const driversAPI = {
 };
 
 export const statsAPI = {
-    getDriverPositionStats: (position: number) => apiService.get(`/stats/driver-positions?position=${position}`),
+    getDriverPositionStats: (position: number, seasonYear?: number | 'all' | null) => {
+        const params: { position: number; seasonYear?: number } = { position };
+        if (seasonYear != null && seasonYear !== 'all') params.seasonYear = seasonYear;
+        return apiService.get('/stats/driver-positions', { params });
+    },
+};
+
+export const seasonsAPI = {
+    getSeasons: () => apiService.get('/seasons'),
+    getCurrentSeason: () => apiService.get('/seasons/current'),
 };
 
 export const f1racesAPI = {

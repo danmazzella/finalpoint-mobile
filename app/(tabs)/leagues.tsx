@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { leaguesAPI, chatAPI } from '../../src/services/apiService';
+import { leaguesAPI, chatAPI, seasonsAPI } from '../../src/services/apiService';
 import { League } from '../../src/types';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
@@ -136,6 +136,7 @@ const LeaguesScreen = () => {
             flexDirection: 'row',
             alignItems: 'center',
             flex: 1,
+            minWidth: 0,
             marginRight: 8,
         },
         leagueName: {
@@ -169,6 +170,7 @@ const LeaguesScreen = () => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
+            flexShrink: 0,
         },
         chatButton: {
             padding: 4,
@@ -470,6 +472,32 @@ const LeaguesScreen = () => {
             fontSize: 14,
             fontWeight: '500',
         },
+        seasonRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 6,
+            marginTop: 12,
+        },
+        seasonChip: {
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor: currentColors.backgroundSecondary,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        seasonChipSelected: {
+            backgroundColor: currentColors.primary,
+            borderColor: currentColors.primary,
+        },
+        seasonChipText: {
+            fontSize: 13,
+            fontWeight: '500',
+            color: currentColors.textSecondary,
+        },
+        seasonChipTextSelected: {
+            color: currentColors.textInverse,
+        },
     });
 
     const [myLeagues, setMyLeagues] = useState<League[]>([]);
@@ -482,6 +510,32 @@ const LeaguesScreen = () => {
     const [isPublic, setIsPublic] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [seasons, setSeasons] = useState<{ year: number; displayLabel: string }[]>([]);
+    const [seasonFilter, setSeasonFilter] = useState<number | null>(null);
+
+    useEffect(() => {
+        const loadSeasons = async () => {
+            try {
+                const [seasonsRes, currentRes] = await Promise.all([
+                    seasonsAPI.getSeasons(),
+                    seasonsAPI.getCurrentSeason()
+                ]);
+                if (seasonsRes.data?.success && Array.isArray(seasonsRes.data.data)) {
+                    const list = seasonsRes.data.data as { year: number; displayLabel: string }[];
+                    setSeasons(list);
+                    const currentYear = currentRes.data?.success && currentRes.data?.data?.year != null
+                        ? currentRes.data.data.year
+                        : list.length > 0 ? list[0].year : null;
+                    if (currentYear != null) {
+                        setSeasonFilter((prev) => (prev === null ? currentYear : prev));
+                    }
+                }
+            } catch {
+                // leave seasonFilter null so we show all leagues
+            }
+        };
+        loadSeasons();
+    }, []);
 
     // Load data when auth state or chat feature flag changes
     useEffect(() => {
@@ -650,13 +704,13 @@ const LeaguesScreen = () => {
                                 </View>
                             )}
                         </View>
-                        <View style={[
-                            styles.visibilityBadge,
-                            { backgroundColor: currentColors.success }
-                        ]}>
-                            <Text style={styles.visibilityText}>
-                                Public
-                            </Text>
+                        <View style={styles.headerActions}>
+                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.backgroundTertiary }]}>
+                                <Text style={[styles.visibilityText, { color: currentColors.textPrimary }]}>{league.seasonYear}</Text>
+                            </View>
+                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.success }]}>
+                                <Text style={styles.visibilityText}>Public</Text>
+                            </View>
                         </View>
                     </View>
 
@@ -716,21 +770,27 @@ const LeaguesScreen = () => {
                         </View>
                     </View>
 
-                    {/* Join Button */}
-                    <TouchableOpacity
-                        style={styles.joinButton}
-                        onPress={() => {
-                            if (user) {
-                                router.push(`/joinleague/${league.joinCode}` as any);
-                            } else {
-                                router.push(`/league/${league.id}` as any);
-                            }
-                        }}
-                    >
-                        <Text style={styles.joinButtonText}>
-                            {user ? 'Join League' : 'Preview League'}
-                        </Text>
-                    </TouchableOpacity>
+                    {/* Join Button or Season ended */}
+                    {league.seasonEnded ? (
+                        <View style={[styles.joinButton, { backgroundColor: currentColors.backgroundTertiary, opacity: 0.8 }]}>
+                            <Text style={[styles.joinButtonText, { color: currentColors.textSecondary }]}>Season ended</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.joinButton}
+                            onPress={() => {
+                                if (user) {
+                                    router.push(`/joinleague/${league.joinCode}` as any);
+                                } else {
+                                    router.push(`/league/${league.id}` as any);
+                                }
+                            }}
+                        >
+                            <Text style={styles.joinButtonText}>
+                                {user ? 'Join League' : 'Preview League'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             );
         } else {
@@ -756,7 +816,10 @@ const LeaguesScreen = () => {
                                 </View>
                             )}
                         </View>
-                        <View style={styles.headerActions}>
+                        <View style={[styles.headerActions, { marginLeft: 'auto' }]}>
+                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.backgroundTertiary }]}>
+                                <Text style={[styles.visibilityText, { color: currentColors.textPrimary }]}>{league.seasonYear}</Text>
+                            </View>
                             <View style={[
                                 styles.visibilityBadge,
                                 { backgroundColor: league.isPublic ? currentColors.success : currentColors.secondary }
@@ -873,6 +936,21 @@ const LeaguesScreen = () => {
                                 <Text style={styles.primaryButtonText}>Sign Up to Create</Text>
                             </TouchableOpacity>
                         </View>
+                        {seasons.length > 0 && seasonFilter != null && (
+                            <View style={styles.seasonRow}>
+                                {seasons.map((s) => (
+                                    <TouchableOpacity
+                                        key={s.year}
+                                        style={[styles.seasonChip, seasonFilter === s.year && styles.seasonChipSelected]}
+                                        onPress={() => setSeasonFilter(s.year)}
+                                    >
+                                        <Text style={[styles.seasonChipText, seasonFilter === s.year && styles.seasonChipTextSelected]}>
+                                            {s.displayLabel || s.year}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
                     </View>
 
                     {/* My Leagues Section */}
@@ -903,17 +981,20 @@ const LeaguesScreen = () => {
                                 Browse and preview public leagues
                             </Text>
                         </View>
-                        {publicLeagues.length === 0 ? (
+                        {(() => {
+                            const filteredPublic = seasonFilter != null ? publicLeagues.filter((l) => l.seasonYear === seasonFilter) : publicLeagues;
+                            return filteredPublic.length === 0 ? (
                             <View style={styles.emptyState}>
                                 <Text style={styles.emptyStateText}>
-                                    No public leagues available to preview.
+                                    {seasonFilter != null ? `No public leagues for ${seasonFilter}.` : 'No public leagues available to preview.'}
                                 </Text>
                             </View>
                         ) : (
                             <View style={styles.leaguesGrid}>
-                                {publicLeagues.map(league => renderLeagueCard(league, true))}
+                                {filteredPublic.map(league => renderLeagueCard(league, true))}
                             </View>
-                        )}
+                        );
+                        })()}
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -948,16 +1029,34 @@ const LeaguesScreen = () => {
                             <Text style={styles.primaryButtonText}>Create League</Text>
                         </TouchableOpacity>
                     </View>
+                    {seasons.length > 0 && seasonFilter != null && (
+                        <View style={styles.seasonRow}>
+                            {seasons.map((s) => (
+                                <TouchableOpacity
+                                    key={s.year}
+                                    style={[styles.seasonChip, seasonFilter === s.year && styles.seasonChipSelected]}
+                                    onPress={() => setSeasonFilter(s.year)}
+                                >
+                                    <Text style={[styles.seasonChipText, seasonFilter === s.year && styles.seasonChipTextSelected]}>
+                                        {s.displayLabel || s.year}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
                 {/* My Leagues Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>My Leagues</Text>
-                    {myLeagues.length === 0 ? (
+                    {(() => {
+                        const filteredMy = seasonFilter != null ? myLeagues.filter((l) => l.seasonYear === seasonFilter) : myLeagues;
+                        return filteredMy.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Text style={styles.emptyStateText}>
-                                You haven&apos;t joined any leagues yet.
+                                {seasonFilter != null ? `No leagues for ${seasonFilter}. Try another season.` : "You haven't joined any leagues yet."}
                             </Text>
+                            {seasonFilter == null && (
                             <TouchableOpacity
                                 style={styles.createFirstButton}
                                 onPress={() => setModalVisible(true)}
@@ -966,12 +1065,14 @@ const LeaguesScreen = () => {
                                     Create Your First League
                                 </Text>
                             </TouchableOpacity>
+                            )}
                         </View>
                     ) : (
                         <View style={styles.leaguesGrid}>
-                            {myLeagues.map(league => renderLeagueCard(league, false))}
+                            {filteredMy.map(league => renderLeagueCard(league, false))}
                         </View>
-                    )}
+                    );
+                    })()}
                 </View>
 
                 {/* Public Leagues Section */}
@@ -982,17 +1083,20 @@ const LeaguesScreen = () => {
                             Browse and join public leagues • Limited preview only
                         </Text>
                     </View>
-                    {publicLeagues.length === 0 ? (
+                    {(() => {
+                        const filteredPublic = seasonFilter != null ? publicLeagues.filter((l) => l.seasonYear === seasonFilter) : publicLeagues;
+                        return filteredPublic.length === 0 ? (
                         <View style={styles.emptyState}>
                             <Text style={styles.emptyStateText}>
-                                No public leagues available to join.
+                                {seasonFilter != null ? `No public leagues for ${seasonFilter}.` : 'No public leagues available to join.'}
                             </Text>
                         </View>
                     ) : (
                         <View style={styles.leaguesGrid}>
-                            {publicLeagues.map(league => renderLeagueCard(league, true))}
+                            {filteredPublic.map(league => renderLeagueCard(league, true))}
                         </View>
-                    )}
+                    );
+                    })()}
                 </View>
 
                 {error && (

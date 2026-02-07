@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/context/ThemeContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
-import { statsAPI } from '../src/services/apiService';
+import { statsAPI, seasonsAPI } from '../src/services/apiService';
 import { lightColors, darkColors } from '../src/constants/Colors';
 // import { createThemeStyles } from '../src/styles/universalStyles';
 
@@ -98,6 +98,36 @@ const StatsScreen = () => {
             color: currentColors.textSecondary,
             marginBottom: 16,
             lineHeight: 20,
+        },
+        seasonRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 12,
+        },
+        seasonChip: {
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: 'center',
+        },
+        seasonChipActive: {
+            backgroundColor: currentColors.primary,
+        },
+        seasonChipInactive: {
+            backgroundColor: currentColors.backgroundSecondary,
+            borderWidth: 1,
+            borderColor: currentColors.borderLight,
+        },
+        seasonChipText: {
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        seasonChipTextActive: {
+            color: currentColors.textInverse,
+        },
+        seasonChipTextInactive: {
+            color: currentColors.textSecondary,
         },
         positionGrid: {
             flexDirection: 'row',
@@ -271,14 +301,30 @@ const StatsScreen = () => {
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [seasons, setSeasons] = useState<{ year: number; displayLabel: string }[]>([]);
+    const [seasonFilter, setSeasonFilter] = useState<number | 'all'>('all');
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await seasonsAPI.getSeasons();
+                if (res.data?.success && Array.isArray(res.data.data)) {
+                    setSeasons(res.data.data);
+                }
+            } catch {
+                // ignore
+            }
+        };
+        load();
+    }, []);
 
     const loadDriverStats = useCallback(async (position: number) => {
         try {
             setLoading(true);
             setError(null);
 
-            console.log(`Loading driver stats for position ${position}...`);
-            const response = await statsAPI.getDriverPositionStats(position);
+            const seasonParam = seasonFilter === 'all' ? undefined : seasonFilter;
+            const response = await statsAPI.getDriverPositionStats(position, seasonParam);
             console.log('Full API Response:', JSON.stringify(response, null, 2));
 
             // Handle the API response structure: { success: true, data: { position: 1, drivers: [...] } }
@@ -314,7 +360,7 @@ const StatsScreen = () => {
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, seasonFilter]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -331,10 +377,8 @@ const StatsScreen = () => {
     };
 
     useEffect(() => {
-        // Debug: Log the API base URL being used
-        console.log('API Base URL:', process.env.EXPO_PUBLIC_API_URL || 'http://localhost:6075/api (fallback)');
         loadDriverStats(selectedPosition);
-    }, [selectedPosition, loadDriverStats]);
+    }, [selectedPosition, seasonFilter, loadDriverStats]);
 
     const renderDriverCard = (driver: DriverPositionStats) => (
         <View key={driver.driverId} style={styles.driverCard}>
@@ -402,11 +446,49 @@ const StatsScreen = () => {
                 }
             >
                 <View style={styles.content}>
+                    {/* Season selector */}
+                    <View style={styles.positionSelector}>
+                        <Text style={styles.selectorTitle}>Season</Text>
+                        <View style={styles.seasonRow}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.seasonChip,
+                                    seasonFilter === 'all' ? styles.seasonChipActive : styles.seasonChipInactive,
+                                ]}
+                                onPress={() => setSeasonFilter('all')}
+                            >
+                                <Text style={[
+                                    styles.seasonChipText,
+                                    seasonFilter === 'all' ? styles.seasonChipTextActive : styles.seasonChipTextInactive,
+                                ]}>
+                                    All-Time
+                                </Text>
+                            </TouchableOpacity>
+                            {seasons.map((s) => (
+                                <TouchableOpacity
+                                    key={s.year}
+                                    style={[
+                                        styles.seasonChip,
+                                        seasonFilter === s.year ? styles.seasonChipActive : styles.seasonChipInactive,
+                                    ]}
+                                    onPress={() => setSeasonFilter(s.year)}
+                                >
+                                    <Text style={[
+                                        styles.seasonChipText,
+                                        seasonFilter === s.year ? styles.seasonChipTextActive : styles.seasonChipTextInactive,
+                                    ]}>
+                                        {s.displayLabel || String(s.year)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+
                     {/* Position Selector */}
                     <View style={styles.positionSelector}>
                         <Text style={styles.selectorTitle}>Driver Finishing Positions</Text>
                         <Text style={styles.selectorDescription}>
-                            Select a position to see how many times each driver has finished in that position this season.
+                            Select a position to see how many times each driver has finished in that position.
                         </Text>
 
                         <View style={styles.positionGrid}>

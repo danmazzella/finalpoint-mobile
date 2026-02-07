@@ -40,6 +40,8 @@ export interface League {
     totalActivity?: number;
     activityScore?: number;
     positionStatus?: PositionStatus;
+    /** Set for public leagues; true if that season has ended (no joining). */
+    seasonEnded?: boolean;
 }
 
 // Position status types for efficient pick status

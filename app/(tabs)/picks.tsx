@@ -705,53 +705,51 @@ const PicksScreen = () => {
         try {
             setLoading(true);
             setError(null);
-            const [driversResponse, leaguesResponse, currentRaceResponse] = await Promise.all([
+            const [driversResult, leaguesResult, currentRaceResult] = await Promise.allSettled([
                 driversAPI.getDrivers(),
                 leaguesAPI.getLeagues(),
                 f1racesAPI.getCurrentRace()
             ]);
 
-            if (driversResponse.data.success && driversResponse.data.data) {
-                const validDrivers = Array.isArray(driversResponse.data.data)
-                    ? driversResponse.data.data.filter((driver: any) => driver && driver.id && driver.name)
+            if (driversResult.status === 'fulfilled' && driversResult.value?.data?.success && driversResult.value?.data?.data) {
+                const validDrivers = Array.isArray(driversResult.value.data.data)
+                    ? driversResult.value.data.data.filter((driver: any) => driver && driver.id && driver.name)
                     : [];
                 setDrivers(validDrivers);
             } else {
                 setDrivers([]);
             }
 
-            if (leaguesResponse.data.success && leaguesResponse.data.data) {
-                const validLeagues = Array.isArray(leaguesResponse.data.data)
-                    ? leaguesResponse.data.data.filter((league: any) => league && league.id)
+            if (leaguesResult.status === 'fulfilled' && leaguesResult.value?.data?.success && leaguesResult.value?.data?.data) {
+                const rawLeagues = Array.isArray(leaguesResult.value.data.data)
+                    ? leaguesResult.value.data.data.filter((league: any) => league && league.id)
                     : [];
+                const validLeagues = rawLeagues.filter((league: League) => league.seasonEnded !== true);
                 setLeagues(validLeagues);
 
-                // If we have a leagueId from URL, select that league
-                if (urlLeagueId && validLeagues.length > 0) {
-                    const urlLeagueIdNum = Number(urlLeagueId);
-                    const urlLeague = validLeagues.find((league: League) => league.id === urlLeagueIdNum);
-                    if (urlLeague) {
-                        setSelectedLeague(urlLeague.id);
-                    } else if (!selectedLeague) {
-                        // Fallback to first league if URL league not found
-                        setSelectedLeague(validLeagues[0].id);
+                setSelectedLeague((prev) => {
+                    if (!prev) {
+                        if (urlLeagueId && validLeagues.length > 0) {
+                            const urlLeagueIdNum = Number(urlLeagueId);
+                            const urlLeague = validLeagues.find((league: League) => league.id === urlLeagueIdNum);
+                            return urlLeague ? urlLeague.id : validLeagues[0].id;
+                        }
+                        return validLeagues.length > 0 ? validLeagues[0].id : null;
                     }
-                } else if (!selectedLeague && validLeagues.length > 0) {
-                    // If no league is selected and we have leagues, select the first one
-                    setSelectedLeague(validLeagues[0].id);
-                }
+                    return validLeagues.some((l: League) => l.id === prev) ? prev : (validLeagues[0]?.id ?? null);
+                });
             } else {
                 setLeagues([]);
             }
 
-            if (currentRaceResponse.data.success && currentRaceResponse.data.data) {
-                setCurrentRace(currentRaceResponse.data.data);
-                setCurrentWeek(currentRaceResponse.data.data.weekNumber || 1);
-                setDefaultEventTypeSet(false); // Reset flag when week changes
+            if (currentRaceResult.status === 'fulfilled' && currentRaceResult.value?.data?.success && currentRaceResult.value?.data?.data) {
+                setCurrentRace(currentRaceResult.value.data.data);
+                setCurrentWeek(currentRaceResult.value.data.data.weekNumber || 1);
+                setDefaultEventTypeSet(false);
             } else {
                 setCurrentRace(null);
                 setCurrentWeek(1);
-                setDefaultEventTypeSet(false); // Reset flag when week changes
+                setDefaultEventTypeSet(false);
             }
         } catch (error: any) {
             console.error('Error loading data:', error);
@@ -1164,7 +1162,7 @@ const PicksScreen = () => {
                     </>
                 ) : (
                     <>
-                        <Text style={styles.description}>Week {currentWeek} - 2025 F1 Season</Text>
+                        <Text style={styles.description}>Week {currentWeek} - {currentRace?.seasonYear ?? new Date().getFullYear()} F1 Season</Text>
 
                         {/* League Selection */}
                         <View style={styles.leagueSection}>

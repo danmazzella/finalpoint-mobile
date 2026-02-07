@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,7 +9,7 @@ import {
     RefreshControl,
     Alert,
 } from 'react-native';
-import { adminAPI } from '../src/services/apiService';
+import { adminAPI, seasonsAPI } from '../src/services/apiService';
 import { AdminStats } from '../src/types';
 import { router } from 'expo-router';
 import Colors from '../constants/Colors';
@@ -19,12 +19,32 @@ const AdminScreen = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [seasons, setSeasons] = useState<{ year: number; displayLabel: string }[]>([]);
+    const [adminSeason, setAdminSeason] = useState<number | null>(null);
 
     useEffect(() => {
-        loadAdminData();
+        const loadSeasons = async () => {
+            try {
+                const res = await seasonsAPI.getSeasons();
+                if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+                    setSeasons(res.data.data);
+                    setAdminSeason(res.data.data[0].year);
+                }
+            } catch {
+                // ignore
+            }
+        };
+        loadSeasons();
     }, []);
 
+    useEffect(() => {
+        if (adminSeason != null) {
+            loadAdminData();
+        }
+    }, [adminSeason]);
+
     const loadAdminData = async (isRefresh = false) => {
+        if (adminSeason == null) return;
         try {
             if (isRefresh) {
                 setRefreshing(true);
@@ -33,7 +53,7 @@ const AdminScreen = () => {
             }
             setError(null);
 
-            const response = await adminAPI.getDashboardStats();
+            const response = await adminAPI.getDashboardStats(adminSeason);
 
             if (response.data.success) {
                 setStats(response.data.data);
@@ -57,7 +77,16 @@ const AdminScreen = () => {
         loadAdminData(true);
     };
 
-    if (loading) {
+    if (adminSeason == null && seasons.length === 0) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#e91e63" />
+                <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (loading && !stats) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#e91e63" />
@@ -108,6 +137,27 @@ const AdminScreen = () => {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Admin Dashboard</Text>
                 <Text style={styles.headerSubtitle}>Platform statistics and management</Text>
+                {seasons.length > 0 && (
+                    <View style={styles.seasonRow}>
+                        {seasons.map((s) => (
+                            <TouchableOpacity
+                                key={s.year}
+                                style={[
+                                    styles.seasonChip,
+                                    adminSeason === s.year ? styles.seasonChipActive : styles.seasonChipInactive,
+                                ]}
+                                onPress={() => setAdminSeason(s.year)}
+                            >
+                                <Text style={[
+                                    styles.seasonChipText,
+                                    adminSeason === s.year ? styles.seasonChipTextActive : styles.seasonChipTextInactive,
+                                ]}>
+                                    {s.displayLabel || String(s.year)}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
             </View>
 
             {/* Users Stats */}
@@ -259,6 +309,36 @@ const styles = StyleSheet.create({
     },
     headerSubtitle: {
         fontSize: 16,
+        color: Colors.light.textSecondary,
+        marginBottom: 12,
+    },
+    seasonRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    seasonChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    seasonChipActive: {
+        backgroundColor: Colors.light.primary,
+    },
+    seasonChipInactive: {
+        backgroundColor: Colors.light.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: Colors.light.borderLight,
+    },
+    seasonChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    seasonChipTextActive: {
+        color: Colors.light.textInverse,
+    },
+    seasonChipTextInactive: {
         color: Colors.light.textSecondary,
     },
     section: {

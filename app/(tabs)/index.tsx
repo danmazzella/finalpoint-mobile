@@ -523,7 +523,12 @@ const HomeScreen = () => {
       try {
         const res = await seasonsAPI.getSeasons();
         if (res.data?.success && Array.isArray(res.data.data)) {
-          setSeasons(res.data.data);
+          const seasonsData = res.data.data;
+          setSeasons(seasonsData);
+          if (seasonsData.length > 0) {
+            const latestYear = Math.max(...seasonsData.map((s: { year: number }) => s.year));
+            setLeagueSeasonFilter(latestYear);
+          }
         }
       } catch {
         // ignore

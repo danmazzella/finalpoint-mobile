@@ -263,9 +263,12 @@ export const seasonsAPI = {
 
 export const f1racesAPI = {
     getCurrentRace: () => apiService.get('/f1races/current'),
-    getAllRaces: (seasonYear = 2025) => apiService.get(`/f1races/all?seasonYear=${seasonYear}`),
-    getRaceByWeek: (weekNumber: number, seasonYear = 2025) =>
-        apiService.get(`/f1races/week/${weekNumber}?seasonYear=${seasonYear}`),
+    getAllRaces: (seasonYear?: number) => seasonYear != null
+        ? apiService.get(`/f1races/all?seasonYear=${seasonYear}`)
+        : apiService.get('/f1races/all'),
+    getRaceByWeek: (weekNumber: number, seasonYear?: number) => seasonYear != null
+        ? apiService.get(`/f1races/week/${weekNumber}?seasonYear=${seasonYear}`)
+        : apiService.get(`/f1races/week/${weekNumber}`),
     populateSeason: () => apiService.post('/f1races/populate-season'),
 };
 

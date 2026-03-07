@@ -194,7 +194,7 @@ const JoinLeagueScreen = () => {
                             autoCorrect={false}
                             autoFocus
                             textAlign="left"
-                            selection={{ start: 0, end: 0 }}
+
                             placeholderTextColor={currentColors.textTertiary}
                         />
                     </View>

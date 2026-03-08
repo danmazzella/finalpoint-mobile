@@ -419,55 +419,6 @@ const RaceResultsScreen = () => {
             marginBottom: spacing.sm,
             paddingHorizontal: 0,
         },
-        resultsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            paddingHorizontal: spacing.md,
-            gap: spacing.sm,
-            justifyContent: 'space-between',
-        },
-        actualResultsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            paddingHorizontal: spacing.md,
-            gap: spacing.sm,
-            justifyContent: 'space-between',
-        },
-        actualResultCard: {
-            width: '48%',
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: borderRadius.md,
-            padding: spacing.md,
-            marginBottom: spacing.sm,
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            ...shadows.sm,
-        },
-        actualPositionLabel: {
-            fontSize: 11,
-            fontWeight: '500',
-            color: currentColors.textSecondary,
-            marginBottom: spacing.xs,
-            textAlign: 'center',
-        },
-        resultCard: {
-            width: '48%',
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: borderRadius.md,
-            padding: spacing.md,
-            marginBottom: spacing.sm,
-            marginHorizontal: '1%',
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            ...shadows.sm,
-        },
-        positionLabel: {
-            fontSize: 11,
-            fontWeight: '500',
-            color: currentColors.textSecondary,
-            marginBottom: spacing.xs,
-            textAlign: 'center',
-        },
         driverName: {
             fontSize: 14,
             fontWeight: '600',
@@ -679,8 +630,9 @@ const RaceResultsScreen = () => {
             color: currentColors.success,
             marginLeft: spacing.sm,
         },
-        positionCard: {
-            width: '48%',
+        positionRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
             backgroundColor: currentColors.backgroundSecondary,
             borderRadius: borderRadius.md,
             padding: spacing.md,
@@ -688,20 +640,34 @@ const RaceResultsScreen = () => {
             borderWidth: 1,
             borderColor: currentColors.borderLight,
             ...shadows.sm,
-            alignItems: 'center',
+        },
+        positionBadge: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: currentColors.primary,
             justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 14,
         },
-        positionNumber: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: currentColors.primary,
-            marginBottom: spacing.xs,
+        positionBadgeText: {
+            fontSize: 13,
+            fontWeight: '800',
+            color: '#ffffff',
+            letterSpacing: 0.5,
         },
-        viewResultsText: {
+        positionRowContent: {
+            flex: 1,
+        },
+        positionRowLabel: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentColors.textPrimary,
+        },
+        positionRowSublabel: {
             fontSize: 12,
-            fontWeight: '500',
-            color: currentColors.textSecondary,
-            textDecorationLine: 'underline',
+            color: currentColors.primary,
+            marginTop: 2,
         },
         warningSection: {
             flexDirection: 'row',
@@ -773,13 +739,6 @@ const RaceResultsScreen = () => {
             fontSize: 14,
             fontWeight: '500',
             color: currentColors.textInverse,
-        },
-        positionsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            paddingHorizontal: spacing.md,
-            gap: spacing.sm,
-            justifyContent: 'space-between',
         },
         description: {
             fontSize: 14,
@@ -856,12 +815,6 @@ const RaceResultsScreen = () => {
             color: currentColors.textSecondary,
             marginBottom: spacing.lg,
             lineHeight: 20,
-        },
-        unscoredPositionsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            gap: spacing.sm,
         },
         guestPrompt: {
             backgroundColor: 'transparent',
@@ -1328,20 +1281,27 @@ const RaceResultsScreen = () => {
                         <Text style={styles.sectionTitle}>
                             {selectedEventType === 'sprint' ? 'View Picks by Position' : 'View Results by Position'}
                         </Text>
-                        <View style={styles.positionsGrid}>
+                        <View>
                             {requiredPositions.map((position) => (
                                 <TouchableOpacity
                                     key={position}
-                                    style={styles.positionCard}
+                                    style={styles.positionRow}
                                     onPress={() => selectedEventType === 'sprint'
                                         ? navigateToUnscoredPositionPicks(position)
                                         : navigateToPositionResults(position)
                                     }
+                                    activeOpacity={0.7}
                                 >
-                                    <Text style={styles.positionNumber}>P{position}</Text>
-                                    <Text style={styles.viewResultsText}>
-                                        {selectedEventType === 'sprint' ? 'View Picks' : 'View Results'}
-                                    </Text>
+                                    <View style={styles.positionBadge}>
+                                        <Text style={styles.positionBadgeText}>P{position}</Text>
+                                    </View>
+                                    <View style={styles.positionRowContent}>
+                                        <Text style={styles.positionRowLabel}>{getPositionLabel(position)}</Text>
+                                        <Text style={styles.positionRowSublabel}>
+                                            {selectedEventType === 'sprint' ? 'View Picks' : 'View Results'}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={currentColors.textSecondary} />
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -1377,16 +1337,22 @@ const RaceResultsScreen = () => {
                             <View style={styles.unscoredPositionsSection}>
                                 <Text style={styles.unscoredSectionTitle}>View Picks by Position</Text>
 
-                                <View style={styles.unscoredPositionsGrid}>
+                                <View>
                                     {requiredPositions.map((position) => (
                                         <TouchableOpacity
                                             key={position}
-                                            style={styles.positionCard}
+                                            style={styles.positionRow}
                                             onPress={() => navigateToUnscoredPositionPicks(position)}
                                             activeOpacity={0.7}
                                         >
-                                            <Text style={styles.positionNumber}>P{position}</Text>
-                                            <Text style={styles.viewResultsText}>View Picks</Text>
+                                            <View style={styles.positionBadge}>
+                                                <Text style={styles.positionBadgeText}>P{position}</Text>
+                                            </View>
+                                            <View style={styles.positionRowContent}>
+                                                <Text style={styles.positionRowLabel}>{getPositionLabel(position)}</Text>
+                                                <Text style={styles.positionRowSublabel}>View Picks</Text>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={18} color={currentColors.textSecondary} />
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -1412,7 +1378,7 @@ const RaceResultsScreen = () => {
                 {hasScoredResults && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Actual Race Results</Text>
-                        <View style={styles.actualResultsGrid}>
+                        <View>
                             {requiredPositions.map((position, index) => {
                                 const positionResult = results.find(result =>
                                     result.picks.some(pick =>
@@ -1422,22 +1388,22 @@ const RaceResultsScreen = () => {
                                 const actualPick = positionResult?.picks.find(pick => pick.position === position);
 
                                 return (
-                                    <View key={`position-${position}-${index}`} style={styles.actualResultCard}>
-                                        <Text style={styles.actualPositionLabel}>
-                                            {getPositionLabel(position)}
-                                        </Text>
-                                        {actualPick?.actualDriverName ? (
-                                            <View>
-                                                <Text style={styles.actualDriverName}>
-                                                    {actualPick.actualDriverName}
+                                    <View key={`position-${position}-${index}`} style={styles.positionRow}>
+                                        <View style={styles.positionBadge}>
+                                            <Text style={styles.positionBadgeText}>P{position}</Text>
+                                        </View>
+                                        <View style={styles.positionRowContent}>
+                                            <Text style={styles.positionRowLabel}>
+                                                {getPositionLabel(position)}
+                                            </Text>
+                                            {actualPick?.actualDriverName ? (
+                                                <Text style={styles.positionRowSublabel}>
+                                                    {actualPick.actualDriverName} · {actualPick.actualDriverTeam}
                                                 </Text>
-                                                <Text style={styles.actualDriverTeam}>
-                                                    {actualPick.actualDriverTeam}
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <Text style={styles.noResult}>No result available</Text>
-                                        )}
+                                            ) : (
+                                                <Text style={styles.noResult}>No result available</Text>
+                                            )}
+                                        </View>
                                     </View>
                                 );
                             })}

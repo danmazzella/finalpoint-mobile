@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 interface FeatureFlagContextType {
     isChatFeatureEnabled: boolean;
     isPositionChangesEnabled: boolean;
+    isMultiPositionPicksEnabled: boolean;
     isLoading: boolean;
     refreshFlags: () => Promise<void>;
     getAllFlags: () => Record<string, any>;
@@ -19,6 +20,7 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
     const [isLoading, setIsLoading] = useState(true);
     const [isChatFeatureEnabled, setIsChatFeatureEnabled] = useState(false);
     const [isPositionChangesEnabled, setIsPositionChangesEnabled] = useState(false);
+    const [isMultiPositionPicksEnabled, setIsMultiPositionPicksEnabled] = useState(false);
     const { user } = useAuth();
 
     const refreshFlags = useCallback(async () => {
@@ -38,6 +40,11 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
                     flagsSet++;
                 }
 
+                if (user.multiPositionPicksEnabled !== undefined) {
+                    setIsMultiPositionPicksEnabled(user.multiPositionPicksEnabled);
+                    flagsSet++;
+                }
+
                 // If we got at least one flag or user is defined, we can stop loading
                 if (flagsSet > 0 || user.id) {
                     setIsLoading(false);
@@ -51,7 +58,8 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
     const getAllFlags = () => {
         return {
             chat_feature_enabled: isChatFeatureEnabled,
-            position_changes_enabled: isPositionChangesEnabled
+            position_changes_enabled: isPositionChangesEnabled,
+            multi_position_picks_enabled: isMultiPositionPicksEnabled,
         };
     };
 
@@ -70,11 +78,12 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
             console.log('❌ FeatureFlagContext: User not logged in, disabling all features');
             setIsChatFeatureEnabled(false);
             setIsPositionChangesEnabled(false);
+            setIsMultiPositionPicksEnabled(false);
             setIsLoading(false);
         } else if (user) {
             // User is logged in - handle each flag independently
             let flagsSet = 0;
-            const totalFlags = 2;
+            const totalFlags = 3;
 
             if (user.chatFeatureEnabled !== undefined) {
                 console.log('✅ FeatureFlagContext: Setting chat feature flag:', user.chatFeatureEnabled);
@@ -90,6 +99,14 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
                 flagsSet++;
             } else {
                 console.log('⚠️ FeatureFlagContext: positionChangesEnabled is undefined, keeping current value');
+            }
+
+            if (user.multiPositionPicksEnabled !== undefined) {
+                console.log('✅ FeatureFlagContext: Setting multi position picks flag:', user.multiPositionPicksEnabled);
+                setIsMultiPositionPicksEnabled(user.multiPositionPicksEnabled);
+                flagsSet++;
+            } else {
+                console.log('⚠️ FeatureFlagContext: multiPositionPicksEnabled is undefined, keeping current value');
             }
 
             // If we got at least one flag or user is defined, we can stop loading
@@ -118,6 +135,7 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
     const value: FeatureFlagContextType = {
         isChatFeatureEnabled,
         isPositionChangesEnabled,
+        isMultiPositionPicksEnabled,
         isLoading,
         refreshFlags,
         getAllFlags,
@@ -148,4 +166,10 @@ export const useChatFeature = () => {
 export const usePositionChanges = () => {
     const { isPositionChangesEnabled, isLoading } = useFeatureFlags();
     return { isPositionChangesEnabled, isLoading };
+};
+
+// Convenience hook for multi-position picks feature
+export const useMultiPositionPicks = () => {
+    const { isMultiPositionPicksEnabled, isLoading } = useFeatureFlags();
+    return { isMultiPositionPicksEnabled, isLoading };
 };

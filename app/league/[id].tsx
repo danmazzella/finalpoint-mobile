@@ -20,7 +20,7 @@ import { lightColors, darkColors } from '../../src/constants/Colors';
 import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { useChatFeature, usePositionChanges } from '../../src/context/FeatureFlagContext';
+import { useChatFeature, usePositionChanges, useMultiPositionPicks } from '../../src/context/FeatureFlagContext';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
@@ -30,6 +30,7 @@ const LeagueDetailScreen = () => {
     const { resolvedTheme } = useTheme();
     const { isChatFeatureEnabled } = useChatFeature();
     const { isPositionChangesEnabled } = usePositionChanges();
+    const { isMultiPositionPicksEnabled } = useMultiPositionPicks();
 
     // Get current theme colors
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
@@ -1600,29 +1601,35 @@ const LeagueDetailScreen = () => {
                                         <View style={styles.settingSection}>
                                             <Text style={styles.settingLabel}>Position Requirements</Text>
                                             <Text style={styles.settingDescription}>
-                                                Select 1-2 positions that league members must predict for each race.
+                                                {isMultiPositionPicksEnabled
+                                                    ? 'Select the positions that league members must predict for each race.'
+                                                    : 'Select 1-2 positions that league members must predict for each race.'}
                                             </Text>
                                             <View style={styles.positionGrid}>
-                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((position) => (
+                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((position) => {
+                                                    const isSelected = editingPositions.includes(position);
+                                                    const atLimit = !isMultiPositionPicksEnabled && editingPositions.length >= 2 && !isSelected;
+                                                    return (
                                                     <TouchableOpacity
                                                         key={position}
                                                         style={[
                                                             styles.positionButton,
-                                                            editingPositions.includes(position) && styles.positionButtonSelected,
-                                                            editingPositions.length >= 2 && !editingPositions.includes(position) && styles.positionButtonDisabled
+                                                            isSelected && styles.positionButtonSelected,
+                                                            atLimit && styles.positionButtonDisabled
                                                         ]}
                                                         onPress={() => handlePositionToggle(position)}
-                                                        disabled={editingPositions.length >= 2 && !editingPositions.includes(position)}
+                                                        disabled={atLimit}
                                                     >
                                                         <Text style={[
                                                             styles.positionButtonText,
-                                                            editingPositions.includes(position) && styles.positionButtonTextSelected,
-                                                            editingPositions.length >= 2 && !editingPositions.includes(position) && styles.positionButtonTextDisabled
+                                                            isSelected && styles.positionButtonTextSelected,
+                                                            atLimit && styles.positionButtonTextDisabled
                                                         ]}>
                                                             P{position}
                                                         </Text>
                                                     </TouchableOpacity>
-                                                ))}
+                                                    );
+                                                })}
                                             </View>
                                             <Text style={styles.positionCurrentText}>
                                                 Current: P{league?.requiredPositions?.join(', P') || 'None selected'}

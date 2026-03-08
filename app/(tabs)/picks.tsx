@@ -258,69 +258,55 @@ const PicksScreen = () => {
             fontWeight: '500',
             color: currentColors.textPrimary,
         },
-        positionsGrid: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 12,
+        positionsList: {
+            gap: 10,
         },
-        positionCard: {
-            width: '48%',
+        positionRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
             backgroundColor: currentColors.cardBackground,
-            borderRadius: 8,
-            padding: 12,
-            borderWidth: 1,
+            borderRadius: 12,
+            padding: 14,
+            borderWidth: 1.5,
             borderColor: currentColors.borderLight,
         },
-        clickablePositionCard: {
-            borderColor: currentColors.primary,
+        positionRowClickable: {
+            borderColor: currentColors.primary + '60',
         },
-        positionHeader: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
+        positionRowDone: {
+            borderColor: currentColors.success,
+            backgroundColor: currentColors.success + '0D',
         },
-        positionTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: currentColors.textPrimary,
-        },
-        currentPickCard: {
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: 6,
-            padding: 8,
-            position: 'relative',
-        },
-        currentPickDriver: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: currentColors.textPrimary,
-            marginBottom: 2,
-        },
-        currentPickTeam: {
-            fontSize: 12,
-            color: currentColors.textSecondary,
-        },
-        removePickIcon: {
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            backgroundColor: currentColors.error,
+        positionBadge: {
+            width: 46,
+            height: 46,
+            borderRadius: 23,
+            backgroundColor: currentColors.primary,
             justifyContent: 'center',
             alignItems: 'center',
-            overflow: 'hidden',
+            marginRight: 14,
         },
-        noPickContainer: {
+        positionBadgeDone: {
+            backgroundColor: currentColors.success,
+        },
+        positionBadgeText: {
+            fontSize: 13,
+            fontWeight: '800',
+            color: '#ffffff',
+            letterSpacing: 0.5,
+        },
+        positionRowContent: {
+            flex: 1,
+        },
+        positionRowRight: {
+            marginLeft: 10,
+            justifyContent: 'center',
             alignItems: 'center',
-            paddingVertical: 16,
         },
         noPickText: {
             fontSize: 14,
             color: currentColors.textSecondary,
-            marginBottom: 4,
+            marginBottom: 2,
         },
         tapToSelectText: {
             fontSize: 12,
@@ -1341,18 +1327,19 @@ const PicksScreen = () => {
                                     Week {currentWeek} - {currentRace?.raceName}
                                 </Text>
 
-                                <View style={styles.positionsGrid}>
+                                <View style={styles.positionsList}>
                                     {leaguePositions.map((position) => {
                                         const currentPick = getCurrentPickForPosition(position, 'sprint');
                                         const isLocked = isPositionLocked(position);
                                         const isRaceLockedNow = isRaceLocked();
+                                        const hasPick = !!currentPick;
 
                                         return (
                                             <TouchableOpacity
                                                 key={`sprint-${position}`}
                                                 style={[
-                                                    styles.positionCard,
-                                                    !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                                    styles.positionRow,
+                                                    hasPick ? styles.positionRowDone : (!isLocked && !isRaceLockedNow && styles.positionRowClickable),
                                                 ]}
                                                 onPress={() => {
                                                     if (!isLocked && !isRaceLockedNow) {
@@ -1362,33 +1349,43 @@ const PicksScreen = () => {
                                                     }
                                                 }}
                                                 disabled={isLocked || isRaceLockedNow}
+                                                activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
                                             >
-                                                <View style={styles.positionHeader}>
-                                                    <Text style={styles.positionNumber}>P{position}</Text>
-                                                    {currentPick && !isLocked && !isRaceLockedNow && (
+                                                <View style={[styles.positionBadge, hasPick && styles.positionBadgeDone]}>
+                                                    <Text style={styles.positionBadgeText}>P{position}</Text>
+                                                </View>
+
+                                                <View style={styles.positionRowContent}>
+                                                    {currentPick ? (
+                                                        <>
+                                                            <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
+                                                            <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Text style={styles.noPickText}>No pick made yet</Text>
+                                                            {!isLocked && !isRaceLockedNow && (
+                                                                <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </View>
+
+                                                <View style={styles.positionRowRight}>
+                                                    {hasPick && !isLocked && !isRaceLockedNow ? (
                                                         <TouchableOpacity
                                                             style={styles.removePickButton}
                                                             onPress={() => removeSprintPick(position)}
                                                             disabled={submitting}
                                                         >
-                                                            <Ionicons name="close" size={16} color={currentColors.textInverse} />
+                                                            <Ionicons name="close" size={14} color={currentColors.textInverse} />
                                                         </TouchableOpacity>
-                                                    )}
+                                                    ) : hasPick ? (
+                                                        <Ionicons name="checkmark-circle" size={22} color={currentColors.success} />
+                                                    ) : !isLocked && !isRaceLockedNow ? (
+                                                        <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+                                                    ) : null}
                                                 </View>
-
-                                                {currentPick ? (
-                                                    <View style={styles.pickContainer}>
-                                                        <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
-                                                        <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
-                                                    </View>
-                                                ) : (
-                                                    <View style={styles.noPickContainer}>
-                                                        <Text style={styles.noPickText}>No pick made yet</Text>
-                                                        {!isLocked && !isRaceLockedNow && (
-                                                            <Text style={styles.tapToSelectText}>Tap to select driver</Text>
-                                                        )}
-                                                    </View>
-                                                )}
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -1411,18 +1408,19 @@ const PicksScreen = () => {
                                     Week {currentWeek} - {currentRace?.raceName}
                                 </Text>
 
-                                <View style={styles.positionsGrid}>
+                                <View style={styles.positionsList}>
                                     {leaguePositions.map((position) => {
                                         const currentPick = getCurrentPickForPosition(position, 'race');
                                         const isLocked = isPositionLocked(position);
                                         const isRaceLockedNow = isRaceLocked();
+                                        const hasPick = !!currentPick;
 
                                         return (
                                             <TouchableOpacity
                                                 key={`race-${position}`}
                                                 style={[
-                                                    styles.positionCard,
-                                                    !isLocked && !isRaceLockedNow && styles.clickablePositionCard
+                                                    styles.positionRow,
+                                                    hasPick ? styles.positionRowDone : (!isLocked && !isRaceLockedNow && styles.positionRowClickable),
                                                 ]}
                                                 onPress={() => {
                                                     if (!isLocked && !isRaceLockedNow) {
@@ -1432,33 +1430,43 @@ const PicksScreen = () => {
                                                     }
                                                 }}
                                                 disabled={isLocked || isRaceLockedNow}
+                                                activeOpacity={isLocked || isRaceLockedNow ? 1 : 0.7}
                                             >
-                                                <View style={styles.positionHeader}>
-                                                    <Text style={styles.positionNumber}>P{position}</Text>
-                                                    {currentPick && !isLocked && !isRaceLockedNow && (
+                                                <View style={[styles.positionBadge, hasPick && styles.positionBadgeDone]}>
+                                                    <Text style={styles.positionBadgeText}>P{position}</Text>
+                                                </View>
+
+                                                <View style={styles.positionRowContent}>
+                                                    {currentPick ? (
+                                                        <>
+                                                            <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
+                                                            <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Text style={styles.noPickText}>No pick made yet</Text>
+                                                            {!isLocked && !isRaceLockedNow && (
+                                                                <Text style={styles.tapToSelectText}>Tap to select driver</Text>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </View>
+
+                                                <View style={styles.positionRowRight}>
+                                                    {hasPick && !isLocked && !isRaceLockedNow ? (
                                                         <TouchableOpacity
                                                             style={styles.removePickButton}
                                                             onPress={() => removePick(position)}
                                                             disabled={submitting}
                                                         >
-                                                            <Ionicons name="close" size={16} color={currentColors.textInverse} />
+                                                            <Ionicons name="close" size={14} color={currentColors.textInverse} />
                                                         </TouchableOpacity>
-                                                    )}
+                                                    ) : hasPick ? (
+                                                        <Ionicons name="checkmark-circle" size={22} color={currentColors.success} />
+                                                    ) : !isLocked && !isRaceLockedNow ? (
+                                                        <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+                                                    ) : null}
                                                 </View>
-
-                                                {currentPick ? (
-                                                    <View style={styles.pickContainer}>
-                                                        <Text style={styles.pickDriverName}>{currentPick.driverName}</Text>
-                                                        <Text style={styles.pickDriverTeam}>{currentPick.driverTeam}</Text>
-                                                    </View>
-                                                ) : (
-                                                    <View style={styles.noPickContainer}>
-                                                        <Text style={styles.noPickText}>No pick made yet</Text>
-                                                        {!isLocked && !isRaceLockedNow && (
-                                                            <Text style={styles.tapToSelectText}>Tap to select driver</Text>
-                                                        )}
-                                                    </View>
-                                                )}
                                             </TouchableOpacity>
                                         );
                                     })}

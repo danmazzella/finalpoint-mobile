@@ -7,6 +7,7 @@ export interface User {
     role?: 'user' | 'admin';
     chatFeatureEnabled?: boolean;
     positionChangesEnabled?: boolean;
+    multiPositionPicksEnabled?: boolean;
 }
 
 export interface SignupData {

@@ -509,7 +509,7 @@ const PositionResultsScreen = () => {
 
     const loadCurrentRace = useCallback(async () => {
         try {
-            const response = await f1racesAPI.getAllRaces();
+            const response = await f1racesAPI.getAllRaces(new Date().getFullYear());
             if (response.data.success) {
                 const currentRaceData = response.data.data.find((race: any) => race.weekNumber === weekNumber);
                 setCurrentRace(currentRaceData);

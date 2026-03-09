@@ -899,7 +899,7 @@ const RaceResultsScreen = () => {
 
             const [leagueResponse, racesResponse, resultsResponse, positionsResponse] = await Promise.all([
                 leaguesAPI.getLeague(leagueId),
-                f1racesAPI.getAllRaces(),
+                f1racesAPI.getAllRaces(new Date().getFullYear()),
                 picksAPI.getRaceResultsV2(leagueId, selectedWeek, selectedEventType),
                 picksAPI.getLeaguePositionsForWeek(leagueId, selectedWeek)
             ]);

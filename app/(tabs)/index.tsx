@@ -92,6 +92,9 @@ const HomeScreen = () => {
     quickActions: {
       paddingHorizontal: 12,
       marginBottom: 16,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
     },
     actionButton: {
       flexDirection: 'row',
@@ -484,6 +487,60 @@ const HomeScreen = () => {
       color: currentColors.primary,
       marginLeft: 4,
     },
+    exploreCard: {
+      backgroundColor: currentColors.cardBackground,
+      marginHorizontal: 12,
+      marginBottom: 16,
+      borderRadius: 12,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    exploreCardHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: currentColors.borderLight,
+    },
+    exploreCardTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: currentColors.textPrimary,
+    },
+    exploreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: currentColors.borderLight,
+    },
+    exploreIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: currentColors.backgroundSecondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    exploreTextWrap: {
+      flex: 1,
+    },
+    exploreRowTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: currentColors.textPrimary,
+      marginBottom: 2,
+    },
+    exploreRowDesc: {
+      fontSize: 12,
+      color: currentColors.textSecondary,
+      lineHeight: 17,
+    },
   });
 
   // Remove the hardcoded getBaseUrl function - use the one from apiService
@@ -528,6 +585,8 @@ const HomeScreen = () => {
           if (seasonsData.length > 0) {
             const latestYear = Math.max(...seasonsData.map((s: { year: number }) => s.year));
             setLeagueSeasonFilter(latestYear);
+            setUserStatsSeason(latestYear);
+            setGlobalStatsSeason(latestYear);
           }
         }
       } catch {
@@ -705,6 +764,33 @@ const HomeScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
+
+          {/* Explore Card */}
+          <View style={styles.exploreCard}>
+            <View style={styles.exploreCardHeader}>
+              <Text style={styles.exploreCardTitle}>Explore</Text>
+            </View>
+            <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/community-picks')}>
+              <View style={styles.exploreIconWrap}>
+                <Ionicons name="people-outline" size={20} color={currentColors.primary} />
+              </View>
+              <View style={styles.exploreTextWrap}>
+                <Text style={styles.exploreRowTitle}>Community Picks</Text>
+                <Text style={styles.exploreRowDesc}>See how everyone picked each race week</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/platform-standings')}>
+              <View style={styles.exploreIconWrap}>
+                <Ionicons name="podium-outline" size={20} color={currentColors.primary} />
+              </View>
+              <View style={styles.exploreTextWrap}>
+                <Text style={styles.exploreRowTitle}>Platform Standings</Text>
+                <Text style={styles.exploreRowDesc}>See how you rank against all players</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+            </TouchableOpacity>
           </View>
 
           {/* Your Statistics Section */}
@@ -907,6 +993,33 @@ const HomeScreen = () => {
               ))}
             </View>
           )}
+        </View>
+
+        {/* Explore Card */}
+        <View style={styles.exploreCard}>
+          <View style={styles.exploreCardHeader}>
+            <Text style={styles.exploreCardTitle}>Explore</Text>
+          </View>
+          <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/community-picks')}>
+            <View style={styles.exploreIconWrap}>
+              <Ionicons name="people-outline" size={20} color={currentColors.primary} />
+            </View>
+            <View style={styles.exploreTextWrap}>
+              <Text style={styles.exploreRowTitle}>Community Picks</Text>
+              <Text style={styles.exploreRowDesc}>See how everyone picked each race week</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/platform-standings')}>
+            <View style={styles.exploreIconWrap}>
+              <Ionicons name="podium-outline" size={20} color={currentColors.primary} />
+            </View>
+            <View style={styles.exploreTextWrap}>
+              <Text style={styles.exploreRowTitle}>Platform Standings</Text>
+              <Text style={styles.exploreRowDesc}>See how you rank against all players</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+          </TouchableOpacity>
         </View>
 
         {/* User Stats Section */}

@@ -244,6 +244,18 @@ export const picksAPI = {
         apiService.get(`/picks/user/${leagueId}/week/${weekNumber}/event/${eventType}`),
 };
 
+export const platformStandingsAPI = {
+    getStandings: (seasonYear?: number | null) =>
+        apiService.get('/users/platform-standings', { params: seasonYear != null ? { seasonYear } : {} }),
+};
+
+export const communityPicksAPI = {
+    getAvailableWeeks: (seasonYear?: number) =>
+        apiService.get('/picks/community/weeks', { params: seasonYear ? { seasonYear } : {} }),
+    getStats: (weekNumber: number, eventType: 'race' | 'sprint' = 'race', seasonYear?: number) =>
+        apiService.get('/picks/community/stats', { params: { weekNumber, eventType, ...(seasonYear ? { seasonYear } : {}) } }),
+};
+
 export const driversAPI = {
     getDrivers: () => apiService.get('/drivers/get'),
 };

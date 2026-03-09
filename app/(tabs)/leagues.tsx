@@ -723,15 +723,13 @@ const LeaguesScreen = () => {
 
                         {/* Required Positions */}
                         {league.requiredPositions && league.requiredPositions.length > 0 && (
-                            <View style={styles.statRow}>
-                                <Text style={styles.statLabel}>Positions:</Text>
-
+                            <View style={{ marginTop: 6 }}>
                                 {/* Sprint Positions (only show if this is a sprint weekend) */}
-                                {league.positionStatus?.hasSprint === true && (
+                                {league.positionStatus?.hasSprint && (
                                     <View style={styles.positionsContainer}>
-                                        <Text style={styles.eventTypeLabel}>Sprint:</Text>
+                                        <Text style={styles.eventTypeLabel}>Sprint</Text>
                                         <View style={styles.positionsRow}>
-                                            {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                            {league.requiredPositions.sort((a, b) => a - b).map((position) => (
                                                 <View key={`sprint-${position}`} style={styles.positionBadge}>
                                                     <Text style={styles.positionText}>P{position}</Text>
                                                 </View>
@@ -742,9 +740,9 @@ const LeaguesScreen = () => {
 
                                 {/* Race Positions */}
                                 <View style={styles.positionsContainer}>
-                                    <Text style={styles.eventTypeLabel}>Race:</Text>
+                                    <Text style={styles.eventTypeLabel}>Race</Text>
                                     <View style={styles.positionsRow}>
-                                        {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                        {league.requiredPositions.sort((a, b) => a - b).map((position) => (
                                             <View key={`race-${position}`} style={styles.positionBadge}>
                                                 <Text style={styles.positionText}>P{position}</Text>
                                             </View>
@@ -840,15 +838,13 @@ const LeaguesScreen = () => {
 
                         {/* Required Positions */}
                         {league.requiredPositions && league.requiredPositions.length > 0 && (
-                            <View style={styles.statRow}>
-                                <Text style={styles.statLabel}>Positions:</Text>
-
+                            <View style={{ marginTop: 6 }}>
                                 {/* Sprint Positions (only show if this is a sprint weekend) */}
-                                {league.positionStatus?.hasSprint === true && (
+                                {league.positionStatus?.hasSprint && (
                                     <View style={styles.positionsContainer}>
-                                        <Text style={styles.eventTypeLabel}>Sprint:</Text>
+                                        <Text style={styles.eventTypeLabel}>Sprint</Text>
                                         <View style={styles.positionsRow}>
-                                            {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                            {league.requiredPositions.sort((a, b) => a - b).map((position) => (
                                                 <View key={`sprint-${position}`} style={[
                                                     styles.positionBadge,
                                                     hasPickForPosition(league, position, 'sprint')
@@ -871,9 +867,9 @@ const LeaguesScreen = () => {
 
                                 {/* Race Positions */}
                                 <View style={styles.positionsContainer}>
-                                    <Text style={styles.eventTypeLabel}>Race:</Text>
+                                    <Text style={styles.eventTypeLabel}>Race</Text>
                                     <View style={styles.positionsRow}>
-                                        {league.requiredPositions.sort((a, b) => a - b).map((position, index) => (
+                                        {league.requiredPositions.sort((a, b) => a - b).map((position) => (
                                             <View key={`race-${position}`} style={[
                                                 styles.positionBadge,
                                                 hasPickForPosition(league, position, 'race')

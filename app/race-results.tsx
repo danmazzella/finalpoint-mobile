@@ -391,6 +391,7 @@ const RaceResultsScreen = () => {
         section: {
             marginBottom: spacing.sm,
             marginTop: spacing.lg,
+            marginHorizontal: spacing.md,
         },
         unscoredSection: {
             marginBottom: spacing.sm,
@@ -436,7 +437,6 @@ const RaceResultsScreen = () => {
             fontStyle: 'italic',
         },
         memberResultsGrid: {
-            paddingHorizontal: spacing.md,
         },
         memberCard: {
             backgroundColor: currentColors.backgroundSecondary,
@@ -1377,8 +1377,19 @@ const RaceResultsScreen = () => {
                 {/* Actual Race Results */}
                 {hasScoredResults && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Actual Race Results</Text>
-                        <View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                            <Ionicons name="clipboard-outline" size={14} color={currentColors.textTertiary} />
+                            <Text style={[styles.sectionTitle, { marginBottom: 0, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, color: currentColors.textSecondary }]}>
+                                Actual Race Results
+                            </Text>
+                        </View>
+                        <View style={{
+                            borderRadius: borderRadius.md,
+                            borderWidth: 1,
+                            borderColor: currentColors.borderLight,
+                            backgroundColor: currentColors.backgroundSecondary,
+                            overflow: 'hidden',
+                        }}>
                             {requiredPositions.map((position, index) => {
                                 const positionResult = results.find(result =>
                                     result.picks.some(pick =>
@@ -1386,22 +1397,44 @@ const RaceResultsScreen = () => {
                                     )
                                 );
                                 const actualPick = positionResult?.picks.find(pick => pick.position === position);
+                                const isLast = index === requiredPositions.length - 1;
 
                                 return (
-                                    <View key={`position-${position}-${index}`} style={styles.positionRow}>
-                                        <View style={styles.positionBadge}>
-                                            <Text style={styles.positionBadgeText}>P{position}</Text>
-                                        </View>
-                                        <View style={styles.positionRowContent}>
-                                            <Text style={styles.positionRowLabel}>
-                                                {getPositionLabel(position)}
+                                    <View key={`position-${position}-${index}`} style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 11,
+                                        borderBottomWidth: isLast ? 0 : 1,
+                                        borderBottomColor: currentColors.borderLight,
+                                    }}>
+                                        <View style={{
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 8,
+                                            backgroundColor: currentColors.backgroundTertiary || currentColors.borderLight,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            marginRight: 12,
+                                        }}>
+                                            <Text style={{ fontSize: 12, fontWeight: '700', color: currentColors.textSecondary }}>
+                                                P{position}
                                             </Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
                                             {actualPick?.actualDriverName ? (
-                                                <Text style={styles.positionRowSublabel}>
-                                                    {actualPick.actualDriverName} · {actualPick.actualDriverTeam}
-                                                </Text>
+                                                <>
+                                                    <Text style={{ fontSize: 14, fontWeight: '600', color: currentColors.textPrimary }}>
+                                                        {actualPick.actualDriverName}
+                                                    </Text>
+                                                    <Text style={{ fontSize: 12, color: currentColors.textSecondary, marginTop: 1 }}>
+                                                        {actualPick.actualDriverTeam}
+                                                    </Text>
+                                                </>
                                             ) : (
-                                                <Text style={styles.noResult}>No result available</Text>
+                                                <Text style={{ fontSize: 13, color: currentColors.textTertiary, fontStyle: 'italic' }}>
+                                                    No result available
+                                                </Text>
                                             )}
                                         </View>
                                     </View>

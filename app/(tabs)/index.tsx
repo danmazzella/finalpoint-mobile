@@ -769,7 +769,7 @@ const HomeScreen = () => {
           {/* Explore Card */}
           <View style={styles.exploreCard}>
             <View style={styles.exploreCardHeader}>
-              <Text style={styles.exploreCardTitle}>Explore</Text>
+              <Text style={styles.exploreCardTitle}>Stats & Info</Text>
             </View>
             <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/community-picks')}>
               <View style={styles.exploreIconWrap}>
@@ -781,13 +781,23 @@ const HomeScreen = () => {
               </View>
               <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/platform-standings')}>
+            <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/platform-standings')}>
               <View style={styles.exploreIconWrap}>
                 <Ionicons name="podium-outline" size={20} color={currentColors.primary} />
               </View>
               <View style={styles.exploreTextWrap}>
                 <Text style={styles.exploreRowTitle}>Platform Standings</Text>
                 <Text style={styles.exploreRowDesc}>See how you rank against all players</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/stats')}>
+              <View style={styles.exploreIconWrap}>
+                <Ionicons name="stats-chart-outline" size={20} color={currentColors.primary} />
+              </View>
+              <View style={styles.exploreTextWrap}>
+                <Text style={styles.exploreRowTitle}>Driver Position Stats</Text>
+                <Text style={styles.exploreRowDesc}>Historical driver finishing position data</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
             </TouchableOpacity>
@@ -831,13 +841,6 @@ const HomeScreen = () => {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Platform Statistics</Text>
-              <TouchableOpacity
-                style={styles.statsButton}
-                onPress={() => router.push('/stats')}
-              >
-                <Ionicons name="stats-chart" size={16} color={currentColors.primary} />
-                <Text style={styles.statsButtonText}>Driver Position Stats</Text>
-              </TouchableOpacity>
             </View>
 
             {/* Lifetime Performance */}
@@ -995,10 +998,10 @@ const HomeScreen = () => {
           )}
         </View>
 
-        {/* Explore Card */}
+        {/* Stats & Info Card */}
         <View style={styles.exploreCard}>
           <View style={styles.exploreCardHeader}>
-            <Text style={styles.exploreCardTitle}>Explore</Text>
+            <Text style={styles.exploreCardTitle}>Stats & Info</Text>
           </View>
           <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/community-picks')}>
             <View style={styles.exploreIconWrap}>
@@ -1010,13 +1013,23 @@ const HomeScreen = () => {
             </View>
             <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/platform-standings')}>
+          <TouchableOpacity style={styles.exploreRow} onPress={() => router.push('/platform-standings')}>
             <View style={styles.exploreIconWrap}>
               <Ionicons name="podium-outline" size={20} color={currentColors.primary} />
             </View>
             <View style={styles.exploreTextWrap}>
               <Text style={styles.exploreRowTitle}>Platform Standings</Text>
               <Text style={styles.exploreRowDesc}>See how you rank against all players</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.exploreRow, { borderBottomWidth: 0 }]} onPress={() => router.push('/stats')}>
+            <View style={styles.exploreIconWrap}>
+              <Ionicons name="stats-chart-outline" size={20} color={currentColors.primary} />
+            </View>
+            <View style={styles.exploreTextWrap}>
+              <Text style={styles.exploreRowTitle}>Driver Position Stats</Text>
+              <Text style={styles.exploreRowDesc}>Historical driver finishing position data</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={currentColors.textTertiary} />
           </TouchableOpacity>
@@ -1067,13 +1080,7 @@ const HomeScreen = () => {
 
         {/* Global Stats Section */}
         <View style={styles.section}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Platform Statistics</Text>
-            <TouchableOpacity style={styles.statsButton} onPress={() => router.push('/stats')}>
-              <Ionicons name="stats-chart" size={16} color={currentColors.primary} />
-              <Text style={styles.statsButtonText}>Driver Position Stats</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionTitle}>Platform Statistics</Text>
           {seasons.length > 0 && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
               <TouchableOpacity onPress={() => setGlobalStatsSeason('all')} style={[styles.seasonChip, globalStatsSeason === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>

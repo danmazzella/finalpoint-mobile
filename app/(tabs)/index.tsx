@@ -15,7 +15,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useUnreadCounts } from '../../src/context/UnreadCountContext';
-import { leaguesAPI, authAPI, getBaseUrl, chatAPI, seasonsAPI } from '../../src/services/apiService';
+import { leaguesAPI, authAPI, getBaseUrl, getFrontendUrl, chatAPI, seasonsAPI } from '../../src/services/apiService';
 import { UserStats, GlobalStats, League } from '../../src/types';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
@@ -675,7 +675,7 @@ const HomeScreen = () => {
 
   const handleScoringPress = async () => {
     try {
-      const url = `${getBaseUrl()}/scoring`;
+      const url = `${getFrontendUrl()}/scoring`;
       const supported = await Linking.canOpenURL(url);
 
       if (supported) {
@@ -930,7 +930,7 @@ const HomeScreen = () => {
               <View style={styles.emptyStateActions}>
                 <TouchableOpacity
                   style={styles.emptyStateButton}
-                  onPress={() => showToast('Join league feature coming soon!', 'info')}
+                  onPress={() => router.push('/join-league')}
                 >
                   <Text style={styles.emptyStateButtonText}>Join League</Text>
                 </TouchableOpacity>

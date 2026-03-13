@@ -282,18 +282,23 @@ export interface F1Race {
     isLocked: boolean;
     isScored: boolean;
     status?: string;
-    // New pick locking fields
-    picksLocked?: boolean;
+    // Pick locking fields
+    picksLocked?: boolean; // backward-compat: same as racePicksLocked
+    lockTime?: string; // backward-compat: same as raceLockTime
     timeUntilLock?: string;
     timeUntilQualifying?: string;
     lockMessage?: string;
-    lockTime?: string; // Added for new countdown logic
+    showCountdown?: boolean;
     qualifyingDate?: string;
     circuitName?: string;
     country?: string;
-    showCountdown?: boolean;
     // Sprint race support
     hasSprint?: boolean;
+    // Sprint weekend separate lock fields
+    sprintPicksLocked?: boolean;
+    sprintLockTime?: string | null;
+    racePicksLocked?: boolean;
+    raceLockTime?: string;
 }
 
 // League member types

@@ -19,13 +19,14 @@ import { lightColors, darkColors } from '../src/constants/Colors';
 interface Threshold {
     label: string;
     percentile: number;
-    points: number;
+    accuracy: number;
 }
 
 interface UserLeague {
     leagueId: number;
     leagueName: string;
     totalPoints: number;
+    accuracy: number;
     platformRank: number;
     platformPercentile: number | null;
 }
@@ -276,7 +277,7 @@ const PlatformStandingsScreen = () => {
         setRefreshing(false);
     };
 
-    const maxPoints = standings?.thresholds[0]?.points ?? 1;
+    const maxAccuracy = standings?.thresholds[0]?.accuracy ?? 100;
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -331,7 +332,7 @@ const PlatformStandingsScreen = () => {
                                     <View key={league.leagueId} style={styles.leagueRow}>
                                         <View style={styles.leagueRowTop}>
                                             <Text style={styles.leagueName} numberOfLines={1}>{league.leagueName}</Text>
-                                            <Text style={styles.leaguePoints}>{league.totalPoints} pts</Text>
+                                            <Text style={styles.leaguePoints}>{league.accuracy}% accuracy</Text>
                                         </View>
                                         <View style={styles.leagueRankRow}>
                                             <Text style={styles.leagueRank}>#{league.platformRank}</Text>
@@ -347,13 +348,13 @@ const PlatformStandingsScreen = () => {
                         {/* Points thresholds card */}
                         <View style={styles.card}>
                             <View style={styles.cardHeader}>
-                                <Text style={styles.cardHeaderTitle}>Points Thresholds</Text>
-                                <Text style={styles.cardHeaderSub}>Points needed in a single league to reach each tier</Text>
+                                <Text style={styles.cardHeaderTitle}>Accuracy Thresholds</Text>
+                                <Text style={styles.cardHeaderSub}>% of available points earned — fair regardless of picks per race</Text>
                             </View>
 
                             {standings.thresholds.map((threshold, idx) => {
                                 const isFirst = idx === 0;
-                                const barWidth = maxPoints > 0 ? Math.max((threshold.points / maxPoints) * 100, 2) : 2;
+                                const barWidth = maxAccuracy > 0 ? Math.max((threshold.accuracy / maxAccuracy) * 100, 2) : 2;
                                 return (
                                     <View key={threshold.label} style={styles.thresholdRow}>
                                         <Text style={[styles.thresholdLabel, isFirst && styles.thresholdLabelFirst]}>
@@ -369,7 +370,7 @@ const PlatformStandingsScreen = () => {
                                             />
                                         </View>
                                         <Text style={[styles.thresholdPoints, isFirst && styles.thresholdPointsFirst]}>
-                                            {threshold.points} pts
+                                            {threshold.accuracy}%
                                         </Text>
                                     </View>
                                 );

@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/AuthContext';
-import { authAPI, apiService, getBaseUrl } from '../../src/services/apiService';
+import { authAPI, apiService, getFrontendUrl } from '../../src/services/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import Avatar from '../../src/components/Avatar';
@@ -107,7 +107,7 @@ const ProfileScreen = () => {
 
   const handleAboutFinalPoint = async () => {
     try {
-      const url = `${getBaseUrl()}/info`;
+      const url = `${getFrontendUrl()}/info`;
       const supported = await Linking.canOpenURL(url);
 
       if (supported) {
@@ -123,7 +123,7 @@ const ProfileScreen = () => {
 
   const handlePrivacyPolicy = async () => {
     try {
-      const url = `${getBaseUrl()}/privacy`;
+      const url = `${getFrontendUrl()}/privacy`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
@@ -138,7 +138,7 @@ const ProfileScreen = () => {
 
   const handleTermsOfService = async () => {
     try {
-      const url = `${getBaseUrl()}/terms`;
+      const url = `${getFrontendUrl()}/terms`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);

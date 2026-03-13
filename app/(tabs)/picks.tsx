@@ -854,9 +854,13 @@ const PicksScreen = () => {
             return;
         }
 
-        // Check if picks are locked
-        if (currentRace && Boolean(currentRace.picksLocked)) {
-            showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
+        // Check if picks are locked (sprint picks lock at sprint qualifying, race picks at GP qualifying)
+        const isLocked = eventType === 'sprint'
+            ? Boolean(currentRace?.sprintPicksLocked ?? currentRace?.picksLocked)
+            : Boolean(currentRace?.racePicksLocked ?? currentRace?.picksLocked);
+        if (currentRace && isLocked) {
+            const lockDesc = eventType === 'sprint' ? 'sprint qualifying' : 'qualifying';
+            showToast(`Picks are currently locked for this race. Picks lock 5 minutes before ${lockDesc} starts.`, 'warning');
             return;
         }
 
@@ -910,8 +914,8 @@ const PicksScreen = () => {
             return;
         }
 
-        // Check if picks are locked
-        if (currentRace && Boolean(currentRace.picksLocked)) {
+        // Check if race picks are locked (lock at GP qualifying)
+        if (currentRace && Boolean(currentRace.racePicksLocked ?? currentRace.picksLocked)) {
             showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
             return;
         }
@@ -947,9 +951,9 @@ const PicksScreen = () => {
             return;
         }
 
-        // Check if picks are locked
-        if (currentRace && Boolean(currentRace.picksLocked)) {
-            showToast('Picks are currently locked for this race. Picks lock 5 minutes before qualifying starts.', 'warning');
+        // Check if sprint picks are locked (lock at sprint qualifying)
+        if (currentRace && Boolean(currentRace.sprintPicksLocked ?? currentRace.picksLocked)) {
+            showToast('Picks are currently locked for this race. Sprint picks lock 5 minutes before sprint qualifying starts.', 'warning');
             return;
         }
 
@@ -981,7 +985,10 @@ const PicksScreen = () => {
     };
 
     const handlePositionPress = (position: number) => {
-        if ((currentRace && Boolean(currentRace.picksLocked)) || isRaceLocked()) {
+        const locked = selectedEventType === 'sprint'
+            ? Boolean(currentRace?.sprintPicksLocked ?? currentRace?.picksLocked)
+            : Boolean(currentRace?.racePicksLocked ?? currentRace?.picksLocked);
+        if (locked || isRaceLocked()) {
             showToast('Picks are currently locked for this race.', 'warning');
             return;
         }
@@ -1018,13 +1025,14 @@ const PicksScreen = () => {
         return pick && Boolean(pick.isLocked);
     };
 
-    const isRaceLocked = () => {
-        if (!currentRace || currentRace.picksLocked === undefined || currentRace.picksLocked === null) {
-            return false;
+    const isRaceLocked = (eventType: 'race' | 'sprint' = 'race') => {
+        if (!currentRace) return false;
+        if (eventType === 'sprint') {
+            const locked = currentRace.sprintPicksLocked ?? currentRace.picksLocked;
+            return Boolean(locked);
         }
-        // Handle both boolean and number types from API
-        const picksLocked = currentRace.picksLocked;
-        return Boolean(picksLocked);
+        const locked = currentRace.racePicksLocked ?? currentRace.picksLocked;
+        return Boolean(locked);
     };
 
     // Time formatting is now handled by the imported utility function
@@ -1186,44 +1194,76 @@ const PicksScreen = () => {
                             <View style={styles.raceInfoSection}>
                                 <Text style={styles.sectionTitle}>Current Race</Text>
 
-                                {/* Pick Locking Status Banner */}
-                                {currentRace.picksLocked && Boolean(currentRace.picksLocked) && (
-                                    <View style={styles.lockedBanner}>
-                                        <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                        <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
-                                    </View>
-                                )}
-
-                                {/* Pick Locking Countdown */}
-                                {!Boolean(currentRace.picksLocked) && Boolean(currentRace.showCountdown) && (
-                                    <View style={styles.countdownBanner}>
-                                        <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
-                                        <Text style={styles.countdownBannerMessage}>
-                                            {currentRace.lockTime ? (
-                                                <>
-                                                    Picks will lock in {(() => {
-                                                        try {
-                                                            return formatTimeRemainingLocal(currentRace.lockTime, { compact: true });
-                                                        } catch (e) {
-                                                            return 'soon';
-                                                        }
-                                                    })()} for {currentRace.raceName || 'this race'}
+                                {/* Pick Locking Status Banners */}
+                                {currentRace.hasSprint ? (
+                                    <>
+                                        {/* Sprint picks lock banner */}
+                                        {Boolean(currentRace.sprintPicksLocked) ? (
+                                            <View style={styles.lockedBanner}>
+                                                <Text style={styles.lockedBannerTitle}>🔒 Sprint Picks are Locked</Text>
+                                                <Text style={styles.lockedBannerMessage}>Sprint picks locked before sprint qualifying.</Text>
+                                            </View>
+                                        ) : currentRace.sprintLockTime ? (
+                                            <View style={styles.countdownBanner}>
+                                                <Text style={styles.countdownBannerTitle}>⏰ Sprint Picks Lock Soon</Text>
+                                                <Text style={styles.countdownBannerMessage}>
+                                                    Sprint picks lock in {(() => {
+                                                        try { return formatTimeRemainingLocal(currentRace.sprintLockTime!, { compact: true }); } catch (e) { return 'soon'; }
+                                                    })()}
                                                     {'\n'}
-                                                    <Text style={styles.countdownBannerSubtext}>
-                                                        Lock time: {(() => {
-                                                            try {
-                                                                return new Date(currentRace.lockTime).toLocaleString();
-                                                            } catch (e) {
-                                                                return 'Invalid date';
-                                                            }
-                                                        })()}
-                                                    </Text>
-                                                </>
-                                            ) : (
-                                                currentRace.lockMessage || 'Picks will lock soon'
-                                            )}
-                                        </Text>
-                                    </View>
+                                                    <Text style={styles.countdownBannerSubtext}>Lock time: {(() => { try { return new Date(currentRace.sprintLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}</Text>
+                                                </Text>
+                                            </View>
+                                        ) : null}
+                                        {/* GP picks lock banner */}
+                                        {Boolean(currentRace.racePicksLocked) ? (
+                                            <View style={styles.lockedBanner}>
+                                                <Text style={styles.lockedBannerTitle}>🔒 Grand Prix Picks are Locked</Text>
+                                                <Text style={styles.lockedBannerMessage}>Grand Prix picks locked before qualifying.</Text>
+                                            </View>
+                                        ) : currentRace.raceLockTime ? (
+                                            <View style={styles.countdownBanner}>
+                                                <Text style={styles.countdownBannerTitle}>⏰ Grand Prix Picks Lock Soon</Text>
+                                                <Text style={styles.countdownBannerMessage}>
+                                                    GP picks lock in {(() => {
+                                                        try { return formatTimeRemainingLocal(currentRace.raceLockTime!, { compact: true }); } catch (e) { return 'soon'; }
+                                                    })()}
+                                                    {'\n'}
+                                                    <Text style={styles.countdownBannerSubtext}>Lock time: {(() => { try { return new Date(currentRace.raceLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}</Text>
+                                                </Text>
+                                            </View>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Non-sprint weekend: single lock banner */}
+                                        {Boolean(currentRace.picksLocked) && (
+                                            <View style={styles.lockedBanner}>
+                                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
+                                            </View>
+                                        )}
+                                        {!Boolean(currentRace.picksLocked) && Boolean(currentRace.showCountdown) && (
+                                            <View style={styles.countdownBanner}>
+                                                <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
+                                                <Text style={styles.countdownBannerMessage}>
+                                                    {currentRace.lockTime ? (
+                                                        <>
+                                                            Picks will lock in {(() => {
+                                                                try { return formatTimeRemainingLocal(currentRace.lockTime, { compact: true }); } catch (e) { return 'soon'; }
+                                                            })()} for {currentRace.raceName || 'this race'}
+                                                            {'\n'}
+                                                            <Text style={styles.countdownBannerSubtext}>
+                                                                Lock time: {(() => { try { return new Date(currentRace.lockTime).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}
+                                                            </Text>
+                                                        </>
+                                                    ) : (
+                                                        currentRace.lockMessage || 'Picks will lock soon'
+                                                    )}
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </>
                                 )}
 
                                 <View style={styles.raceCard}>
@@ -1317,7 +1357,7 @@ const PicksScreen = () => {
                             <View style={styles.sprintSection}>
                                 <View style={styles.sprintHeader}>
                                     <Text style={styles.sectionTitle}>Sprint Race Picks</Text>
-                                    {currentRace?.picksLocked && (
+                                    {Boolean(currentRace?.sprintPicksLocked ?? currentRace?.picksLocked) && (
                                         <View style={styles.lockedBadge}>
                                             <Text style={styles.lockedBadgeText}>Picks Locked</Text>
                                         </View>
@@ -1331,7 +1371,7 @@ const PicksScreen = () => {
                                     {leaguePositions.map((position) => {
                                         const currentPick = getCurrentPickForPosition(position, 'sprint');
                                         const isLocked = isPositionLocked(position);
-                                        const isRaceLockedNow = isRaceLocked();
+                                        const isRaceLockedNow = isRaceLocked('sprint');
                                         const hasPick = !!currentPick;
 
                                         return (
@@ -1398,7 +1438,7 @@ const PicksScreen = () => {
                             <View style={styles.raceSection}>
                                 <View style={styles.raceHeader}>
                                     <Text style={styles.sectionTitle}>Grand Prix Picks</Text>
-                                    {currentRace?.picksLocked && (
+                                    {Boolean(currentRace?.racePicksLocked ?? currentRace?.picksLocked) && (
                                         <View style={styles.lockedBadge}>
                                             <Text style={styles.lockedBadgeText}>Picks Locked</Text>
                                         </View>
@@ -1412,7 +1452,7 @@ const PicksScreen = () => {
                                     {leaguePositions.map((position) => {
                                         const currentPick = getCurrentPickForPosition(position, 'race');
                                         const isLocked = isPositionLocked(position);
-                                        const isRaceLockedNow = isRaceLocked();
+                                        const isRaceLockedNow = isRaceLocked('race');
                                         const hasPick = !!currentPick;
 
                                         return (

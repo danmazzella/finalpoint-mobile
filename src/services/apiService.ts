@@ -30,12 +30,23 @@ export const getApiBaseUrl = () => {
     throw new Error('EXPO_PUBLIC_API_URL environment variable is not set. Please check your .env file.');
 };
 
-// Helper function to get base URL without /api suffix (for avatar URLs)
+// Helper function to get base URL without /api suffix (for avatar URLs on the API server)
 export const getBaseUrl = () => {
     const apiUrl = getApiBaseUrl();
     // Remove /api suffix to get the base server URL for static files
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl.replace('/api', '');
     return baseUrl;
+};
+
+// Helper function to get the frontend website URL (not the API server)
+export const getFrontendUrl = () => {
+    if (process.env.EXPO_PUBLIC_FRONTEND_URL) {
+        return process.env.EXPO_PUBLIC_FRONTEND_URL;
+    }
+    if (__DEV__) {
+        return 'http://localhost:3000';
+    }
+    return 'https://finalpoint.app';
 };
 
 const API_BASE_URL = getApiBaseUrl();

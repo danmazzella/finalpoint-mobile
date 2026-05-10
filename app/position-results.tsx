@@ -17,6 +17,7 @@ import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import GlassBackground from '../src/components/GlassBackground';
 import { usePositionNavigation } from '../hooks/usePositionNavigation';
 
 interface PositionResultV2 {
@@ -66,7 +67,7 @@ const PositionResultsScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: {
             flex: 1,
@@ -75,7 +76,7 @@ const PositionResultsScreen = () => {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         loadingText: {
             marginTop: spacing.md,
@@ -118,9 +119,9 @@ const PositionResultsScreen = () => {
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
             minHeight: 64,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             paddingLeft: spacing.md,
@@ -149,13 +150,15 @@ const PositionResultsScreen = () => {
         },
         summaryCard: {
             flex: 1,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: spacing.md,
             borderRadius: borderRadius.lg,
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: 60,
-            ...shadows.sm,
+            ...shadows.glass,
         },
         summaryLabel: {
             fontSize: 11,
@@ -203,11 +206,10 @@ const PositionResultsScreen = () => {
             marginTop: spacing.xs,
         },
         resultCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             padding: spacing.md,
             borderRadius: borderRadius.md,
             marginBottom: spacing.sm,
-            ...shadows.sm,
         },
         resultHeader: {
             flexDirection: 'row',
@@ -229,7 +231,7 @@ const PositionResultsScreen = () => {
             justifyContent: 'center',
             alignItems: 'center',
             borderWidth: 2,
-            borderColor: currentColors.cardBackground,
+            borderColor: currentColors.glassBackground,
         },
         firstPlace: {
             backgroundColor: '#FFD700', // Gold
@@ -581,17 +583,20 @@ const PositionResultsScreen = () => {
 
     if (loading) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading position results...</Text>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.errorContainer}>
                     <Ionicons name="alert-circle" size={48} color={currentColors.error} />
@@ -602,11 +607,13 @@ const PositionResultsScreen = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (!results) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <ScrollView style={styles.scrollView}>
                     <View style={styles.header}>
@@ -633,10 +640,12 @@ const PositionResultsScreen = () => {
                     </View>
                 </ScrollView>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Header */}
@@ -855,6 +864,7 @@ const PositionResultsScreen = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

@@ -22,6 +22,8 @@ import { useChatFeature } from '../../src/context/FeatureFlagContext';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
+import { shadows } from '../../utils/styles';
+import GlassBackground from '../../src/components/GlassBackground';
 
 const LeaguesScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
@@ -52,9 +54,9 @@ const LeaguesScreen = () => {
         },
         header: {
             padding: 16,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         title: {
             fontSize: 28,
@@ -85,17 +87,17 @@ const LeaguesScreen = () => {
             fontWeight: '600',
         },
         secondaryButton: {
-            backgroundColor: currentColors.cardBackground,
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            backgroundColor: currentColors.buttonSecondaryBg,
+            borderWidth: 1.5,
+            borderColor: currentColors.buttonSecondaryBorder,
             paddingHorizontal: 16,
             paddingVertical: 12,
-            borderRadius: 8,
+            borderRadius: 10,
             flex: 1,
             alignItems: 'center',
         },
         secondaryButtonText: {
-            color: currentColors.textSecondary,
+            color: currentColors.buttonSecondaryText,
             fontSize: 16,
             fontWeight: '600',
         },
@@ -120,11 +122,12 @@ const LeaguesScreen = () => {
             gap: 12,
         },
         leagueCard: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: 16,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         leagueCardHeader: {
             flexDirection: 'row',
@@ -177,14 +180,14 @@ const LeaguesScreen = () => {
             borderRadius: 4,
         },
         visibilityBadge: {
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
+            paddingHorizontal: 10,
+            paddingVertical: 2,
+            borderRadius: 999,
+            borderWidth: 1,
         },
         visibilityText: {
-            fontSize: 12,
-            fontWeight: '500',
-            color: currentColors.textInverse,
+            fontSize: 11,
+            fontWeight: '600',
         },
         leagueStats: {
             gap: 8,
@@ -226,29 +229,33 @@ const LeaguesScreen = () => {
             marginTop: 2,
         },
         positionBadge: {
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
-            backgroundColor: currentColors.secondary,
+            paddingHorizontal: 10,
+            paddingVertical: 2,
+            borderRadius: 999,
+            borderWidth: 1,
+            backgroundColor: 'rgba(156,163,175,0.10)',
+            borderColor: 'rgba(156,163,175,0.15)',
             marginRight: 4,
             marginBottom: 4,
         },
         positionBadgePicked: {
-            backgroundColor: currentColors.success,
+            backgroundColor: 'rgba(16,185,129,0.12)',
+            borderColor: 'rgba(16,185,129,0.22)',
         },
         positionBadgeUnpicked: {
-            backgroundColor: currentColors.secondary,
+            backgroundColor: 'rgba(156,163,175,0.10)',
+            borderColor: 'rgba(156,163,175,0.15)',
         },
         positionText: {
             fontSize: 11,
-            fontWeight: '700',
-            color: currentColors.textInverse,
+            fontWeight: '600',
+            color: '#9ca3af',
         },
         positionTextPicked: {
-            color: currentColors.textInverse,
+            color: '#34d399',
         },
         positionTextUnpicked: {
-            color: currentColors.textInverse,
+            color: '#9ca3af',
         },
         joinButton: {
             backgroundColor: currentColors.primary,
@@ -341,11 +348,14 @@ const LeaguesScreen = () => {
             alignItems: 'center',
         },
         modalContent: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.modalBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: 16,
             padding: 24,
             width: '90%',
             maxHeight: '80%',
+            ...shadows.glass,
         },
         modalTitle: {
             fontSize: 20,
@@ -365,12 +375,12 @@ const LeaguesScreen = () => {
         },
         textInput: {
             borderWidth: 1,
-            borderColor: currentColors.borderMedium,
+            borderColor: currentColors.glassBorder,
             borderRadius: 8,
             padding: 12,
             fontSize: 16,
             color: currentColors.textPrimary,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.inputBackground,
         },
         visibilityOptions: {
             flexDirection: 'row',
@@ -381,9 +391,10 @@ const LeaguesScreen = () => {
             flex: 1,
             paddingVertical: 12,
             paddingHorizontal: 16,
-            borderRadius: 8,
+            borderRadius: 10,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            backgroundColor: currentColors.inputBackground,
             alignItems: 'center',
         },
         visibilityOptionSelected: {
@@ -414,8 +425,8 @@ const LeaguesScreen = () => {
             height: 40,
             borderRadius: 20,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            backgroundColor: currentColors.cardBackground,
+            borderColor: currentColors.glassBorder,
+            backgroundColor: currentColors.inputBackground,
             justifyContent: 'center',
             alignItems: 'center',
         },
@@ -445,14 +456,14 @@ const LeaguesScreen = () => {
             flex: 1,
             paddingVertical: 12,
             paddingHorizontal: 16,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            backgroundColor: currentColors.cardBackground,
+            borderRadius: 10,
+            borderWidth: 1.5,
+            borderColor: currentColors.buttonSecondaryBorder,
+            backgroundColor: currentColors.buttonSecondaryBg,
             alignItems: 'center',
         },
         cancelButtonText: {
-            color: currentColors.textSecondary,
+            color: currentColors.buttonSecondaryText,
             fontSize: 14,
             fontWeight: '500',
         },
@@ -479,12 +490,12 @@ const LeaguesScreen = () => {
             marginTop: 12,
         },
         seasonChip: {
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 8,
-            backgroundColor: currentColors.backgroundSecondary,
+            paddingHorizontal: 14,
+            paddingVertical: 7,
+            borderRadius: 20,
+            backgroundColor: currentColors.glassBackground,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
         },
         seasonChipSelected: {
             backgroundColor: currentColors.primary,
@@ -705,11 +716,11 @@ const LeaguesScreen = () => {
                             )}
                         </View>
                         <View style={styles.headerActions}>
-                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.backgroundTertiary }]}>
-                                <Text style={[styles.visibilityText, { color: currentColors.textPrimary }]}>{league.seasonYear}</Text>
+                            <View style={[styles.visibilityBadge, { backgroundColor: 'rgba(156,163,175,0.10)', borderColor: 'rgba(156,163,175,0.15)' }]}>
+                                <Text style={[styles.visibilityText, { color: '#9ca3af' }]}>{league.seasonYear}</Text>
                             </View>
-                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.success }]}>
-                                <Text style={styles.visibilityText}>Public</Text>
+                            <View style={[styles.visibilityBadge, { backgroundColor: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.22)' }]}>
+                                <Text style={[styles.visibilityText, { color: '#34d399' }]}>Public</Text>
                             </View>
                         </View>
                     </View>
@@ -815,14 +826,16 @@ const LeaguesScreen = () => {
                             )}
                         </View>
                         <View style={[styles.headerActions, { marginLeft: 'auto' }]}>
-                            <View style={[styles.visibilityBadge, { backgroundColor: currentColors.backgroundTertiary }]}>
-                                <Text style={[styles.visibilityText, { color: currentColors.textPrimary }]}>{league.seasonYear}</Text>
+                            <View style={[styles.visibilityBadge, { backgroundColor: 'rgba(156,163,175,0.10)', borderColor: 'rgba(156,163,175,0.15)' }]}>
+                                <Text style={[styles.visibilityText, { color: '#9ca3af' }]}>{league.seasonYear}</Text>
                             </View>
                             <View style={[
                                 styles.visibilityBadge,
-                                { backgroundColor: league.isPublic ? currentColors.success : currentColors.secondary }
+                                league.isPublic
+                                    ? { backgroundColor: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.22)' }
+                                    : { backgroundColor: 'rgba(107,114,128,0.12)', borderColor: 'rgba(107,114,128,0.25)' }
                             ]}>
-                                <Text style={styles.visibilityText}>
+                                <Text style={[styles.visibilityText, { color: league.isPublic ? '#34d399' : currentColors.textSecondary }]}>
                                     {league.isPublic ? 'Public' : 'Private'}
                                 </Text>
                             </View>
@@ -898,19 +911,19 @@ const LeaguesScreen = () => {
 
     if (authLoading) {
         return (
-            <SafeAreaView style={universalStyles.container}>
+            <GlassBackground><SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading...</Text>
                 </View>
-            </SafeAreaView>
+            </SafeAreaView></GlassBackground>
         );
     }
 
     // Show unauthenticated view for users who are not logged in
     if (!user) {
         return (
-            <SafeAreaView style={universalStyles.container}>
+            <GlassBackground><SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]}>
                 <ScrollView
                     style={universalStyles.scrollView}
                     showsVerticalScrollIndicator={false}
@@ -993,12 +1006,12 @@ const LeaguesScreen = () => {
                         })()}
                     </View>
                 </ScrollView>
-            </SafeAreaView>
+            </SafeAreaView></GlassBackground>
         );
     }
 
     return (
-        <SafeAreaView style={universalStyles.container}>
+        <GlassBackground><SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]}>
             <ScrollView
                 style={universalStyles.scrollView}
                 showsVerticalScrollIndicator={false}
@@ -1218,7 +1231,7 @@ const LeaguesScreen = () => {
                     </View>
                 </View>
             </Modal>
-        </SafeAreaView>
+        </SafeAreaView></GlassBackground>
     );
 };
 

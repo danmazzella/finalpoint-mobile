@@ -22,6 +22,7 @@ import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 import { shouldShowGoogleSignIn } from '../config/environment';
+import GlassBackground from '../src/components/GlassBackground';
 
 
 const LoginScreen = () => {
@@ -85,14 +86,17 @@ const LoginScreen = () => {
 
     if (isLoading) {
         return (
-            <SafeAreaView style={[styles.loadingContainer, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+            <GlassBackground>
+            <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <ActivityIndicator size="large" color={currentColors.primary} />
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right', 'bottom']}>
+        <GlassBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right', 'bottom']}>
             <KeyboardAvoidingView
                 style={universalStyles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -130,8 +134,8 @@ const LoginScreen = () => {
                                 style={[
                                     styles.input,
                                     {
-                                        backgroundColor: currentColors.backgroundSecondary,
-                                        borderColor: currentColors.borderMedium,
+                                        backgroundColor: currentColors.inputBackground,
+                                        borderColor: currentColors.glassBorder,
                                         color: currentColors.textPrimary
                                     },
                                     emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -163,8 +167,8 @@ const LoginScreen = () => {
                                     style={[
                                         styles.passwordInput,
                                         {
-                                            backgroundColor: currentColors.backgroundSecondary,
-                                            borderColor: currentColors.borderMedium,
+                                            backgroundColor: currentColors.inputBackground,
+                                            borderColor: currentColors.glassBorder,
                                             color: currentColors.textPrimary
                                         },
                                         passwordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -260,6 +264,7 @@ const LoginScreen = () => {
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

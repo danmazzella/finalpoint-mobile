@@ -22,6 +22,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import GlassBackground from '../src/components/GlassBackground';
 
 const SignupScreen = () => {
   const [name, setName] = useState('');
@@ -142,15 +143,18 @@ const SignupScreen = () => {
 
   if (isLoading || isAuthenticating) {
     return (
-      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+      <GlassBackground>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
         <ActivityIndicator size="large" color={currentColors.primary} />
       </SafeAreaView>
+      </GlassBackground>
     );
   }
 
   return (
+    <GlassBackground>
     <>
-      <SafeAreaView style={[styles.container, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
         <KeyboardAvoidingView
           style={universalStyles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -188,8 +192,8 @@ const SignupScreen = () => {
                   style={[
                     styles.input,
                     {
-                      backgroundColor: currentColors.backgroundSecondary,
-                      borderColor: currentColors.borderMedium,
+                      backgroundColor: currentColors.inputBackground,
+                      borderColor: currentColors.glassBorder,
                       color: currentColors.textPrimary
                     },
                     nameFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -217,8 +221,8 @@ const SignupScreen = () => {
                   style={[
                     styles.input,
                     {
-                      backgroundColor: currentColors.backgroundSecondary,
-                      borderColor: currentColors.borderMedium,
+                      backgroundColor: currentColors.inputBackground,
+                      borderColor: currentColors.glassBorder,
                       color: currentColors.textPrimary
                     },
                     emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -248,8 +252,8 @@ const SignupScreen = () => {
                     style={[
                       styles.passwordInput,
                       {
-                        backgroundColor: currentColors.backgroundSecondary,
-                        borderColor: currentColors.borderMedium,
+                        backgroundColor: currentColors.inputBackground,
+                        borderColor: currentColors.glassBorder,
                         color: currentColors.textPrimary
                       },
                       passwordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -282,7 +286,7 @@ const SignupScreen = () => {
 
                 {/* Password Requirements */}
                 {password.length > 0 && (
-                  <View style={styles.requirementsContainer}>
+                  <View style={[styles.requirementsContainer, { backgroundColor: currentColors.inputBackground }]}>
                     <Text style={[styles.requirementsTitle, { color: currentColors.textPrimary }]}>Password Requirements:</Text>
                     {[
                       { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
@@ -340,8 +344,8 @@ const SignupScreen = () => {
                     style={[
                       styles.passwordInput,
                       {
-                        backgroundColor: currentColors.backgroundSecondary,
-                        borderColor: currentColors.borderMedium,
+                        backgroundColor: currentColors.inputBackground,
+                        borderColor: currentColors.glassBorder,
                         color: currentColors.textPrimary
                       },
                       confirmPasswordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -423,6 +427,7 @@ const SignupScreen = () => {
         duration={toast.duration}
       />
     </>
+    </GlassBackground>
   );
 };
 
@@ -529,7 +534,6 @@ const styles = StyleSheet.create({
   requirementsContainer: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 8,
   },
   requirementsTitle: {

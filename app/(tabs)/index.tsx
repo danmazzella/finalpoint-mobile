@@ -20,6 +20,8 @@ import { UserStats, GlobalStats, League } from '../../src/types';
 import { router, useFocusEffect } from 'expo-router';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
+import { shadows, borderRadius as br } from '../../utils/styles';
+import GlassBackground from '../../src/components/GlassBackground';
 
 const HomeScreen = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -39,16 +41,14 @@ const HomeScreen = () => {
       paddingBottom: 50, // Add padding to the bottom to prevent content from being hidden by the tab bar
     },
     errorCard: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
       borderRadius: 12,
       padding: 20,
       alignItems: 'center',
       width: '100%',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      ...shadows.glass,
     },
     errorTitle: {
       fontSize: 20,
@@ -99,17 +99,13 @@ const HomeScreen = () => {
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
+      borderColor: currentColors.glassBorder,
       borderRadius: 8,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
+      ...shadows.glass,
     },
     actionButtonText: {
       marginLeft: 8,
@@ -120,29 +116,27 @@ const HomeScreen = () => {
     seasonChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: currentColors.backgroundSecondary,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
-      borderRadius: 6,
-      paddingHorizontal: 8,
-      paddingVertical: 5,
+      borderColor: currentColors.glassBorder,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
     },
     seasonChipText: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 13,
+      fontWeight: '600',
       color: currentColors.textSecondary,
     },
     section: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
       marginHorizontal: 12,
       marginBottom: 16,
-      borderRadius: 12,
+      borderRadius: 16,
       padding: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      ...shadows.glass,
     },
     sectionHeader: {
       flexDirection: 'row',
@@ -156,15 +150,17 @@ const HomeScreen = () => {
       color: currentColors.textPrimary,
     },
     manageButton: {
-      backgroundColor: currentColors.primary,
-      paddingHorizontal: 12,
+      backgroundColor: currentColors.buttonSecondaryBg,
+      paddingHorizontal: 14,
       paddingVertical: 8,
-      borderRadius: 8,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: currentColors.buttonSecondaryBorder,
     },
     manageButtonText: {
-      color: currentColors.textInverse,
+      color: currentColors.buttonSecondaryText,
       fontSize: 14,
-      fontWeight: '500',
+      fontWeight: '600',
     },
     leaguesList: {
       gap: 8,
@@ -175,7 +171,7 @@ const HomeScreen = () => {
       alignItems: 'center',
       paddingVertical: 12,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderLight,
+      borderBottomColor: currentColors.glassBorder,
     },
     leagueInfo: {
       flex: 1,
@@ -216,21 +212,16 @@ const HomeScreen = () => {
       color: currentColors.textSecondary,
     },
     viewLeagueButton: {
-      backgroundColor: currentColors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: currentColors.primary,
-      shadowColor: currentColors.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 3,
+      backgroundColor: currentColors.buttonSecondaryBg,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: currentColors.buttonSecondaryBorder,
     },
     viewLeagueButtonText: {
-      color: currentColors.textInverse,
-      fontSize: 12,
+      color: currentColors.buttonSecondaryText,
+      fontSize: 13,
       fontWeight: '600',
     },
     emptyState: {
@@ -262,9 +253,9 @@ const HomeScreen = () => {
       marginTop: 12,
     },
     emptyStateButton: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
+      borderColor: currentColors.glassBorder,
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 8,
@@ -294,7 +285,16 @@ const HomeScreen = () => {
       flex: 1,
       minWidth: '45%',
       alignItems: 'center',
-      paddingVertical: 12,
+      padding: 18,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
+      borderRadius: 14,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 6,
     },
     statNumber: {
       fontSize: 20,
@@ -324,7 +324,16 @@ const HomeScreen = () => {
     globalStatCard: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: 12,
+      padding: 18,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
+      borderRadius: 14,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 6,
     },
     globalStatNumber: {
       fontSize: 20,
@@ -340,7 +349,7 @@ const HomeScreen = () => {
     },
     divider: {
       height: 1,
-      backgroundColor: currentColors.borderLight,
+      backgroundColor: currentColors.glassBorder,
       marginVertical: 16,
     },
     bottomSpacing: {
@@ -365,17 +374,13 @@ const HomeScreen = () => {
     scoringButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
+      borderColor: currentColors.glassBorder,
       borderRadius: 8,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
+      ...shadows.glass,
     },
     scoringButtonText: {
       marginLeft: 8,
@@ -384,16 +389,14 @@ const HomeScreen = () => {
       color: currentColors.textSecondary,
     },
     card: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
       marginHorizontal: 12,
       marginBottom: 16,
-      borderRadius: 12,
+      borderRadius: 16,
       padding: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      ...shadows.glass,
     },
     cardHeader: {
       flexDirection: 'row',
@@ -418,9 +421,9 @@ const HomeScreen = () => {
       fontWeight: '500',
     },
     secondaryButton: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
+      borderColor: currentColors.glassBorder,
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 8,
@@ -451,7 +454,16 @@ const HomeScreen = () => {
     platformStatCard: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: 12,
+      padding: 18,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
+      borderRadius: 14,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 6,
     },
     lifetimeStatNumber: {
       fontSize: 20,
@@ -474,7 +486,7 @@ const HomeScreen = () => {
     statsButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: currentColors.backgroundSecondary,
+      backgroundColor: currentColors.glassBackground,
       borderWidth: 1,
       borderColor: currentColors.primary,
       paddingHorizontal: 12,
@@ -488,22 +500,20 @@ const HomeScreen = () => {
       marginLeft: 4,
     },
     exploreCard: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
       marginHorizontal: 12,
       marginBottom: 16,
-      borderRadius: 12,
+      borderRadius: 16,
       overflow: 'hidden',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      ...shadows.glass,
     },
     exploreCardHeader: {
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderLight,
+      borderBottomColor: currentColors.glassBorder,
     },
     exploreCardTitle: {
       fontSize: 18,
@@ -516,13 +526,15 @@ const HomeScreen = () => {
       paddingHorizontal: 16,
       paddingVertical: 14,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderLight,
+      borderBottomColor: currentColors.glassBorder,
     },
     exploreIconWrap: {
       width: 36,
       height: 36,
       borderRadius: 10,
-      backgroundColor: currentColors.backgroundSecondary,
+      backgroundColor: currentColors.glassBackground,
+      borderWidth: 1,
+      borderColor: currentColors.glassBorder,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: 12,
@@ -691,15 +703,15 @@ const HomeScreen = () => {
 
   if (authLoading || loading) {
     return (
-      <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+      <GlassBackground><SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator size="large" color={currentColors.primary} />
-      </SafeAreaView>
+      </SafeAreaView></GlassBackground>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+      <GlassBackground><SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
         <View style={styles.errorCard}>
           <Ionicons name="cloud-offline" size={48} color={currentColors.error} />
           <Text style={styles.errorTitle}>Connection Error</Text>
@@ -708,14 +720,14 @@ const HomeScreen = () => {
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </SafeAreaView></GlassBackground>
     );
   }
 
   // Show unauthenticated view for users who are not logged in
   if (!user) {
     return (
-      <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+      <GlassBackground><SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
         <ScrollView
           style={universalStyles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -880,12 +892,12 @@ const HomeScreen = () => {
           {/* Bottom spacing for mobile to account for fixed bottom navigation */}
           <View style={styles.bottomSpacing} />
         </ScrollView>
-      </SafeAreaView>
+      </SafeAreaView></GlassBackground>
     );
   }
 
   return (
-    <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+    <GlassBackground><SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
       <ScrollView
         style={universalStyles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -895,8 +907,8 @@ const HomeScreen = () => {
       >
         {/* Header Section */}
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome back, {user?.name}!</Text>
-          <Text style={styles.subtitle}>Here&apos;s your F1 prediction overview</Text>
+          <Text style={styles.welcomeText}>Dashboard</Text>
+          <Text style={styles.subtitle}>Welcome to your F1 prediction overview</Text>
         </View>
 
         {/* Quick Actions */}
@@ -945,7 +957,7 @@ const HomeScreen = () => {
           ) : (
             <View style={styles.leaguesList}>
               {seasons.length > 0 && (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                   <TouchableOpacity
                     onPress={() => setLeagueSeasonFilter('all')}
                     style={[styles.seasonChip, leagueSeasonFilter === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}
@@ -1039,7 +1051,7 @@ const HomeScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Statistics</Text>
           {seasons.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, marginBottom: 16 }}>
               <TouchableOpacity onPress={() => setUserStatsSeason('all')} style={[styles.seasonChip, userStatsSeason === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
                 <Text style={[styles.seasonChipText, userStatsSeason === 'all' && { color: currentColors.textInverse }]}>All-Time</Text>
               </TouchableOpacity>
@@ -1082,7 +1094,7 @@ const HomeScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Platform Statistics</Text>
           {seasons.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, marginBottom: 16 }}>
               <TouchableOpacity onPress={() => setGlobalStatsSeason('all')} style={[styles.seasonChip, globalStatsSeason === 'all' && { backgroundColor: currentColors.primary, borderColor: currentColors.primary }]}>
                 <Text style={[styles.seasonChipText, globalStatsSeason === 'all' && { color: currentColors.textInverse }]}>All-Time</Text>
               </TouchableOpacity>
@@ -1131,7 +1143,7 @@ const HomeScreen = () => {
         {/* Bottom spacing for mobile to account for fixed bottom navigation */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView></GlassBackground>
   );
 };
 

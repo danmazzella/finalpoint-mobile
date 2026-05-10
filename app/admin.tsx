@@ -12,9 +12,15 @@ import {
 import { adminAPI, seasonsAPI } from '../src/services/apiService';
 import { AdminStats } from '../src/types';
 import { router } from 'expo-router';
-import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 
 const AdminScreen = () => {
+    const { resolvedTheme } = useTheme();
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -77,328 +83,324 @@ const AdminScreen = () => {
         loadAdminData(true);
     };
 
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: 'transparent',
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingText: {
+            marginTop: 16,
+            fontSize: 16,
+            color: currentColors.textSecondary,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+        },
+        errorTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.error,
+            marginBottom: 10,
+        },
+        errorMessage: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+            marginBottom: 20,
+        },
+        retryButton: {
+            backgroundColor: currentColors.primary,
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+            borderRadius: 8,
+        },
+        retryButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        header: {
+            backgroundColor: currentColors.glassBackground,
+            padding: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: currentColors.glassBorder,
+        },
+        headerTitle: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 4,
+        },
+        headerSubtitle: {
+            fontSize: 16,
+            color: currentColors.textSecondary,
+            marginBottom: 12,
+        },
+        seasonRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+        },
+        seasonChip: {
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 8,
+            alignItems: 'center',
+        },
+        seasonChipActive: {
+            backgroundColor: currentColors.primary,
+        },
+        seasonChipInactive: {
+            backgroundColor: currentColors.inputBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+        },
+        seasonChipText: {
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        seasonChipTextActive: {
+            color: currentColors.textInverse,
+        },
+        seasonChipTextInactive: {
+            color: currentColors.textSecondary,
+        },
+        section: {
+            backgroundColor: currentColors.glassBackground,
+            margin: 10,
+            padding: 20,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: currentColors.textPrimary,
+            marginBottom: 16,
+        },
+        statsGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+        },
+        statCard: {
+            backgroundColor: currentColors.inputBackground,
+            borderRadius: 8,
+            padding: 15,
+            alignItems: 'center',
+            width: '48%',
+            marginBottom: 10,
+        },
+        statNumber: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: currentColors.primary,
+            marginBottom: 4,
+        },
+        statLabel: {
+            fontSize: 12,
+            color: currentColors.textSecondary,
+            textAlign: 'center',
+        },
+        actionButtons: {
+            gap: 10,
+        },
+        actionButton: {
+            backgroundColor: currentColors.primary,
+            padding: 15,
+            borderRadius: 8,
+            alignItems: 'center',
+        },
+        actionButtonText: {
+            color: currentColors.textInverse,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+    });
+
     if (adminSeason == null && seasons.length === 0) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#e91e63" />
-                <Text style={styles.loadingText}>Loading...</Text>
-            </View>
+            <GlassBackground>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={currentColors.primary} />
+                    <Text style={styles.loadingText}>Loading...</Text>
+                </View>
+            </GlassBackground>
         );
     }
 
     if (loading && !stats) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#e91e63" />
-                <Text style={styles.loadingText}>Loading admin data...</Text>
-            </View>
+            <GlassBackground>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={currentColors.primary} />
+                    <Text style={styles.loadingText}>Loading admin data...</Text>
+                </View>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
-            <View style={styles.errorContainer}>
-                <Text style={styles.errorTitle}>Connection Error</Text>
-                <Text style={styles.errorMessage}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={() => loadAdminData()}>
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-            </View>
+            <GlassBackground>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Connection Error</Text>
+                    <Text style={styles.errorMessage}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => loadAdminData()}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </GlassBackground>
         );
     }
 
     if (!stats) {
         return (
-            <View style={styles.errorContainer}>
-                <Text style={styles.errorTitle}>No Admin Data Available</Text>
-                <Text style={styles.errorMessage}>Unable to load admin statistics.</Text>
-                <TouchableOpacity
-                    style={styles.retryButton}
-                    onPress={() => loadAdminData()}
-                >
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-            </View>
+            <GlassBackground>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>No Admin Data Available</Text>
+                    <Text style={styles.errorMessage}>Unable to load admin statistics.</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => loadAdminData()}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </GlassBackground>
         );
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            refreshControl={
-                <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    colors={['#e91e63']}
-                    tintColor="#e91e63"
-                />
-            }
-        >
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Admin Dashboard</Text>
-                <Text style={styles.headerSubtitle}>Platform statistics and management</Text>
-                {seasons.length > 0 && (
-                    <View style={styles.seasonRow}>
-                        {seasons.map((s) => (
-                            <TouchableOpacity
-                                key={s.year}
-                                style={[
-                                    styles.seasonChip,
-                                    adminSeason === s.year ? styles.seasonChipActive : styles.seasonChipInactive,
-                                ]}
-                                onPress={() => setAdminSeason(s.year)}
-                            >
-                                <Text style={[
-                                    styles.seasonChipText,
-                                    adminSeason === s.year ? styles.seasonChipTextActive : styles.seasonChipTextInactive,
-                                ]}>
-                                    {s.displayLabel || String(s.year)}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
-            </View>
+        <GlassBackground>
+            <ScrollView
+                style={styles.container}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[currentColors.primary]}
+                        tintColor={currentColors.primary}
+                    />
+                }
+            >
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Admin Dashboard</Text>
+                    <Text style={styles.headerSubtitle}>Platform statistics and management</Text>
+                    {seasons.length > 0 && (
+                        <View style={styles.seasonRow}>
+                            {seasons.map((s) => (
+                                <TouchableOpacity
+                                    key={s.year}
+                                    style={[
+                                        styles.seasonChip,
+                                        adminSeason === s.year ? styles.seasonChipActive : styles.seasonChipInactive,
+                                    ]}
+                                    onPress={() => setAdminSeason(s.year)}
+                                >
+                                    <Text style={[
+                                        styles.seasonChipText,
+                                        adminSeason === s.year ? styles.seasonChipTextActive : styles.seasonChipTextInactive,
+                                    ]}>
+                                        {s.displayLabel || String(s.year)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
 
-            {/* Users Stats */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Users</Text>
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.users.totalUsers}</Text>
-                        <Text style={styles.statLabel}>Total Users</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.users.adminUsers}</Text>
-                        <Text style={styles.statLabel}>Admin Users</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.users.regularUsers}</Text>
-                        <Text style={styles.statLabel}>Regular Users</Text>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Users</Text>
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.users.totalUsers}</Text>
+                            <Text style={styles.statLabel}>Total Users</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.users.adminUsers}</Text>
+                            <Text style={styles.statLabel}>Admin Users</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.users.regularUsers}</Text>
+                            <Text style={styles.statLabel}>Regular Users</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Leagues Stats */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Leagues</Text>
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.leagues.totalLeagues}</Text>
-                        <Text style={styles.statLabel}>Total Leagues</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.leagues.activeLeagues}</Text>
-                        <Text style={styles.statLabel}>Active Leagues</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.leagues.averageMembersPerLeague.toFixed(1)}</Text>
-                        <Text style={styles.statLabel}>Avg Members</Text>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Leagues</Text>
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.leagues.totalLeagues}</Text>
+                            <Text style={styles.statLabel}>Total Leagues</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.leagues.activeLeagues}</Text>
+                            <Text style={styles.statLabel}>Active Leagues</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.leagues.averageMembersPerLeague.toFixed(1)}</Text>
+                            <Text style={styles.statLabel}>Avg Members</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Picks Stats */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Picks & Performance</Text>
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.picks.totalPicks}</Text>
-                        <Text style={styles.statLabel}>Total Picks</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.picks.correctPicks}</Text>
-                        <Text style={styles.statLabel}>Correct Picks</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.picks.accuracy}%</Text>
-                        <Text style={styles.statLabel}>Accuracy</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>{stats.picks.averagePoints}</Text>
-                        <Text style={styles.statLabel}>Avg Points</Text>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Picks & Performance</Text>
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.picks.totalPicks}</Text>
+                            <Text style={styles.statLabel}>Total Picks</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.picks.correctPicks}</Text>
+                            <Text style={styles.statLabel}>Correct Picks</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.picks.accuracy}%</Text>
+                            <Text style={styles.statLabel}>Accuracy</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statNumber}>{stats.picks.averagePoints}</Text>
+                            <Text style={styles.statLabel}>Avg Points</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Admin Actions */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Admin Actions</Text>
-                <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push('/admin/users' as any)}
-                    >
-                        <Text style={styles.actionButtonText}>Manage Users</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push('/admin/leagues' as any)}
-                    >
-                        <Text style={styles.actionButtonText}>Manage Leagues</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push('/admin/pick-stats' as any)}
-                    >
-                        <Text style={styles.actionButtonText}>View Pick Stats</Text>
-                    </TouchableOpacity>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Admin Actions</Text>
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => router.push('/admin/users' as any)}
+                        >
+                            <Text style={styles.actionButtonText}>Manage Users</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => router.push('/admin/leagues' as any)}
+                        >
+                            <Text style={styles.actionButtonText}>Manage Leagues</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => router.push('/admin/pick-stats' as any)}
+                        >
+                            <Text style={styles.actionButtonText}>View Pick Stats</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </GlassBackground>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.light.backgroundPrimary,
-        padding: 20,
-    },
-    errorTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.light.error,
-        marginBottom: 10,
-    },
-    errorMessage: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    retryButton: {
-        backgroundColor: Colors.light.primary,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 8,
-    },
-    retryButtonText: {
-        color: Colors.light.textInverse,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    header: {
-        backgroundColor: Colors.light.cardBackground,
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.light.borderLight,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: 4,
-    },
-    headerSubtitle: {
-        fontSize: 16,
-        color: Colors.light.textSecondary,
-        marginBottom: 12,
-    },
-    seasonRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    seasonChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    seasonChipActive: {
-        backgroundColor: Colors.light.primary,
-    },
-    seasonChipInactive: {
-        backgroundColor: Colors.light.backgroundSecondary,
-        borderWidth: 1,
-        borderColor: Colors.light.borderLight,
-    },
-    seasonChipText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    seasonChipTextActive: {
-        color: Colors.light.textInverse,
-    },
-    seasonChipTextInactive: {
-        color: Colors.light.textSecondary,
-    },
-    section: {
-        backgroundColor: Colors.light.cardBackground,
-        margin: 10,
-        padding: 20,
-        borderRadius: 12,
-        shadowColor: Colors.light.cardShadow,
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.light.textPrimary,
-        marginBottom: 16,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-    statCard: {
-        backgroundColor: Colors.light.backgroundTertiary,
-        borderRadius: 8,
-        padding: 15,
-        alignItems: 'center',
-        width: '48%',
-        marginBottom: 10,
-    },
-    statNumber: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#e91e63',
-        marginBottom: 4,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-    },
-    actionButtons: {
-        gap: 10,
-    },
-    actionButton: {
-        backgroundColor: '#e91e63',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    actionButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});
 
 export default AdminScreen;

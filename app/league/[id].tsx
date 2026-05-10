@@ -21,6 +21,7 @@ import { spacing, borderRadius, shadows, textStyles } from '../../utils/styles';
 import { useSimpleToast } from '../../src/context/SimpleToastContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChatFeature, usePositionChanges, useMultiPositionPicks } from '../../src/context/FeatureFlagContext';
+import GlassBackground from '../../src/components/GlassBackground';
 
 const LeagueDetailScreen = () => {
     const { id } = useLocalSearchParams();
@@ -39,27 +40,27 @@ const LeagueDetailScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         loadingContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
         },
         errorContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
             padding: 20,
-            backgroundColor: currentColors.backgroundPrimary,
         },
         errorCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: 20,
-            borderRadius: borderRadius.lg,
+            borderRadius: 16,
             alignItems: 'center',
-            ...shadows.sm,
+            ...shadows.glass,
         },
         errorTitle: {
             fontSize: 20,
@@ -101,9 +102,9 @@ const LeagueDetailScreen = () => {
             flexDirection: 'row',
             alignItems: 'center',
             minHeight: 64,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             paddingLeft: spacing.md,
@@ -150,12 +151,14 @@ const LeagueDetailScreen = () => {
             color: currentColors.textSecondary,
         },
         section: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             marginHorizontal: spacing.lg,
             marginBottom: spacing.lg,
-            borderRadius: borderRadius.lg,
+            borderRadius: 16,
             padding: spacing.lg,
-            ...shadows.md,
+            ...shadows.glass,
         },
         sectionTitle: {
             fontSize: 18,
@@ -179,27 +182,43 @@ const LeagueDetailScreen = () => {
             fontWeight: '600',
         },
         secondaryButton: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.buttonSecondaryBg,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.buttonSecondaryBorder,
             paddingHorizontal: spacing.lg,
             paddingVertical: spacing.sm,
             borderRadius: borderRadius.md,
             alignItems: 'center',
         },
         secondaryButtonText: {
-            color: currentColors.textSecondary,
+            color: currentColors.buttonSecondaryText,
             fontSize: 16,
             fontWeight: '500',
         },
+        ghostButton: {
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderColor: currentColors.borderLight,
+            paddingHorizontal: 22,
+            paddingVertical: 10,
+            borderRadius: 10,
+            alignItems: 'center',
+        },
+        ghostButtonText: {
+            color: currentColors.textSecondary,
+            fontSize: 14,
+            fontWeight: '500',
+        },
         shareButton: {
-            backgroundColor: '#f0f0f0',
+            backgroundColor: currentColors.inputBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: 15,
             borderRadius: 8,
             alignItems: 'center',
         },
         shareButtonText: {
-            color: '#333',
+            color: currentColors.textPrimary,
             fontSize: 16,
             fontWeight: 'bold',
         },
@@ -209,14 +228,20 @@ const LeagueDetailScreen = () => {
             gap: spacing.sm,
         },
         statCard: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: borderRadius.lg,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 14,
             padding: spacing.md,
             alignItems: 'center',
             justifyContent: 'center',
             flex: 1,
             minWidth: '48%',
-            ...shadows.sm,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.5,
+            shadowRadius: 10,
+            elevation: 6,
         },
         statLabel: {
             fontSize: 12,
@@ -253,8 +278,10 @@ const LeagueDetailScreen = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: 15,
-            backgroundColor: '#f8f9fa',
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 12,
             marginBottom: 10,
         },
         memberInfo: {
@@ -282,24 +309,26 @@ const LeagueDetailScreen = () => {
         memberName: {
             fontSize: 16,
             fontWeight: 'bold',
-            color: '#333',
+            color: currentColors.textPrimary,
         },
         memberRole: {
             fontSize: 12,
-            color: '#666',
+            color: currentColors.textSecondary,
             marginTop: 2,
         },
         memberDate: {
             fontSize: 12,
-            color: '#999',
+            color: currentColors.textTertiary,
         },
         standingCard: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: 15,
-            backgroundColor: '#f8f9fa',
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 12,
             marginBottom: 10,
         },
         standingInfo: {
@@ -325,12 +354,12 @@ const LeagueDetailScreen = () => {
             backgroundColor: '#CD7F32',
         },
         otherPlace: {
-            backgroundColor: '#e0e0e0',
+            backgroundColor: currentColors.borderMedium,
         },
         standingPositionText: {
             fontSize: 14,
             fontWeight: 'bold',
-            color: '#333',
+            color: currentColors.textInverse,
         },
         standingDetails: {
             flex: 1,
@@ -338,11 +367,11 @@ const LeagueDetailScreen = () => {
         standingName: {
             fontSize: 16,
             fontWeight: 'bold',
-            color: '#333',
+            color: currentColors.textPrimary,
         },
         standingStats: {
             fontSize: 12,
-            color: '#666',
+            color: currentColors.textSecondary,
             marginTop: 2,
         },
         standingPoints: {
@@ -351,11 +380,11 @@ const LeagueDetailScreen = () => {
         standingPointsText: {
             fontSize: 16,
             fontWeight: 'bold',
-            color: '#333',
+            color: currentColors.textPrimary,
         },
         standingAccuracy: {
             fontSize: 12,
-            color: '#666',
+            color: currentColors.textSecondary,
             marginTop: 2,
         },
         emptyText: {
@@ -377,7 +406,9 @@ const LeagueDetailScreen = () => {
         headerButton: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundTertiary,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             paddingHorizontal: spacing.sm,
             paddingVertical: spacing.xs,
             borderRadius: borderRadius.md,
@@ -389,14 +420,16 @@ const LeagueDetailScreen = () => {
             color: currentColors.textSecondary,
         },
         statusBadge: {
-            backgroundColor: currentColors.successLight,
-            borderRadius: borderRadius.sm,
-            paddingVertical: spacing.xs,
-            paddingHorizontal: spacing.sm,
+            backgroundColor: 'rgba(16,185,129,0.12)',
+            borderWidth: 1,
+            borderColor: 'rgba(16,185,129,0.22)',
+            borderRadius: 999,
+            paddingVertical: 2,
+            paddingHorizontal: 10,
         },
         statusText: {
-            color: currentColors.success,
-            fontSize: 12,
+            color: '#34d399',
+            fontSize: 11,
             fontWeight: '600',
         },
         codeBadge: {
@@ -480,14 +513,16 @@ const LeagueDetailScreen = () => {
             zIndex: 10,
         },
         settingsModal: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: borderRadius.lg,
+            backgroundColor: currentColors.modalBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: spacing.lg,
             width: '90%',
             maxWidth: 400,
             maxHeight: '90%',
             minHeight: 200,
-            ...shadows.lg,
+            ...shadows.glass,
         },
         modalHeader: {
             flexDirection: 'row',
@@ -522,7 +557,9 @@ const LeagueDetailScreen = () => {
         visibilityOptions: {
             flexDirection: 'row',
             justifyContent: 'space-around',
-            backgroundColor: currentColors.backgroundTertiary,
+            backgroundColor: currentColors.inputBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.md,
             paddingVertical: spacing.sm,
             paddingHorizontal: spacing.sm,
@@ -567,13 +604,13 @@ const LeagueDetailScreen = () => {
             color: currentColors.textSecondary,
         },
         textInput: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: borderRadius.md,
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.sm,
             marginBottom: spacing.md,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             fontSize: 16,
             color: currentColors.textPrimary,
         },
@@ -599,13 +636,15 @@ const LeagueDetailScreen = () => {
             fontWeight: '600',
         },
         confirmationModal: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: borderRadius.lg,
+            backgroundColor: currentColors.modalBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: spacing.lg,
             width: '90%',
             maxWidth: 400,
             alignItems: 'center',
-            ...shadows.lg,
+            ...shadows.glass,
         },
         confirmationIcon: {
             marginBottom: spacing.md,
@@ -768,16 +807,18 @@ const LeagueDetailScreen = () => {
     // Validate leagueId after all hooks
     if (!leagueId || isNaN(leagueId)) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <View style={styles.errorCard}>
-                    <Ionicons name="alert-circle" size={48} color={currentColors.error} />
-                    <Text style={styles.errorTitle}>Invalid League</Text>
-                    <Text style={styles.errorMessage}>The league ID is invalid. Please try again.</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
-                        <Text style={styles.retryButtonText}>Go Back</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
+            <GlassBackground>
+                <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                    <View style={styles.errorCard}>
+                        <Ionicons name="alert-circle" size={48} color={currentColors.error} />
+                        <Text style={styles.errorTitle}>Invalid League</Text>
+                        <Text style={styles.errorMessage}>The league ID is invalid. Please try again.</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+                            <Text style={styles.retryButtonText}>Go Back</Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </GlassBackground>
         );
     }
 
@@ -1127,36 +1168,43 @@ const LeagueDetailScreen = () => {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color={currentColors.primary} />
-            </SafeAreaView>
+            <GlassBackground>
+                <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
+                    <ActivityIndicator size="large" color={currentColors.primary} />
+                </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
-                <View style={styles.errorCard}>
-                    <Ionicons name="cloud-offline" size={48} color={currentColors.error} />
-                    <Text style={styles.errorTitle}>Connection Error</Text>
-                    <Text style={styles.errorMessage}>{error}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
+            <GlassBackground>
+                <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
+                    <View style={styles.errorCard}>
+                        <Ionicons name="cloud-offline" size={48} color={currentColors.error} />
+                        <Text style={styles.errorTitle}>Connection Error</Text>
+                        <Text style={styles.errorMessage}>{error}</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+                            <Text style={styles.retryButtonText}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (!league) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <Text style={styles.errorText}>League not found</Text>
-            </SafeAreaView>
+            <GlassBackground>
+                <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                    <Text style={styles.errorText}>League not found</Text>
+                </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <ScrollView style={styles.scrollView}>
                 {/* Header */}
@@ -1215,16 +1263,16 @@ const LeagueDetailScreen = () => {
                                 <Text style={styles.secondaryButtonText}>Sign Up</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.secondaryButton}
+                                style={styles.ghostButton}
                                 onPress={() => router.push(`/league/${leagueId}/standings`)}
                             >
-                                <Text style={styles.secondaryButtonText}>View Standings</Text>
+                                <Text style={styles.ghostButtonText}>View Standings</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.secondaryButton}
+                                style={styles.ghostButton}
                                 onPress={() => router.push(`/race-results?leagueId=${leagueId}`)}
                             >
-                                <Text style={styles.secondaryButtonText}>View Results</Text>
+                                <Text style={styles.ghostButtonText}>View Results</Text>
                             </TouchableOpacity>
                             {isChatFeatureEnabled && (
                                 <TouchableOpacity
@@ -1258,16 +1306,16 @@ const LeagueDetailScreen = () => {
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity
-                                style={styles.secondaryButton}
+                                style={styles.ghostButton}
                                 onPress={() => router.push(`/league/${leagueId}/standings`)}
                             >
-                                <Text style={styles.secondaryButtonText}>View Standings</Text>
+                                <Text style={styles.ghostButtonText}>View Standings</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.secondaryButton}
+                                style={styles.ghostButton}
                                 onPress={() => router.push(`/race-results?leagueId=${leagueId}`)}
                             >
-                                <Text style={styles.secondaryButtonText}>View Results</Text>
+                                <Text style={styles.ghostButtonText}>View Results</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1811,6 +1859,7 @@ const LeagueDetailScreen = () => {
                 </View>
             )}
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

@@ -16,7 +16,10 @@ import { useAuth } from '../src/context/AuthContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import Colors from '../constants/Colors';
+import { useTheme } from '../src/context/ThemeContext';
+import { lightColors, darkColors } from '../src/constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
+import GlassBackground from '../src/components/GlassBackground';
 
 const ResetPasswordScreen = () => {
     const [newPassword, setNewPassword] = useState('');
@@ -31,6 +34,8 @@ const ResetPasswordScreen = () => {
 
     const { resetPassword, forgotPassword } = useAuth();
     const { showToast } = useSimpleToast();
+    const { resolvedTheme } = useTheme();
+    const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
     const { token } = useLocalSearchParams<{ token: string }>();
 
     const scrollViewRef = useRef<ScrollView>(null);
@@ -123,72 +128,77 @@ const ResetPasswordScreen = () => {
 
     if (isSuccess) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <GlassBackground>
+            <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <View style={styles.successContainer}>
                     {/* Success Icon */}
                     <View style={styles.successIconContainer}>
-                        <Ionicons name="checkmark-circle" size={80} color={Colors.light.success} />
+                        <Ionicons name="checkmark-circle" size={80} color={currentColors.success} />
                     </View>
 
                     {/* Success Message */}
-                    <Text style={styles.successTitle}>Password Reset Complete!</Text>
-                    <Text style={styles.successMessage}>
+                    <Text style={[styles.successTitle, { color: currentColors.textPrimary }]}>Password Reset Complete!</Text>
+                    <Text style={[styles.successMessage, { color: currentColors.textSecondary }]}>
                         Your password has been successfully reset. You can now sign in with your new password.
                     </Text>
 
                     {/* Action Button */}
                     <TouchableOpacity
-                        style={styles.primaryButton}
+                        style={[styles.primaryButton, { backgroundColor: currentColors.primary }]}
                         onPress={handleGoToLogin}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.primaryButtonText}>Go to Sign In</Text>
+                        <Text style={[styles.primaryButtonText, { color: currentColors.textInverse }]}>Go to Sign In</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (error && (error.includes('expired') || error.includes('invalid'))) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <GlassBackground>
+            <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <View style={styles.errorContainer}>
                     {/* Error Icon */}
                     <View style={styles.errorIconContainer}>
-                        <Ionicons name="time-outline" size={80} color={Colors.light.warning} />
+                        <Ionicons name="time-outline" size={80} color={currentColors.warning} />
                     </View>
 
                     {/* Error Message */}
-                    <Text style={styles.errorTitle}>Link Expired</Text>
-                    <Text style={styles.errorMessage}>
+                    <Text style={[styles.errorTitle, { color: currentColors.textPrimary }]}>Link Expired</Text>
+                    <Text style={[styles.errorMessage, { color: currentColors.textSecondary }]}>
                         This password reset link has expired. Password reset links are valid for 4 hours for security reasons.
                     </Text>
 
                     {/* Action Buttons */}
                     <View style={styles.actionButtonsContainer}>
                         <TouchableOpacity
-                            style={styles.primaryButton}
+                            style={[styles.primaryButton, { backgroundColor: currentColors.primary }]}
                             onPress={handleRequestNewLink}
                             activeOpacity={0.8}
                         >
-                            <Text style={styles.primaryButtonText}>Request New Link</Text>
+                            <Text style={[styles.primaryButtonText, { color: currentColors.textInverse }]}>Request New Link</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={styles.secondaryButton}
+                            style={[styles.secondaryButton, { backgroundColor: currentColors.buttonSecondaryBg, borderColor: currentColors.buttonSecondaryBorder }]}
                             onPress={handleGoToLogin}
                             activeOpacity={0.8}
                         >
-                            <Text style={styles.secondaryButtonText}>Back to Sign In</Text>
+                            <Text style={[styles.secondaryButtonText, { color: currentColors.buttonSecondaryText }]}>Back to Sign In</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <GlassBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -205,29 +215,30 @@ const ResetPasswordScreen = () => {
                     {/* Logo and Branding Section */}
                     <View style={styles.logoSection}>
                         <View style={styles.logoContainer}>
-                            <View style={styles.logo}>
-                                <Text style={styles.logoText}>FP</Text>
-                                <View style={styles.logoAccent} />
+                            <View style={[styles.logo, { backgroundColor: currentColors.primary }]}>
+                                <Text style={[styles.logoText, { color: currentColors.textInverse }]}>FP</Text>
+                                <View style={[styles.logoAccent, { backgroundColor: currentColors.warning }]} />
                             </View>
                         </View>
-                        <Text style={styles.appName}>Create New Password</Text>
-                        <Text style={styles.tagline}>Enter your new secure password</Text>
+                        <Text style={[styles.appName, { color: currentColors.textPrimary }]}>Create New Password</Text>
+                        <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>Enter your new secure password</Text>
                     </View>
 
                     {/* Form Section */}
                     <View style={styles.formSection}>
                         {/* New Password Field */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>New Password</Text>
+                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>New Password</Text>
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     ref={newPasswordInputRef}
                                     style={[
                                         styles.passwordInput,
+                                        { backgroundColor: currentColors.inputBackground, borderColor: currentColors.glassBorder, color: currentColors.textPrimary },
                                         newPasswordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Enter your new password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     onFocus={() => setNewPasswordFocused(true)}
@@ -247,7 +258,7 @@ const ResetPasswordScreen = () => {
                                     <Ionicons
                                         name={showNewPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.gray500}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -255,16 +266,17 @@ const ResetPasswordScreen = () => {
 
                         {/* Confirm Password Field */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>Confirm Password</Text>
+                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Confirm Password</Text>
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     ref={confirmPasswordInputRef}
                                     style={[
                                         styles.passwordInput,
+                                        { backgroundColor: currentColors.inputBackground, borderColor: currentColors.glassBorder, color: currentColors.textPrimary },
                                         confirmPasswordFocused && styles.inputFocused,
                                     ]}
                                     placeholder="Confirm your new password"
-                                    placeholderTextColor={Colors.light.textSecondary}
+                                    placeholderTextColor={currentColors.textSecondary}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     onFocus={() => setConfirmPasswordFocused(true)}
@@ -284,15 +296,15 @@ const ResetPasswordScreen = () => {
                                     <Ionicons
                                         name={showConfirmPassword ? 'eye-off' : 'eye'}
                                         size={20}
-                                        color={Colors.light.gray500}
+                                        color={currentColors.textSecondary}
                                     />
                                 </TouchableOpacity>
                             </View>
                         </View>
 
                         {/* Password Requirements */}
-                        <View style={styles.requirementsContainer}>
-                            <Text style={styles.requirementsTitle}>Password must contain:</Text>
+                        <View style={[styles.requirementsContainer, { backgroundColor: currentColors.inputBackground, borderWidth: 1, borderColor: currentColors.glassBorder }]}>
+                            <Text style={[styles.requirementsTitle, { color: currentColors.textPrimary }]}>Password must contain:</Text>
                             {[
                                 { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
                                 { test: (p: string) => /[a-z]/.test(p), label: 'One lowercase letter' },
@@ -306,11 +318,12 @@ const ResetPasswordScreen = () => {
                                         <Ionicons
                                             name={isMet ? 'checkmark-circle' : 'ellipse-outline'}
                                             size={16}
-                                            color={isMet ? Colors.light.success : Colors.light.textSecondary}
+                                            color={isMet ? currentColors.success : currentColors.textSecondary}
                                         />
                                         <Text style={[
                                             styles.requirementText,
-                                            isMet && styles.requirementTextMet
+                                            { color: currentColors.textSecondary },
+                                            isMet && { color: currentColors.success }
                                         ]}>
                                             {req.label}
                                         </Text>
@@ -321,15 +334,15 @@ const ResetPasswordScreen = () => {
 
                         {/* Reset Password Button */}
                         <TouchableOpacity
-                            style={[styles.resetButton, isLoading && styles.buttonDisabled]}
+                            style={[styles.resetButton, { backgroundColor: currentColors.primary }, isLoading && styles.buttonDisabled]}
                             onPress={handleResetPassword}
                             activeOpacity={0.8}
                             disabled={isLoading}
                         >
                             {isLoading ? (
-                                <ActivityIndicator size="small" color={Colors.light.textInverse} />
+                                <ActivityIndicator size="small" color={currentColors.textInverse} />
                             ) : (
-                                <Text style={styles.resetButtonText}>Reset Password</Text>
+                                <Text style={[styles.resetButtonText, { color: currentColors.textInverse }]}>Reset Password</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -337,19 +350,19 @@ const ResetPasswordScreen = () => {
                     {/* Footer Links */}
                     <View style={styles.footerSection}>
                         <TouchableOpacity onPress={handleGoToLogin}>
-                            <Text style={styles.footerLink}>Back to Sign In</Text>
+                            <Text style={[styles.footerLink, { color: currentColors.primary }]}>Back to Sign In</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.backgroundSecondary, // White background
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -373,7 +386,6 @@ const styles = StyleSheet.create({
     logo: {
         width: 80,
         height: 80,
-        backgroundColor: Colors.light.primary,
         borderRadius: borderRadius.lg,
         justifyContent: 'center',
         alignItems: 'center',
@@ -383,7 +395,6 @@ const styles = StyleSheet.create({
     logoText: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: Colors.light.textInverse,
     },
     logoAccent: {
         position: 'absolute',
@@ -391,18 +402,15 @@ const styles = StyleSheet.create({
         top: 8,
         width: 12,
         height: 12,
-        backgroundColor: Colors.light.warning,
         borderRadius: 2,
     },
     appName: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
         marginBottom: spacing.xs,
     },
     tagline: {
         fontSize: 16,
-        color: Colors.light.textSecondary,
         textAlign: 'center',
     },
     formSection: {
@@ -414,25 +422,20 @@ const styles = StyleSheet.create({
     inputLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: Colors.light.textPrimary,
         marginBottom: spacing.sm,
     },
     passwordContainer: {
         position: 'relative',
     },
     passwordInput: {
-        backgroundColor: Colors.light.backgroundSecondary, // White background
         borderWidth: 1,
-        borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         paddingRight: 50,
         fontSize: 16,
-        color: Colors.light.textPrimary,
     },
     inputFocused: {
-        borderColor: Colors.light.primary,
         borderWidth: 2,
     },
     eyeButton: {
@@ -443,7 +446,6 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
     },
     requirementsContainer: {
-        backgroundColor: Colors.light.backgroundSecondary,
         borderRadius: borderRadius.md,
         padding: spacing.md,
         marginBottom: spacing.lg,
@@ -451,7 +453,6 @@ const styles = StyleSheet.create({
     requirementsTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: Colors.light.textPrimary,
         marginBottom: spacing.sm,
     },
     requirementItem: {
@@ -461,14 +462,10 @@ const styles = StyleSheet.create({
     },
     requirementText: {
         fontSize: 13,
-        color: Colors.light.textSecondary,
         marginLeft: spacing.sm,
     },
-    requirementTextMet: {
-        color: Colors.light.success,
-    },
+    requirementTextMet: {},
     resetButton: {
-        backgroundColor: Colors.light.primary,
         borderRadius: borderRadius.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
@@ -477,7 +474,6 @@ const styles = StyleSheet.create({
         ...shadows.sm,
     },
     resetButtonText: {
-        color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -489,7 +485,6 @@ const styles = StyleSheet.create({
     },
     footerLink: {
         fontSize: 14,
-        color: Colors.light.primary,
         fontWeight: '600',
     },
     // Success and Error screen styles
@@ -514,20 +509,17 @@ const styles = StyleSheet.create({
     successTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
         marginBottom: spacing.md,
         textAlign: 'center',
     },
     errorTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.light.textPrimary,
         marginBottom: spacing.md,
         textAlign: 'center',
     },
     successMessage: {
         fontSize: 16,
-        color: Colors.light.textSecondary,
         textAlign: 'center',
         marginBottom: spacing.xl,
         lineHeight: 22,
@@ -535,7 +527,6 @@ const styles = StyleSheet.create({
     },
     errorMessage: {
         fontSize: 16,
-        color: Colors.light.textSecondary,
         textAlign: 'center',
         marginBottom: spacing.xl,
         lineHeight: 22,
@@ -546,7 +537,6 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     primaryButton: {
-        backgroundColor: Colors.light.primary,
         borderRadius: borderRadius.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
@@ -554,21 +544,17 @@ const styles = StyleSheet.create({
         ...shadows.sm,
     },
     primaryButtonText: {
-        color: Colors.light.textInverse,
         fontSize: 16,
         fontWeight: 'bold',
     },
     secondaryButton: {
-        backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: Colors.light.borderMedium,
         borderRadius: borderRadius.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         alignItems: 'center',
     },
     secondaryButtonText: {
-        color: Colors.light.textPrimary,
         fontSize: 16,
         fontWeight: '600',
     },

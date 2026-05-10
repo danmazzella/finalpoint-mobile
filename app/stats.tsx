@@ -15,6 +15,8 @@ import { useTheme } from '../src/context/ThemeContext';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { statsAPI, seasonsAPI } from '../src/services/apiService';
 import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 // import { createThemeStyles } from '../src/styles/universalStyles';
 
 interface DriverPositionStats {
@@ -40,7 +42,7 @@ const StatsScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: {
             flex: 1,
@@ -54,7 +56,8 @@ const StatsScreen = () => {
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
+            backgroundColor: currentColors.glassBackground,
         },
         backButton: {
             padding: 8,
@@ -77,15 +80,13 @@ const StatsScreen = () => {
             padding: 16,
         },
         positionSelector: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: 16,
             marginBottom: 16,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
+            ...shadows.glass,
         },
         selectorTitle: {
             fontSize: 18,
@@ -160,14 +161,12 @@ const StatsScreen = () => {
             color: currentColors.textSecondary,
         },
         resultsContainer: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: 16,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
+            ...shadows.glass,
         },
         resultsHeader: {
             flexDirection: 'row',
@@ -190,7 +189,7 @@ const StatsScreen = () => {
             marginLeft: 8,
         },
         driverCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: 8,
             padding: 12,
             marginBottom: 8,
@@ -417,6 +416,7 @@ const StatsScreen = () => {
     );
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             {/* Header */}
             <View style={styles.header}>
@@ -544,6 +544,7 @@ const StatsScreen = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

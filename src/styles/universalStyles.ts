@@ -19,18 +19,19 @@ export const createThemeStyles = (currentColors: any) => StyleSheet.create({
 
     // Common card/section styles
     card: {
-        backgroundColor: currentColors.cardBackground,
-        borderRadius: 8,
+        backgroundColor: currentColors.glassBackground,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: currentColors.borderLight,
+        borderColor: currentColors.glassBorder,
         padding: 16,
         marginVertical: 8,
     },
     section: {
-        backgroundColor: currentColors.cardBackground,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: currentColors.borderLight,
+        backgroundColor: currentColors.glassBackground,
+        borderWidth: 1,
+        borderColor: currentColors.glassBorder,
+        borderRadius: 16,
+        marginHorizontal: 16,
         marginTop: 16,
     },
 
@@ -99,10 +100,10 @@ export const createThemeStyles = (currentColors: any) => StyleSheet.create({
 
     // Common input styles
     input: {
-        backgroundColor: currentColors.cardBackground,
+        backgroundColor: currentColors.inputBackground,
         borderWidth: 1,
-        borderColor: currentColors.borderMedium,
-        borderRadius: 8,
+        borderColor: currentColors.glassBorder,
+        borderRadius: 10,
         padding: 12,
         fontSize: 16,
         color: currentColors.textPrimary,
@@ -122,8 +123,8 @@ export const createThemeStyles = (currentColors: any) => StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: currentColors.borderLight,
-        backgroundColor: currentColors.cardBackground,
+        borderBottomColor: currentColors.glassBorder,
+        backgroundColor: 'transparent',
     },
     listItemText: {
         fontSize: 16,
@@ -133,11 +134,11 @@ export const createThemeStyles = (currentColors: any) => StyleSheet.create({
 
     // Common header styles
     header: {
-        backgroundColor: currentColors.cardBackground,
+        backgroundColor: currentColors.glassBackground,
         padding: 16,
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderBottomColor: currentColors.borderLight,
+        borderBottomColor: currentColors.glassBorder,
     },
 
     // Common footer styles

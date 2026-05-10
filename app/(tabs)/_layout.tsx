@@ -62,6 +62,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: currentColors.textSecondary,
         headerShown: false,
         tabBarButton: HapticTab,
+        sceneStyle: { backgroundColor: currentColors.pageBackground },
         tabBarStyle: Platform.select({
           ios: {
             borderTopWidth: 2,

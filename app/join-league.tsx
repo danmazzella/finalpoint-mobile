@@ -15,6 +15,8 @@ import { leaguesAPI } from '../src/services/apiService';
 import { useSimpleToast } from '../src/context/SimpleToastContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 
 const JoinLeagueScreen = () => {
     const { showToast } = useSimpleToast();
@@ -60,17 +62,17 @@ const JoinLeagueScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
             paddingTop: Platform.OS === 'android' ? 0 : 0,
         },
         header: {
             flexDirection: 'row',
             alignItems: 'center',
             padding: 20,
-            minHeight: 96, // 24dp according to Material Design
-            backgroundColor: currentColors.cardBackground,
+            minHeight: 96,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             padding: 8,
@@ -101,14 +103,12 @@ const JoinLeagueScreen = () => {
             fontWeight: '500',
         },
         formContainer: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: 16,
             padding: 24,
-            shadowColor: currentColors.textPrimary,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
+            ...shadows.glass,
         },
         inputContainer: {
             marginBottom: 24,
@@ -122,11 +122,11 @@ const JoinLeagueScreen = () => {
         },
         input: {
             borderWidth: 2,
-            borderColor: currentColors.primary,
+            borderColor: currentColors.glassBorder,
             borderRadius: 8,
             padding: 12,
             fontSize: 16,
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.inputBackground,
             textAlign: 'center',
             letterSpacing: 2,
             fontWeight: 'bold',
@@ -166,6 +166,7 @@ const JoinLeagueScreen = () => {
     });
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
                 <TouchableOpacity
@@ -220,6 +221,7 @@ const JoinLeagueScreen = () => {
                 </View>
             </View>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

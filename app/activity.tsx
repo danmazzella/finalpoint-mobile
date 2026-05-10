@@ -17,8 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
-import { spacing, borderRadius } from '../utils/styles';
+import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import GlassBackground from '../src/components/GlassBackground';
 
 const ActivityScreen = () => {
     const params = useLocalSearchParams();
@@ -78,14 +79,14 @@ const ActivityScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
             paddingTop: Platform.OS === 'android' ? 0 : 0,
         },
         loadingContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         loadingText: {
             marginTop: 16,
@@ -96,7 +97,7 @@ const ActivityScreen = () => {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
             padding: 20,
         },
         errorTitle: {
@@ -123,12 +124,12 @@ const ActivityScreen = () => {
             fontWeight: '600',
         },
         header: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
             minHeight: 64,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -150,12 +151,10 @@ const ActivityScreen = () => {
             paddingRight: spacing.lg,
             paddingVertical: spacing.sm,
         },
-        content: {
-            flex: 1,
-            backgroundColor: currentColors.cardBackground,
-            margin: spacing.md,
-            borderRadius: borderRadius.lg,
-            padding: spacing.lg,
+        listContent: {
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+            paddingBottom: 100,
         },
         description: {
             fontSize: 16,
@@ -184,16 +183,14 @@ const ActivityScreen = () => {
             flexDirection: 'row',
             alignItems: 'flex-start',
             paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            paddingHorizontal: 12,
+            marginBottom: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 12,
         },
         activityAvatar: {
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: currentColors.backgroundSecondary,
-            justifyContent: 'center',
-            alignItems: 'center',
             marginRight: 12,
         },
         avatarText: {
@@ -393,15 +390,18 @@ const ActivityScreen = () => {
 
     if (loading) {
         return (
+            <GlassBackground>
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={currentColors.primary} />
                 <Text style={styles.loadingText}>Loading activities...</Text>
             </View>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
+            <GlassBackground>
             <View style={styles.errorContainer}>
                 <Text style={styles.errorTitle}>Connection Error</Text>
                 <Text style={styles.errorMessage}>{error}</Text>
@@ -412,10 +412,12 @@ const ActivityScreen = () => {
                     <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
             </View>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
                 <TouchableOpacity
@@ -430,36 +432,37 @@ const ActivityScreen = () => {
                 </View>
             </View>
 
-            <View style={styles.content}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>All Activity</Text>
-                    <Text style={styles.sectionSubtitle}>Complete history of all league activity</Text>
-                </View>
-
-                <FlatList
-                    data={activities}
-                    renderItem={renderActivityItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    style={styles.list}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[currentColors.primary]}
-                            tintColor={currentColors.primary}
-                        />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyTitle}>No Activity Yet</Text>
-                            <Text style={styles.emptyMessage}>
-                                When members make picks or join the league, activity will appear here.
-                            </Text>
-                        </View>
-                    }
-                />
-            </View>
+            <FlatList
+                data={activities}
+                renderItem={renderActivityItem}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+                ListHeaderComponent={
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>All Activity</Text>
+                        <Text style={styles.sectionSubtitle}>Complete history of all league activity</Text>
+                    </View>
+                }
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[currentColors.primary]}
+                        tintColor={currentColors.primary}
+                    />
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyTitle}>No Activity Yet</Text>
+                        <Text style={styles.emptyMessage}>
+                            When members make picks or join the league, activity will appear here.
+                        </Text>
+                    </View>
+                }
+            />
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

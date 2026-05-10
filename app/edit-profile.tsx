@@ -18,6 +18,7 @@ import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
+import GlassBackground from '../src/components/GlassBackground';
 
 const EditProfileScreen = () => {
     const { user, updateProfile } = useAuth();
@@ -77,9 +78,9 @@ const EditProfileScreen = () => {
             justifyContent: 'space-between',
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             minHeight: 64,
         },
         backButton: {
@@ -112,9 +113,9 @@ const EditProfileScreen = () => {
             color: currentColors.textPrimary,
             paddingVertical: spacing.md,
             paddingHorizontal: spacing.md,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.inputBackground,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.md,
         },
         hint: {
@@ -140,7 +141,8 @@ const EditProfileScreen = () => {
     });
 
     return (
-        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+        <GlassBackground>
+        <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <ScrollView style={universalStyles.scrollView}>
                 {/* Header */}
                 <View style={styles.header}>
@@ -190,6 +192,7 @@ const EditProfileScreen = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

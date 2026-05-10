@@ -50,6 +50,20 @@ export const shadows = {
     shadowRadius: 16,
     elevation: 8,
   },
+  glass: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.30,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  glassLight: {
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 };
 
 // Common text styles

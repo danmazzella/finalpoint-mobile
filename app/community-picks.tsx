@@ -17,6 +17,8 @@ import { router } from 'expo-router';
 import { useTheme } from '../src/context/ThemeContext';
 import { communityPicksAPI, seasonsAPI } from '../src/services/apiService';
 import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 
 interface CommunityWeek {
     weekNumber: number;
@@ -82,11 +84,11 @@ const Dropdown = ({ label, value, options, onSelect, loading, placeholder, color
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     borderWidth: 1,
-                    borderColor: colors.borderLight,
+                    borderColor: colors.glassBorder,
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 10,
-                    backgroundColor: colors.backgroundSecondary,
+                    backgroundColor: colors.inputBackground,
                 }}
             >
                 {loading ? (
@@ -108,11 +110,13 @@ const Dropdown = ({ label, value, options, onSelect, loading, placeholder, color
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        backgroundColor: colors.cardBackground,
+                        backgroundColor: colors.glassBackground,
                         borderTopLeftRadius: 16,
                         borderTopRightRadius: 16,
                         maxHeight: '60%',
                         paddingBottom: 32,
+                        borderWidth: 1,
+                        borderColor: colors.glassBorder,
                     }}>
                         <View style={{
                             flexDirection: 'row',
@@ -121,7 +125,7 @@ const Dropdown = ({ label, value, options, onSelect, loading, placeholder, color
                             paddingHorizontal: 16,
                             paddingVertical: 14,
                             borderBottomWidth: 1,
-                            borderBottomColor: colors.borderLight,
+                            borderBottomColor: colors.glassBorder,
                         }}>
                             <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }}>{label}</Text>
                             <TouchableOpacity onPress={() => setOpen(false)}>
@@ -143,7 +147,7 @@ const Dropdown = ({ label, value, options, onSelect, loading, placeholder, color
                                             paddingHorizontal: 16,
                                             paddingVertical: 14,
                                             borderBottomWidth: 1,
-                                            borderBottomColor: colors.borderLight,
+                                            borderBottomColor: colors.glassBorder,
                                             backgroundColor: isSelected ? (colors.primary + '15') : 'transparent',
                                         }}
                                     >
@@ -167,7 +171,7 @@ const CommunityPicksScreen = () => {
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: currentColors.backgroundPrimary },
+        container: { flex: 1, backgroundColor: 'transparent' },
         scrollView: { flex: 1 },
         scrollContent: { paddingBottom: 100 },
         header: {
@@ -176,22 +180,21 @@ const CommunityPicksScreen = () => {
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
+            backgroundColor: currentColors.glassBackground,
         },
         backButton: { padding: 8, marginRight: 8 },
         headerTitle: { fontSize: 20, fontWeight: '700', color: currentColors.textPrimary, flex: 1 },
         controls: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             marginHorizontal: 12,
             marginTop: 12,
             marginBottom: 8,
-            borderRadius: 12,
+            borderRadius: 16,
             padding: 14,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 2,
+            ...shadows.glass,
         },
         eventToggle: {
             flexDirection: 'row',
@@ -213,49 +216,47 @@ const CommunityPicksScreen = () => {
             marginBottom: 8,
             paddingHorizontal: 12,
             paddingVertical: 8,
-            backgroundColor: '#f0fdf4',
+            backgroundColor: currentColors.glassBackground,
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: '#bbf7d0',
+            borderColor: currentColors.glassBorder,
             gap: 8,
         },
-        scoredBannerText: { fontSize: 13, fontWeight: '500', color: '#15803d', flex: 1 },
+        scoredBannerText: { fontSize: 13, fontWeight: '500', color: currentColors.success, flex: 1 },
         positionCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             marginHorizontal: 12,
             marginBottom: 10,
-            borderRadius: 12,
+            borderRadius: 16,
             overflow: 'hidden',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 2,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         positionHeader: {
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 14,
             paddingVertical: 10,
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.inputBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         positionLabel: { fontSize: 15, fontWeight: '700', color: currentColors.textPrimary },
         positionSubLabel: { fontSize: 13, color: currentColors.textSecondary, marginLeft: 8 },
         positionBody: { padding: 12, gap: 8 },
-        driverRow: { borderRadius: 8, padding: 10, backgroundColor: currentColors.backgroundSecondary },
-        driverRowCorrect: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0' },
+        driverRow: { borderRadius: 8, padding: 10, backgroundColor: currentColors.glassBackground },
+        driverRowCorrect: { backgroundColor: currentColors.glassBackground, borderWidth: 1, borderColor: currentColors.glassBorder },
         driverRowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
         driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
         driverName: { fontSize: 14, fontWeight: '600', color: currentColors.textPrimary },
-        driverNameCorrect: { color: '#15803d' },
+        driverNameCorrect: { color: currentColors.success },
         driverTeam: { fontSize: 12, color: currentColors.textSecondary },
         percentageText: { fontSize: 14, fontWeight: '700', color: currentColors.textPrimary, marginLeft: 8 },
-        percentageTextCorrect: { color: '#15803d' },
+        percentageTextCorrect: { color: currentColors.success },
         barTrack: { height: 8, backgroundColor: currentColors.borderLight, borderRadius: 4, overflow: 'hidden' },
         barFill: { height: 8, borderRadius: 4, backgroundColor: currentColors.primary },
-        barFillCorrect: { backgroundColor: '#22c55e' },
+        barFillCorrect: { backgroundColor: currentColors.success },
         correctSummary: { marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: currentColors.borderLight },
         correctSummaryText: { fontSize: 12, color: currentColors.textSecondary },
         emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 24 },
@@ -345,6 +346,7 @@ const CommunityPicksScreen = () => {
     };
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -399,7 +401,7 @@ const CommunityPicksScreen = () => {
 
                 {stats?.isScored && (
                     <View style={styles.scoredBanner}>
-                        <Ionicons name="checkmark-circle" size={18} color="#15803d" />
+                        <Ionicons name="checkmark-circle" size={18} color={currentColors.success} />
                         <Text style={styles.scoredBannerText}>Results are in — correct picks are highlighted</Text>
                     </View>
                 )}
@@ -429,7 +431,7 @@ const CommunityPicksScreen = () => {
                                             <View style={styles.driverRowTop}>
                                                 <View style={styles.driverInfo}>
                                                     {driver.isCorrect && (
-                                                        <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                                                        <Ionicons name="checkmark-circle" size={16} color={currentColors.success} />
                                                     )}
                                                     <View style={{ flex: 1 }}>
                                                         <Text style={[styles.driverName, driver.isCorrect && styles.driverNameCorrect]} numberOfLines={1}>
@@ -468,6 +470,7 @@ const CommunityPicksScreen = () => {
                 )}
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

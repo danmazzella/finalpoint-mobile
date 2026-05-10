@@ -18,8 +18,9 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { router } from 'expo-router';
-import { spacing, borderRadius } from '../utils/styles';
+import { spacing, borderRadius, shadows } from '../utils/styles';
 import { contactConfig } from '../config/environment';
+import GlassBackground from '../src/components/GlassBackground';
 
 const DeleteAccountScreen = () => {
     const { user, deleteAccount } = useAuth();
@@ -111,8 +112,8 @@ const DeleteAccountScreen = () => {
             alignItems: 'center',
             padding: spacing.lg,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
-            backgroundColor: currentColors.cardBackground,
+            borderBottomColor: currentColors.glassBorder,
+            backgroundColor: currentColors.glassBackground,
         },
         backButton: {
             marginRight: spacing.md,
@@ -183,12 +184,13 @@ const DeleteAccountScreen = () => {
             marginBottom: spacing.xs,
         },
         accountInfoContainer: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: borderRadius.md,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: spacing.lg,
             marginBottom: spacing.lg,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         accountInfoTitle: {
             fontSize: 18,
@@ -228,12 +230,13 @@ const DeleteAccountScreen = () => {
             color: currentColors.textSecondary,
         },
         formContainer: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: borderRadius.md,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: spacing.lg,
             marginBottom: spacing.lg,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         formTitle: {
             fontSize: 18,
@@ -257,12 +260,12 @@ const DeleteAccountScreen = () => {
         },
         textInput: {
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.md,
             padding: spacing.md,
             fontSize: 16,
             color: currentColors.textPrimary,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: currentColors.inputBackground,
         },
         inputHint: {
             fontSize: 12,
@@ -279,7 +282,9 @@ const DeleteAccountScreen = () => {
         },
         cancelButton: {
             flex: 1,
-            backgroundColor: currentColors.borderLight,
+            backgroundColor: currentColors.buttonSecondaryBg,
+            borderWidth: 1,
+            borderColor: currentColors.buttonSecondaryBorder,
             borderRadius: borderRadius.md,
             padding: spacing.md,
             alignItems: 'center',
@@ -290,7 +295,7 @@ const DeleteAccountScreen = () => {
         cancelButtonText: {
             fontSize: 16,
             fontWeight: 'bold',
-            color: currentColors.textSecondary,
+            color: currentColors.buttonSecondaryText,
             textAlign: 'center',
             textAlignVertical: 'center',
         },
@@ -315,10 +320,13 @@ const DeleteAccountScreen = () => {
             textAlignVertical: 'center',
         },
         helpContainer: {
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: borderRadius.md,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: spacing.lg,
             marginTop: spacing.lg,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         helpTitle: {
             fontSize: 16,
@@ -344,7 +352,8 @@ const DeleteAccountScreen = () => {
     });
 
     return (
-        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+        <GlassBackground>
+        <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <ScrollView style={universalStyles.scrollView}>
                 {/* Header */}
                 <View style={styles.header}>
@@ -480,6 +489,7 @@ const DeleteAccountScreen = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

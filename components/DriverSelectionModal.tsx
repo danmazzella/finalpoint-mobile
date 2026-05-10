@@ -6,13 +6,14 @@ import {
     Modal,
     TouchableOpacity,
     ScrollView,
-    Dimensions,
-    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Driver } from '../src/types';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 
 interface DriverSelectionModalProps {
     visible: boolean;
@@ -23,10 +24,8 @@ interface DriverSelectionModalProps {
     onDriverSelect: (driver: Driver) => void;
     disabled?: boolean;
     submitting?: boolean;
-    userPicks?: Map<number, number>; // position -> driverId mapping
+    userPicks?: Map<number, number>;
 }
-
-const { height: screenHeight } = Dimensions.get('window');
 
 export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
     visible,
@@ -40,8 +39,6 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
     userPicks,
 }) => {
     const { resolvedTheme } = useTheme();
-
-    // Get current theme colors
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
 
     const handleDriverPress = (driver: Driver) => {
@@ -50,16 +47,15 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
         onClose();
     };
 
-    // Create theme-aware styles
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         header: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             paddingHorizontal: 16,
             paddingVertical: 16,
         },
@@ -78,21 +74,18 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
             width: 32,
             height: 32,
             borderRadius: 16,
-            backgroundColor: currentColors.borderLight,
+            backgroundColor: currentColors.inputBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             justifyContent: 'center',
             alignItems: 'center',
-        },
-        closeButtonText: {
-            fontSize: 16,
-            color: currentColors.textSecondary,
-            fontWeight: 'bold',
         },
         driversContainer: {
             flex: 1,
         },
         driversContent: {
             padding: 16,
-            paddingBottom: 100, // Extra padding for footer
+            paddingBottom: 100,
         },
         driversGrid: {
             flexDirection: 'row',
@@ -100,31 +93,32 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
             justifyContent: 'space-between',
         },
         driverCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: 12,
             padding: 16,
             marginBottom: 12,
-            width: '48%', // Two columns with spacing
+            width: '48%',
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            shadowColor: currentColors.textPrimary,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
+            borderColor: currentColors.glassBorder,
             minHeight: 120,
+            ...shadows.glass,
         },
         selectedDriverCard: {
             backgroundColor: currentColors.primary + '20',
             borderColor: currentColors.primary,
             borderWidth: 2,
+            shadowColor: currentColors.primary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 4,
         },
         disabledDriverCard: {
             opacity: 0.5,
         },
         alreadyPickedDriverCard: {
-            backgroundColor: currentColors.backgroundSecondary,
-            borderColor: currentColors.borderMedium,
+            backgroundColor: currentColors.inputBackground,
+            borderColor: currentColors.glassBorder,
             opacity: 0.7,
         },
         driverHeader: {
@@ -189,9 +183,9 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
             fontWeight: 'bold',
         },
         footer: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderTopWidth: 1,
-            borderTopColor: currentColors.borderLight,
+            borderTopColor: currentColors.glassBorder,
             padding: 16,
             alignItems: 'center',
         },
@@ -209,85 +203,84 @@ export const DriverSelectionModal: React.FC<DriverSelectionModalProps> = ({
             presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle}>Select Driver for P{position}</Text>
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={onClose}
-                            disabled={submitting}
-                        >
-                            <Text style={styles.closeButtonText}>✕</Text>
-                        </TouchableOpacity>
+            <GlassBackground>
+                <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                    <View style={styles.header}>
+                        <View style={styles.headerContent}>
+                            <Text style={styles.headerTitle}>Select Driver for P{position}</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={onClose}
+                                disabled={submitting}
+                            >
+                                <Ionicons name="close" size={18} color={currentColors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
 
-                {/* Drivers Grid */}
-                <ScrollView
-                    style={styles.driversContainer}
-                    contentContainerStyle={styles.driversContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.driversGrid}>
-                        {drivers.map((driver) => {
-                            const isSelected = selectedDriverId === driver.id;
-                            const isAlreadyPicked = userPicks ? Array.from(userPicks.entries()).some(([pos, driverId]) =>
-                                pos !== position && driverId === driver.id
-                            ) : false;
-                            const isDisabled = disabled || submitting || isAlreadyPicked;
+                    <ScrollView
+                        style={styles.driversContainer}
+                        contentContainerStyle={styles.driversContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.driversGrid}>
+                            {drivers.map((driver) => {
+                                const isSelected = selectedDriverId === driver.id;
+                                const isAlreadyPicked = userPicks ? Array.from(userPicks.entries()).some(([pos, driverId]) =>
+                                    pos !== position && driverId === driver.id
+                                ) : false;
+                                const isDisabled = disabled || submitting || isAlreadyPicked;
 
-                            return (
-                                <TouchableOpacity
-                                    key={driver.id}
-                                    style={[
-                                        styles.driverCard,
-                                        isSelected && styles.selectedDriverCard,
-                                        isDisabled && styles.disabledDriverCard,
-                                        isAlreadyPicked && styles.alreadyPickedDriverCard,
-                                    ]}
-                                    onPress={() => handleDriverPress(driver)}
-                                    disabled={isDisabled}
-                                    activeOpacity={isDisabled ? 1 : 0.7}
-                                >
-                                    <View style={styles.driverHeader}>
-                                        <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
-                                        <Text style={styles.driverCountry}>{driver.country}</Text>
-                                    </View>
-
-                                    <Text style={styles.driverName} numberOfLines={2}>
-                                        {driver.name}
-                                    </Text>
-
-                                    <Text style={styles.driverTeam} numberOfLines={1}>
-                                        {driver.team}
-                                    </Text>
-
-                                    {isSelected && (
-                                        <View style={styles.selectedIndicator}>
-                                            <Text style={styles.selectedIndicatorText}>✓</Text>
+                                return (
+                                    <TouchableOpacity
+                                        key={driver.id}
+                                        style={[
+                                            styles.driverCard,
+                                            isSelected && styles.selectedDriverCard,
+                                            isDisabled && styles.disabledDriverCard,
+                                            isAlreadyPicked && styles.alreadyPickedDriverCard,
+                                        ]}
+                                        onPress={() => handleDriverPress(driver)}
+                                        disabled={isDisabled}
+                                        activeOpacity={isDisabled ? 1 : 0.7}
+                                    >
+                                        <View style={styles.driverHeader}>
+                                            <Text style={styles.driverNumber}>#{driver.driverNumber}</Text>
+                                            <Text style={styles.driverCountry}>{driver.country}</Text>
                                         </View>
-                                    )}
 
-                                    {isAlreadyPicked && !isSelected && (
-                                        <View style={styles.alreadyPickedIndicator}>
-                                            <Text style={styles.alreadyPickedIndicatorText}>Already Picked</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            );
-                        })}
+                                        <Text style={styles.driverName} numberOfLines={2}>
+                                            {driver.name}
+                                        </Text>
+
+                                        <Text style={styles.driverTeam} numberOfLines={1}>
+                                            {driver.team}
+                                        </Text>
+
+                                        {isSelected && (
+                                            <View style={styles.selectedIndicator}>
+                                                <Text style={styles.selectedIndicatorText}>✓</Text>
+                                            </View>
+                                        )}
+
+                                        {isAlreadyPicked && !isSelected && (
+                                            <View style={styles.alreadyPickedIndicator}>
+                                                <Text style={styles.alreadyPickedIndicatorText}>Already Picked</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </ScrollView>
+
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            Tap a driver to select them for P{position}
+                        </Text>
                     </View>
-                </ScrollView>
-
-                {/* Footer */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Tap on a driver to select them for P{position}
-                    </Text>
-                </View>
-            </SafeAreaView>
+                </SafeAreaView>
+            </GlassBackground>
         </Modal>
     );
 };

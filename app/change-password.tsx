@@ -20,6 +20,7 @@ import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius } from '../utils/styles';
 import { router } from 'expo-router';
+import GlassBackground from '../src/components/GlassBackground';
 
 const ChangePasswordScreen = () => {
     const { changePassword } = useAuth();
@@ -135,9 +136,9 @@ const ChangePasswordScreen = () => {
             justifyContent: 'space-between',
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             minHeight: 64,
         },
         backButton: {
@@ -177,9 +178,9 @@ const ChangePasswordScreen = () => {
             paddingVertical: spacing.md,
             paddingHorizontal: spacing.md,
             paddingRight: 50, // Space for eye button
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.inputBackground,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.md,
         },
         eyeButton: {
@@ -273,7 +274,8 @@ const ChangePasswordScreen = () => {
     };
 
     return (
-        <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+        <GlassBackground>
+        <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 style={universalStyles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -447,6 +449,7 @@ const ChangePasswordScreen = () => {
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

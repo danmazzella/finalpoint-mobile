@@ -17,6 +17,8 @@ import { useTheme } from '../../../src/context/ThemeContext';
 import { lightColors, darkColors } from '../../../src/constants/Colors';
 import { createThemeStyles } from '../../../src/styles/universalStyles';
 import Avatar from '../../../src/components/Avatar';
+import GlassBackground from '../../../src/components/GlassBackground';
+import { shadows } from '../../../utils/styles';
 
 const LeagueStandingsScreen = () => {
     const { id } = useLocalSearchParams();
@@ -138,7 +140,7 @@ const LeagueStandingsScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: {
             flex: 1,
@@ -151,9 +153,9 @@ const LeagueStandingsScreen = () => {
             alignItems: 'center',
             paddingHorizontal: 16,
             paddingVertical: 16,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             marginBottom: 16,
         },
         backButton: {
@@ -184,17 +186,15 @@ const LeagueStandingsScreen = () => {
             gap: 12,
         },
         summaryCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: 12,
             padding: 12,
             width: '48%',
             flexDirection: 'row',
             alignItems: 'center',
-            shadowColor: currentColors.textPrimary,
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: resolvedTheme === 'dark' ? 0.3 : 0.05,
-            shadowRadius: 3,
-            elevation: 2,
+            ...shadows.glass,
         },
         summaryIcon: {
             width: 32,
@@ -231,15 +231,13 @@ const LeagueStandingsScreen = () => {
             marginBottom: 16,
         },
         standingCard: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: 16,
             marginBottom: 16,
-            shadowColor: currentColors.textPrimary,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: resolvedTheme === 'dark' ? 0.3 : 0.1,
-            shadowRadius: 4,
-            elevation: 3,
+            ...shadows.glass,
         },
         standingHeader: {
             marginBottom: 16,
@@ -339,7 +337,7 @@ const LeagueStandingsScreen = () => {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         loadingText: {
             fontSize: 16,
@@ -351,7 +349,7 @@ const LeagueStandingsScreen = () => {
             justifyContent: 'center',
             alignItems: 'center',
             padding: 20,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         errorTitle: {
             fontSize: 20,
@@ -370,11 +368,6 @@ const LeagueStandingsScreen = () => {
             borderRadius: 6,
             padding: 12,
             paddingHorizontal: 20,
-            shadowColor: currentColors.textPrimary,
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: resolvedTheme === 'dark' ? 0.3 : 0.1,
-            shadowRadius: 2,
-            elevation: 2,
         },
         retryButtonText: {
             color: currentColors.textInverse,
@@ -400,7 +393,7 @@ const LeagueStandingsScreen = () => {
         correctPicksContainer: {
             marginTop: 12,
             padding: 12,
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: 8,
         },
         correctPicksTitle: {
@@ -421,12 +414,12 @@ const LeagueStandingsScreen = () => {
         correctPickBadge: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
         },
         correctPickPosition: {
             fontSize: 10,
@@ -447,6 +440,7 @@ const LeagueStandingsScreen = () => {
 
     if (!leagueId || isNaN(leagueId)) {
         return (
+            <GlassBackground>
             <View style={styles.container}>
                 <View style={styles.errorContainer}>
                     <Text style={styles.errorTitle}>Invalid League</Text>
@@ -456,22 +450,26 @@ const LeagueStandingsScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
+            </GlassBackground>
         );
     }
 
     if (loading) {
         return (
+            <GlassBackground>
             <View style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading standings...</Text>
                 </View>
             </View>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
+            <GlassBackground>
             <View style={styles.container}>
                 <View style={styles.errorContainer}>
                     <Ionicons name="cloud-offline" size={48} color={currentColors.error} />
@@ -482,18 +480,22 @@ const LeagueStandingsScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
+            </GlassBackground>
         );
     }
 
     if (!league) {
         return (
+            <GlassBackground>
             <View style={styles.container}>
                 <Text style={styles.errorText}>League not found</Text>
             </View>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <View style={styles.container}>
             <ScrollView
                 style={styles.scrollView}
@@ -689,6 +691,7 @@ const LeagueStandingsScreen = () => {
                 </View>
             </ScrollView>
         </View>
+        </GlassBackground>
     );
 };
 

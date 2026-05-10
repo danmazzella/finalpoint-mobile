@@ -21,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
 import { formatTimeRemainingLocal } from '../../utils/timeUtils';
+import GlassBackground from '../../src/components/GlassBackground';
+import { shadows } from '../../utils/styles';
 
 const PicksScreen = () => {
     const { user, isLoading: authLoading } = useAuth();
@@ -73,12 +75,13 @@ const PicksScreen = () => {
             fontWeight: '600',
         },
         card: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: 16,
             marginBottom: 16,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         cardHeader: {
             flexDirection: 'row',
@@ -115,9 +118,9 @@ const PicksScreen = () => {
             fontWeight: '500',
         },
         secondaryButton: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.buttonSecondaryBg,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.buttonSecondaryBorder,
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderRadius: 8,
@@ -125,15 +128,18 @@ const PicksScreen = () => {
             alignItems: 'center',
         },
         secondaryButtonText: {
-            color: currentColors.textSecondary,
+            color: currentColors.buttonSecondaryText,
             fontSize: 14,
             fontWeight: '500',
         },
         raceCard: {
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: 16,
-            marginTop: 12,
+            marginTop: 0,
+            ...shadows.glass,
         },
         raceName: {
             fontSize: 18,
@@ -188,8 +194,10 @@ const PicksScreen = () => {
         },
         positionPreviewCard: {
             width: '48%',
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 12,
             padding: 12,
             alignItems: 'center',
         },
@@ -206,9 +214,9 @@ const PicksScreen = () => {
         },
         header: {
             paddingHorizontal: 0,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             minHeight: 64,
             flexDirection: 'row',
             alignItems: 'center',
@@ -216,7 +224,9 @@ const PicksScreen = () => {
         leagueSelector: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.inputBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: 8,
             padding: 12,
             marginBottom: 16,
@@ -231,12 +241,13 @@ const PicksScreen = () => {
             marginLeft: 8,
         },
         raceInfo: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 16,
             padding: 16,
             marginBottom: 16,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         raceInfoTitle: {
             fontSize: 18,
@@ -264,18 +275,19 @@ const PicksScreen = () => {
         positionRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: 12,
             padding: 14,
-            borderWidth: 1.5,
-            borderColor: currentColors.borderLight,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         positionRowClickable: {
-            borderColor: currentColors.primary + '60',
+            borderColor: 'rgba(59,130,246,0.35)',
         },
         positionRowDone: {
-            borderColor: currentColors.success,
-            backgroundColor: currentColors.success + '0D',
+            borderColor: 'rgba(16,185,129,0.35)',
+            backgroundColor: 'rgba(16,185,129,0.06)',
         },
         positionBadge: {
             width: 46,
@@ -352,12 +364,12 @@ const PicksScreen = () => {
         driverCard: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 12,
             padding: 12,
             marginBottom: 8,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
         },
         selectedDriverCard: {
             borderColor: currentColors.primary,
@@ -424,15 +436,22 @@ const PicksScreen = () => {
         },
         leagueScroll: {
             marginTop: 12,
+            marginHorizontal: -16,
+            overflow: 'visible',
+        },
+        leagueScrollContent: {
+            paddingVertical: 8,
+            paddingHorizontal: 16,
         },
         leagueCard: {
-            backgroundColor: currentColors.cardBackground,
-            borderRadius: 8,
+            backgroundColor: currentColors.glassBackground,
+            borderRadius: 12,
             padding: 16,
             marginRight: 12,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             minWidth: 120,
+            ...shadows.glass,
         },
         selectedLeagueCard: {
             borderColor: currentColors.primary,
@@ -499,27 +518,26 @@ const PicksScreen = () => {
             fontStyle: 'italic',
         },
         countdownBanner: {
-            backgroundColor: currentColors.info + '20',
-            borderColor: currentColors.info,
+            backgroundColor: 'rgba(59,130,246,0.10)',
+            borderColor: 'rgba(59,130,246,0.30)',
             borderWidth: 1,
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 16,
+            borderRadius: 12,
+            padding: 14,
         },
         countdownBannerTitle: {
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: '600',
-            color: currentColors.info,
-            marginBottom: 4,
+            color: currentColors.primary,
+            marginBottom: 2,
         },
         countdownBannerMessage: {
-            fontSize: 14,
+            fontSize: 13,
             color: currentColors.textSecondary,
+            marginBottom: 2,
         },
         countdownBannerSubtext: {
             fontSize: 12,
             color: currentColors.textTertiary,
-            marginTop: 4,
         },
         qualifyingDate: {
             fontSize: 14,
@@ -536,9 +554,12 @@ const PicksScreen = () => {
         // Sprint race styles
         sprintSection: {
             marginBottom: 24,
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: 16,
+            ...shadows.glass,
         },
         sprintHeader: {
             flexDirection: 'row',
@@ -548,9 +569,12 @@ const PicksScreen = () => {
         },
         raceSection: {
             marginBottom: 24,
-            backgroundColor: currentColors.backgroundSecondary,
-            borderRadius: 12,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            borderRadius: 16,
             padding: 16,
+            ...shadows.glass,
         },
         raceHeader: {
             flexDirection: 'row',
@@ -1039,26 +1063,31 @@ const PicksScreen = () => {
 
     if (authLoading || loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2563eb" />
-            </View>
+            <GlassBackground>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#2563eb" />
+                </View>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
-            <View style={styles.errorContainer}>
-                <Text style={styles.errorTitle}>Connection Error</Text>
-                <Text style={styles.errorMessage}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-            </View>
+            <GlassBackground>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Connection Error</Text>
+                    <Text style={styles.errorMessage}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </GlassBackground>
         );
     }
 
     return (
-        <View style={universalStyles.container}>
+        <GlassBackground>
+        <View style={[universalStyles.container, { backgroundColor: 'transparent' }]}>
             {/* Header - outside ScrollView for edge-to-edge */}
             <View style={[styles.header, { paddingTop: insets.top }]}>
                 <Text style={styles.title}>Make Your Picks</Text>
@@ -1103,7 +1132,7 @@ const PicksScreen = () => {
                                 <Ionicons name="flag" size={24} color="#6b7280" />
                                 <Text style={styles.cardTitle}>Current Race</Text>
                             </View>
-                            <View style={[styles.raceCard, { marginTop: 0 }]}>
+                            <View style={styles.raceCard}>
                                 <Text style={styles.raceName}>Dutch Grand Prix</Text>
                                 <Text style={styles.raceDate}>Circuit Zandvoort, Netherlands</Text>
                                 <Text style={styles.raceWeek}>Week 15 • 8/31/2025</Text>
@@ -1161,7 +1190,7 @@ const PicksScreen = () => {
                         {/* League Selection */}
                         <View style={styles.leagueSection}>
                             <Text style={styles.sectionTitle}>Select League</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueScroll}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.leagueScroll} contentContainerStyle={styles.leagueScrollContent}>
                                 {leagues.map((league) => (
                                     <TouchableOpacity
                                         key={league.id}
@@ -1192,116 +1221,78 @@ const PicksScreen = () => {
                         {/* Current Race Info */}
                         {currentRace && (
                             <View style={styles.raceInfoSection}>
-                                <Text style={styles.sectionTitle}>Current Race</Text>
-
-                                {/* Pick Locking Status Banners */}
-                                {currentRace.hasSprint ? (
-                                    <>
-                                        {/* Sprint picks lock banner */}
-                                        {Boolean(currentRace.sprintPicksLocked) ? (
-                                            <View style={styles.lockedBanner}>
-                                                <Text style={styles.lockedBannerTitle}>🔒 Sprint Picks are Locked</Text>
-                                                <Text style={styles.lockedBannerMessage}>Sprint picks locked before sprint qualifying.</Text>
-                                            </View>
-                                        ) : currentRace.sprintLockTime ? (
-                                            <View style={styles.countdownBanner}>
-                                                <Text style={styles.countdownBannerTitle}>⏰ Sprint Picks Lock Soon</Text>
-                                                <Text style={styles.countdownBannerMessage}>
-                                                    Sprint picks lock in {(() => {
-                                                        try { return formatTimeRemainingLocal(currentRace.sprintLockTime!, { compact: true }); } catch (e) { return 'soon'; }
-                                                    })()}
-                                                    {'\n'}
-                                                    <Text style={styles.countdownBannerSubtext}>Lock time: {(() => { try { return new Date(currentRace.sprintLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}</Text>
-                                                </Text>
-                                            </View>
-                                        ) : null}
-                                        {/* GP picks lock banner */}
-                                        {Boolean(currentRace.racePicksLocked) ? (
-                                            <View style={styles.lockedBanner}>
-                                                <Text style={styles.lockedBannerTitle}>🔒 Grand Prix Picks are Locked</Text>
-                                                <Text style={styles.lockedBannerMessage}>Grand Prix picks locked before qualifying.</Text>
-                                            </View>
-                                        ) : currentRace.raceLockTime ? (
-                                            <View style={styles.countdownBanner}>
-                                                <Text style={styles.countdownBannerTitle}>⏰ Grand Prix Picks Lock Soon</Text>
-                                                <Text style={styles.countdownBannerMessage}>
-                                                    GP picks lock in {(() => {
-                                                        try { return formatTimeRemainingLocal(currentRace.raceLockTime!, { compact: true }); } catch (e) { return 'soon'; }
-                                                    })()}
-                                                    {'\n'}
-                                                    <Text style={styles.countdownBannerSubtext}>Lock time: {(() => { try { return new Date(currentRace.raceLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}</Text>
-                                                </Text>
-                                            </View>
-                                        ) : null}
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* Non-sprint weekend: single lock banner */}
-                                        {Boolean(currentRace.picksLocked) && (
-                                            <View style={styles.lockedBanner}>
-                                                <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
-                                                <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
-                                            </View>
-                                        )}
-                                        {!Boolean(currentRace.picksLocked) && Boolean(currentRace.showCountdown) && (
-                                            <View style={styles.countdownBanner}>
-                                                <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
-                                                <Text style={styles.countdownBannerMessage}>
-                                                    {currentRace.lockTime ? (
-                                                        <>
-                                                            Picks will lock in {(() => {
-                                                                try { return formatTimeRemainingLocal(currentRace.lockTime, { compact: true }); } catch (e) { return 'soon'; }
-                                                            })()} for {currentRace.raceName || 'this race'}
-                                                            {'\n'}
-                                                            <Text style={styles.countdownBannerSubtext}>
-                                                                Lock time: {(() => { try { return new Date(currentRace.lockTime).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}
-                                                            </Text>
-                                                        </>
-                                                    ) : (
-                                                        currentRace.lockMessage || 'Picks will lock soon'
-                                                    )}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </>
-                                )}
-
                                 <View style={styles.raceCard}>
                                     <Text style={styles.raceName}>{currentRace.raceName || 'Race'}</Text>
                                     <Text style={styles.raceDate}>
-                                        {currentRace.raceDate ? (() => {
-                                            try {
-                                                return new Date(currentRace.raceDate).toLocaleDateString();
-                                            } catch (e) {
-                                                return 'Invalid date';
-                                            }
-                                        })() : 'Date TBD'}
+                                        {currentRace.raceDate ? (() => { try { return new Date(currentRace.raceDate).toLocaleDateString(); } catch (e) { return 'Invalid date'; } })() : 'Date TBD'}
                                     </Text>
                                     {currentRace.qualifyingDate && (
                                         <Text style={styles.qualifyingDate}>
-                                            Qualifying: {(() => {
-                                                try {
-                                                    return new Date(currentRace.qualifyingDate).toLocaleDateString();
-                                                } catch (e) {
-                                                    return 'Invalid date';
-                                                }
-                                            })()}
+                                            Qualifying: {(() => { try { return new Date(currentRace.qualifyingDate).toLocaleDateString(); } catch (e) { return 'Invalid date'; } })()}
                                         </Text>
                                     )}
                                     <Text style={[styles.raceStatus, isRaceLocked() && styles.lockedStatus]}>
                                         Status: {isRaceLocked() ? 'Locked' : (currentRace.status || 'Unknown')}
                                     </Text>
-                                </View>
-                            </View>
-                        )}
 
-                        {/* League Positions */}
-                        {selectedLeague && leaguePositions.length > 0 && (
-                            <View style={styles.positionsSection}>
-                                <Text style={styles.sectionTitle}>League Positions</Text>
-                                <Text style={styles.positionsSubtitle}>
-                                    This league requires picks for positions: {leaguePositions.map(p => `P${p}`).join(', ')}
-                                </Text>
+                                    {/* Pick Locking Status Banners — inside the race card */}
+                                    {currentRace.hasSprint ? (
+                                        <View style={{ marginTop: 12, gap: 8 }}>
+                                            {Boolean(currentRace.sprintPicksLocked) ? (
+                                                <View style={styles.lockedBanner}>
+                                                    <Text style={styles.lockedBannerTitle}>🔒 Sprint Picks are Locked</Text>
+                                                    <Text style={styles.lockedBannerMessage}>Sprint picks locked before sprint qualifying.</Text>
+                                                </View>
+                                            ) : currentRace.sprintLockTime ? (
+                                                <View style={styles.countdownBanner}>
+                                                    <Text style={styles.countdownBannerTitle}>⏰ Sprint Picks Lock Soon</Text>
+                                                    <Text style={styles.countdownBannerMessage}>
+                                                        Sprint picks lock in {(() => { try { return formatTimeRemainingLocal(currentRace.sprintLockTime!, { compact: true }); } catch (e) { return 'soon'; } })()}
+                                                    </Text>
+                                                    <Text style={styles.countdownBannerSubtext}>
+                                                        Lock time: {(() => { try { return new Date(currentRace.sprintLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+                                            {Boolean(currentRace.racePicksLocked) ? (
+                                                <View style={styles.lockedBanner}>
+                                                    <Text style={styles.lockedBannerTitle}>🔒 Grand Prix Picks are Locked</Text>
+                                                    <Text style={styles.lockedBannerMessage}>Grand Prix picks locked before qualifying.</Text>
+                                                </View>
+                                            ) : currentRace.raceLockTime ? (
+                                                <View style={styles.countdownBanner}>
+                                                    <Text style={styles.countdownBannerTitle}>⏰ Grand Prix Picks Lock Soon</Text>
+                                                    <Text style={styles.countdownBannerMessage}>
+                                                        GP picks lock in {(() => { try { return formatTimeRemainingLocal(currentRace.raceLockTime!, { compact: true }); } catch (e) { return 'soon'; } })()}
+                                                    </Text>
+                                                    <Text style={styles.countdownBannerSubtext}>
+                                                        Lock time: {(() => { try { return new Date(currentRace.raceLockTime!).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+                                        </View>
+                                    ) : (
+                                        <>
+                                            {Boolean(currentRace.picksLocked) && (
+                                                <View style={[styles.lockedBanner, { marginTop: 12, marginBottom: 0 }]}>
+                                                    <Text style={styles.lockedBannerTitle}>🔒 Picks are Locked</Text>
+                                                    <Text style={styles.lockedBannerMessage}>{currentRace.lockMessage || 'Picks are locked for this race'}</Text>
+                                                </View>
+                                            )}
+                                            {!Boolean(currentRace.picksLocked) && Boolean(currentRace.showCountdown) && currentRace.lockTime && (
+                                                <View style={[styles.countdownBanner, { marginTop: 12, marginBottom: 0 }]}>
+                                                    <Text style={styles.countdownBannerTitle}>⏰ Picks Lock Soon</Text>
+                                                    <Text style={styles.countdownBannerMessage}>
+                                                        Picks lock in {(() => { try { return formatTimeRemainingLocal(currentRace.lockTime, { compact: true }); } catch (e) { return 'soon'; } })()}
+                                                    </Text>
+                                                    <Text style={styles.countdownBannerSubtext}>
+                                                        Lock time: {(() => { try { return new Date(currentRace.lockTime).toLocaleString(); } catch (e) { return 'Invalid date'; } })()}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </>
+                                    )}
+                                </View>
                             </View>
                         )}
 
@@ -1530,6 +1521,7 @@ const PicksScreen = () => {
                 userPicks={new Map((selectedEventType === 'race' ? selectedPicks : selectedSprintPicks).map(pick => [pick.position, pick.driverId]))}
             />
         </View>
+        </GlassBackground>
     );
 };
 

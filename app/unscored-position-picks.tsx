@@ -17,6 +17,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import GlassBackground from '../src/components/GlassBackground';
 
 interface PositionResultV2 {
     leagueId: number;
@@ -71,7 +72,7 @@ const UnscoredPositionPicksScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: {
             flex: 1,
@@ -80,22 +81,24 @@ const UnscoredPositionPicksScreen = () => {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         errorContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
             padding: spacing.lg,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         errorCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.lg,
             padding: spacing.xl,
             alignItems: 'center',
             width: '100%',
-            ...shadows.md,
+            ...shadows.glass,
         },
         errorTitle: {
             fontSize: 20,
@@ -127,9 +130,9 @@ const UnscoredPositionPicksScreen = () => {
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
             minHeight: 64,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             paddingLeft: spacing.md,
@@ -203,12 +206,14 @@ const UnscoredPositionPicksScreen = () => {
             borderColor: currentColors.borderLight,
         },
         section: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             marginHorizontal: spacing.lg,
             marginBottom: spacing.lg,
             borderRadius: borderRadius.lg,
             padding: spacing.lg,
-            ...shadows.sm,
+            ...shadows.glass,
         },
         noticeSection: {
             marginHorizontal: spacing.lg,
@@ -246,12 +251,13 @@ const UnscoredPositionPicksScreen = () => {
         },
         summaryCard: {
             flex: 1,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.md,
             padding: spacing.md,
             alignItems: 'center',
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         summaryLabel: {
             fontSize: 12,
@@ -282,23 +288,10 @@ const UnscoredPositionPicksScreen = () => {
             gap: spacing.sm,
         },
         pickCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
             marginBottom: spacing.md,
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            ...shadows.sm,
-            ...Platform.select({
-                ios: {
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                },
-                android: {
-                    elevation: 2,
-                },
-            }),
         },
         pickCardHeader: {
             flexDirection: 'row',
@@ -366,12 +359,9 @@ const UnscoredPositionPicksScreen = () => {
             gap: spacing.sm,
         },
         popularPickCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
-            borderWidth: 1,
-            borderColor: currentColors.borderLight,
-            ...shadows.sm,
         },
         popularPickContent: {
             flexDirection: 'row',
@@ -529,12 +519,11 @@ const UnscoredPositionPicksScreen = () => {
         },
         // Actual result styles
         actualResultCard: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.lg,
             padding: spacing.lg,
             flexDirection: 'row',
             alignItems: 'center',
-            ...shadows.sm,
         },
         actualResultBadge: {
             backgroundColor: currentColors.primary,
@@ -731,14 +720,17 @@ const UnscoredPositionPicksScreen = () => {
 
     if (loading) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.loadingContainer} edges={['top', 'left', 'right']}>
                 <ActivityIndicator size="large" color={currentColors.primary} />
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (error || !results) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.errorContainer} edges={['top', 'left', 'right']}>
                 <View style={styles.errorCard}>
                     <Ionicons name="alert-circle" size={48} color={currentColors.error} />
@@ -749,10 +741,12 @@ const UnscoredPositionPicksScreen = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Header */}
@@ -1050,6 +1044,7 @@ const UnscoredPositionPicksScreen = () => {
                 <View style={styles.bottomSpacing} />
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

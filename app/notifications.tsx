@@ -18,7 +18,8 @@ import { NotificationPreferences } from '../src/types';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
-import { spacing, borderRadius } from '../utils/styles';
+import { spacing, borderRadius, shadows } from '../utils/styles';
+import GlassBackground from '../src/components/GlassBackground';
 import { router } from 'expo-router';
 import { shouldEnableNotifications } from '../utils/environment';
 
@@ -165,8 +166,8 @@ const NotificationSettingsScreen = () => {
       alignItems: 'center',
       padding: spacing.lg,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderLight,
-      backgroundColor: currentColors.cardBackground,
+      borderBottomColor: currentColors.glassBorder,
+      backgroundColor: currentColors.glassBackground,
     },
     backButton: {
       marginRight: spacing.md,
@@ -186,12 +187,13 @@ const NotificationSettingsScreen = () => {
       textAlign: 'center',
     },
     section: {
-      backgroundColor: currentColors.cardBackground,
+      backgroundColor: currentColors.glassBackground,
       borderRadius: borderRadius.md,
       padding: spacing.lg,
       marginBottom: spacing.lg,
       borderWidth: 1,
-      borderColor: currentColors.borderLight,
+      borderColor: currentColors.glassBorder,
+      ...shadows.glass,
     },
     sectionTitle: {
       fontSize: 18,
@@ -205,7 +207,7 @@ const NotificationSettingsScreen = () => {
       alignItems: 'center',
       paddingVertical: spacing.sm,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderLight,
+      borderBottomColor: currentColors.glassBorder,
     },
     preferenceRowLast: {
       borderBottomWidth: 0,
@@ -276,7 +278,8 @@ const NotificationSettingsScreen = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+      <GlassBackground>
+      <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -293,11 +296,13 @@ const NotificationSettingsScreen = () => {
           </View>
         </View>
       </SafeAreaView>
+      </GlassBackground>
     );
   }
 
   return (
-    <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+    <GlassBackground>
+    <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
       <ScrollView style={universalStyles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
@@ -428,6 +433,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushReminder5Days', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushReminder5Days ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -442,6 +448,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushReminder3Days', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushReminder3Days ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -456,6 +463,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushReminder1Day', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushReminder1Day ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -470,6 +478,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushReminder1Hour', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushReminder1Hour ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -484,6 +493,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushScoreUpdates', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushScoreUpdates ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -498,6 +508,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushChatMessages', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushChatMessages ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -512,6 +523,7 @@ const NotificationSettingsScreen = () => {
                 onValueChange={(value) => handlePreferenceChange('pushOther', value)}
                 trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                 thumbColor={preferences.pushOther ? currentColors.primary : currentColors.borderMedium}
+                ios_backgroundColor={currentColors.borderLight}
                 disabled={!notificationsSupported}
               />
             </View>
@@ -542,6 +554,7 @@ const NotificationSettingsScreen = () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </GlassBackground>
   );
 };
 

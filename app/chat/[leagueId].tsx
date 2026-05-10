@@ -10,6 +10,8 @@ import { useChatFeature } from '../../src/context/FeatureFlagContext';
 import { lightColors, darkColors } from '../../src/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { chatAPI, leaguesAPI } from '../../src/services/apiService';
+import GlassBackground from '../../src/components/GlassBackground';
+import { shadows } from '../../utils/styles';
 
 export default function LeagueChatScreen() {
     const { leagueId } = useLocalSearchParams<{ leagueId: string }>();
@@ -125,24 +127,22 @@ export default function LeagueChatScreen() {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'transparent',
         },
         loadingContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: '#f5f5f5',
         },
         errorContainer: {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: '#f5f5f5',
             padding: 20,
         },
         modalOverlay: {
             flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
             justifyContent: 'center',
             alignItems: 'center',
             padding: 20,
@@ -150,15 +150,11 @@ export default function LeagueChatScreen() {
         modalContent: {
             width: '100%',
             maxWidth: 400,
-            borderRadius: 12,
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            backgroundColor: currentColors.modalBackground,
+            ...shadows.glass,
         },
         modalHeader: {
             flexDirection: 'row',
@@ -166,10 +162,12 @@ export default function LeagueChatScreen() {
             alignItems: 'center',
             padding: 20,
             borderBottomWidth: 1,
+            borderBottomColor: currentColors.glassBorder,
         },
         modalTitle: {
             fontSize: 18,
             fontWeight: '600',
+            color: currentColors.textPrimary,
         },
         modalBody: {
             padding: 20,
@@ -183,34 +181,39 @@ export default function LeagueChatScreen() {
             fontSize: 16,
             fontWeight: '500',
             marginBottom: 4,
+            color: currentColors.textPrimary,
         },
         settingDescription: {
             fontSize: 14,
             lineHeight: 20,
+            color: currentColors.textSecondary,
         },
         modalFooter: {
             padding: 20,
             borderTopWidth: 1,
+            borderTopColor: currentColors.glassBorder,
         },
         closeButton: {
             paddingVertical: 12,
             paddingHorizontal: 24,
             borderRadius: 8,
             alignItems: 'center',
+            backgroundColor: currentColors.primary,
         },
         closeButtonText: {
             fontSize: 16,
             fontWeight: '600',
+            color: currentColors.textInverse,
         },
         errorText: {
             fontSize: 24,
             fontWeight: 'bold',
-            color: '#333',
+            color: currentColors.textPrimary,
             marginBottom: 10,
         },
         errorSubtext: {
             fontSize: 16,
-            color: '#666',
+            color: currentColors.textSecondary,
             textAlign: 'center',
             marginBottom: 30,
         },
@@ -220,77 +223,9 @@ export default function LeagueChatScreen() {
             justifyContent: 'space-between',
             paddingHorizontal: 16,
             paddingVertical: 12,
-            backgroundColor: 'white',
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: '#e0e0e0',
-        },
-        backButton: {
-            padding: 8,
-        },
-        headerTitle: {
-            fontSize: 18,
-            fontWeight: '600',
-            color: '#333',
-            flex: 1,
-            textAlign: 'center',
-        },
-        headerRight: {
-            width: 40, // Same width as back button for centering
-        },
-        backButtonText: {
-            color: '#007AFF',
-            fontSize: 16,
-            fontWeight: '600',
-        },
-    });
-
-    if (!user) {
-        return (
-            <View style={[styles.errorContainer, { backgroundColor: currentColors.backgroundPrimary }]}>
-                <Text style={[styles.errorText, { color: currentColors.textPrimary }]}>Please Log In</Text>
-                <Text style={[styles.errorSubtext, { color: currentColors.textSecondary }]}>You need to be logged in to access chat.</Text>
-            </View>
-        );
-    }
-
-    if (loading || featureFlagLoading) {
-        return (
-            <View style={[styles.loadingContainer, { backgroundColor: currentColors.backgroundPrimary }]}>
-                <Text style={{ color: currentColors.textPrimary }}>
-                    {featureFlagLoading ? 'Loading...' : 'Loading chat...'}
-                </Text>
-            </View>
-        );
-    }
-
-    if (!hasAccess) {
-        return (
-            <View style={[styles.errorContainer, { backgroundColor: currentColors.backgroundPrimary }]}>
-                <Text style={[styles.errorText, { color: currentColors.textPrimary }]}>Access Denied</Text>
-                <Text style={[styles.errorSubtext, { color: currentColors.textSecondary }]}>You are not a member of this league.</Text>
-                <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                    <Text style={[styles.backButtonText, { color: currentColors.buttonPrimary }]}>Go Back</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
-
-    // Create theme-aware styles
-    const themeStyles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
-        },
-        header: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingTop: insets.top + 12,
-            paddingBottom: 12,
-            backgroundColor: currentColors.cardBackground,
-            borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             padding: 8,
@@ -303,101 +238,72 @@ export default function LeagueChatScreen() {
             textAlign: 'center',
         },
         headerRight: {
-            width: 40, // Same width as back button for centering
+            width: 40,
         },
-        modalOverlay: {
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 20,
-        },
-        modalContent: {
-            width: '100%',
-            maxWidth: 400,
-            borderRadius: 12,
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-        },
-        modalHeader: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: 20,
-            borderBottomWidth: 1,
-        },
-        modalTitle: {
-            fontSize: 18,
-            fontWeight: '600',
-        },
-        modalBody: {
-            padding: 20,
-        },
-        settingRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-        },
-        settingTitle: {
-            fontSize: 16,
-            fontWeight: '500',
-            marginBottom: 4,
-        },
-        settingDescription: {
-            fontSize: 14,
-            lineHeight: 20,
-        },
-        modalFooter: {
-            padding: 20,
-            borderTopWidth: 1,
-        },
-        closeButton: {
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-            alignItems: 'center',
-        },
-        closeButtonText: {
+        backButtonText: {
+            color: currentColors.primary,
             fontSize: 16,
             fontWeight: '600',
         },
     });
 
+    if (!user) {
+        return (
+            <GlassBackground>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Please Log In</Text>
+                    <Text style={styles.errorSubtext}>You need to be logged in to access chat.</Text>
+                </View>
+            </GlassBackground>
+        );
+    }
+
+    if (loading || featureFlagLoading) {
+        return (
+            <GlassBackground>
+                <View style={styles.loadingContainer}>
+                    <Text style={{ color: currentColors.textPrimary }}>
+                        {featureFlagLoading ? 'Loading...' : 'Loading chat...'}
+                    </Text>
+                </View>
+            </GlassBackground>
+        );
+    }
+
+    if (!hasAccess) {
+        return (
+            <GlassBackground>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Access Denied</Text>
+                    <Text style={styles.errorSubtext}>You are not a member of this league.</Text>
+                    <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                        <Text style={styles.backButtonText}>Go Back</Text>
+                    </TouchableOpacity>
+                </View>
+            </GlassBackground>
+        );
+    }
+
     return (
-        <View style={themeStyles.container}>
+        <GlassBackground>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Header */}
-            <View style={themeStyles.header}>
-                <TouchableOpacity style={themeStyles.backButton} onPress={handleBack}>
-                    <Ionicons name="arrow-back" size={24} color={currentColors.buttonPrimary} />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                    <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
                 </TouchableOpacity>
-                <Text style={themeStyles.headerTitle}>{leagueName}</Text>
+                <Text style={styles.headerTitle}>{leagueName}</Text>
 
                 {/* Settings Button */}
-                <View style={themeStyles.headerRight}>
-                    <TouchableOpacity
-                        onPress={() => setShowSettingsModal(true)}
-                        style={{ padding: 8 }}
-                    >
-                        <Ionicons
-                            name="settings-outline"
-                            size={24}
-                            color={currentColors.textSecondary}
-                        />
+                <View style={styles.headerRight}>
+                    <TouchableOpacity onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
+                        <Ionicons name="settings-outline" size={24} color={currentColors.textSecondary} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             {/* Chat Component */}
-            <LeagueChat
-                leagueId={leagueId}
-                leagueName={leagueName}
-            />
+            <LeagueChat leagueId={leagueId} leagueName={leagueName} />
 
             {/* Settings Modal */}
             <Modal
@@ -407,32 +313,18 @@ export default function LeagueChatScreen() {
                 onRequestClose={() => setShowSettingsModal(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: currentColors.cardBackground }]}>
-                        {/* Modal Header */}
-                        <View style={[styles.modalHeader, { borderBottomColor: currentColors.borderLight }]}>
-                            <Text style={[styles.modalTitle, { color: currentColors.textPrimary }]}>
-                                Chat Settings
-                            </Text>
-                            <TouchableOpacity
-                                onPress={() => setShowSettingsModal(false)}
-                                style={{ padding: 4 }}
-                            >
-                                <Ionicons
-                                    name="close"
-                                    size={24}
-                                    color={currentColors.textSecondary}
-                                />
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Chat Settings</Text>
+                            <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={{ padding: 4 }}>
+                                <Ionicons name="close" size={24} color={currentColors.textSecondary} />
                             </TouchableOpacity>
                         </View>
-
-                        {/* Modal Body */}
                         <View style={styles.modalBody}>
                             <View style={styles.settingRow}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={[styles.settingTitle, { color: currentColors.textPrimary }]}>
-                                        Push Notifications
-                                    </Text>
-                                    <Text style={[styles.settingDescription, { color: currentColors.textSecondary }]}>
+                                    <Text style={styles.settingTitle}>Push Notifications</Text>
+                                    <Text style={styles.settingDescription}>
                                         Get notified when someone sends a message in this league
                                     </Text>
                                 </View>
@@ -442,24 +334,19 @@ export default function LeagueChatScreen() {
                                     disabled={loadingPreferences}
                                     trackColor={{ false: currentColors.borderLight, true: currentColors.primary + '40' }}
                                     thumbColor={notificationsEnabled ? currentColors.primary : currentColors.borderMedium}
+                                    ios_backgroundColor={currentColors.borderLight}
                                 />
                             </View>
                         </View>
-
-                        {/* Modal Footer */}
-                        <View style={[styles.modalFooter, { borderTopColor: currentColors.borderLight }]}>
-                            <TouchableOpacity
-                                onPress={() => setShowSettingsModal(false)}
-                                style={[styles.closeButton, { backgroundColor: currentColors.primary }]}
-                            >
-                                <Text style={[styles.closeButtonText, { color: currentColors.textInverse }]}>
-                                    Close
-                                </Text>
+                        <View style={styles.modalFooter}>
+                            <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={styles.closeButton}>
+                                <Text style={styles.closeButtonText}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
             </Modal>
         </View>
+        </GlassBackground>
     );
 }

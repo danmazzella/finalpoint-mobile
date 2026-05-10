@@ -15,6 +15,8 @@ import { useTheme } from '../src/context/ThemeContext';
 import { useAuth } from '../src/context/AuthContext';
 import { platformStandingsAPI, seasonsAPI } from '../src/services/apiService';
 import { lightColors, darkColors } from '../src/constants/Colors';
+import GlassBackground from '../src/components/GlassBackground';
+import { shadows } from '../utils/styles';
 
 interface Threshold {
     label: string;
@@ -49,7 +51,7 @@ const PlatformStandingsScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: { flex: 1 },
         scrollContent: { paddingBottom: 100 },
@@ -59,7 +61,8 @@ const PlatformStandingsScreen = () => {
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
+            backgroundColor: currentColors.glassBackground,
         },
         backButton: { padding: 8, marginRight: 8 },
         headerTitle: {
@@ -147,23 +150,21 @@ const PlatformStandingsScreen = () => {
             color: 'rgba(255,255,255,0.65)',
         },
         card: {
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             marginHorizontal: 12,
             marginTop: 12,
-            borderRadius: 12,
+            borderRadius: 16,
             overflow: 'hidden',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 4,
-            elevation: 2,
+            ...shadows.glass,
         },
         cardHeader: {
             paddingHorizontal: 14,
             paddingVertical: 10,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
-            backgroundColor: currentColors.backgroundSecondary,
+            borderBottomColor: currentColors.glassBorder,
+            backgroundColor: currentColors.inputBackground,
         },
         cardHeaderTitle: {
             fontSize: 11,
@@ -183,7 +184,7 @@ const PlatformStandingsScreen = () => {
             paddingHorizontal: 14,
             paddingVertical: 14,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
             gap: 10,
         },
         thresholdLabel: {
@@ -280,6 +281,7 @@ const PlatformStandingsScreen = () => {
     const maxAccuracy = standings?.thresholds[0]?.accuracy ?? 100;
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             {/* Header */}
             <View style={styles.header}>
@@ -380,6 +382,7 @@ const PlatformStandingsScreen = () => {
                 )}
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

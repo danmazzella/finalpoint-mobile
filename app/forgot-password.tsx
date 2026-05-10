@@ -19,6 +19,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import GlassBackground from '../src/components/GlassBackground';
 
 const ForgotPasswordScreen = () => {
     const [email, setEmail] = useState('');
@@ -68,7 +69,8 @@ const ForgotPasswordScreen = () => {
 
     if (isSuccess) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+            <GlassBackground>
+            <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <View style={styles.successContainer}>
                     {/* Success Icon */}
                     <View style={styles.successIconContainer}>
@@ -101,7 +103,7 @@ const ForgotPasswordScreen = () => {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={[styles.secondaryButton, { backgroundColor: currentColors.backgroundSecondary, borderColor: currentColors.borderMedium }]}
+                            style={[styles.secondaryButton, { backgroundColor: currentColors.buttonSecondaryBg, borderColor: currentColors.buttonSecondaryBorder }]}
                             onPress={() => {
                                 setIsSuccess(false);
                                 setEmail('');
@@ -113,11 +115,13 @@ const ForgotPasswordScreen = () => {
                     </View>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: currentColors.backgroundPrimary }]} edges={['top', 'left', 'right']}>
+        <GlassBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 style={universalStyles.keyboardAvoidingView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -164,8 +168,8 @@ const ForgotPasswordScreen = () => {
                                 style={[
                                     styles.input,
                                     {
-                                        backgroundColor: currentColors.backgroundSecondary,
-                                        borderColor: currentColors.borderMedium,
+                                        backgroundColor: currentColors.inputBackground,
+                                        borderColor: currentColors.glassBorder,
                                         color: currentColors.textPrimary
                                     },
                                     emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
@@ -221,6 +225,7 @@ const ForgotPasswordScreen = () => {
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

@@ -18,6 +18,7 @@ import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
 import Avatar from '../src/components/Avatar';
+import GlassBackground from '../src/components/GlassBackground';
 
 interface RaceResultV2 {
     userId: number;
@@ -104,7 +105,7 @@ const RaceResultsScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: 'transparent',
         },
         scrollView: {
             flex: 1,
@@ -155,9 +156,9 @@ const RaceResultsScreen = () => {
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
             minHeight: 64,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             paddingLeft: spacing.md,
@@ -350,18 +351,22 @@ const RaceResultsScreen = () => {
         },
         summaryCard: {
             flex: 1,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: 60,
             maxWidth: '32%',
-            ...shadows.sm,
+            ...shadows.glass,
         },
         summaryCardGrid: {
             flex: 1,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
             alignItems: 'center',
@@ -370,7 +375,7 @@ const RaceResultsScreen = () => {
             width: '45%',
             maxWidth: '45%',
             flexBasis: '45%',
-            ...shadows.sm,
+            ...shadows.glass,
         },
         summaryLabel: {
             fontSize: 12,
@@ -403,7 +408,6 @@ const RaceResultsScreen = () => {
             fontWeight: '600',
             color: currentColors.textPrimary,
             marginBottom: spacing.xs,
-            paddingHorizontal: spacing.md,
         },
         raceStatusTitle: {
             fontSize: 18,
@@ -439,11 +443,13 @@ const RaceResultsScreen = () => {
         memberResultsGrid: {
         },
         memberCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
             marginBottom: spacing.sm,
-            ...shadows.sm,
+            ...shadows.glass,
         },
 
         memberCardGuest: {
@@ -550,7 +556,7 @@ const RaceResultsScreen = () => {
             color: currentColors.textSecondary,
         },
         picksContainer: {
-            backgroundColor: currentColors.backgroundTertiary,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.md,
             padding: spacing.md,
         },
@@ -748,11 +754,13 @@ const RaceResultsScreen = () => {
             marginTop: spacing.sm,
         },
         statusCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             borderRadius: borderRadius.md,
             padding: spacing.md,
             marginBottom: spacing.xs,
-            ...shadows.sm,
+            ...shadows.glass,
         },
         statusHeader: {
             flexDirection: 'row',
@@ -1060,17 +1068,20 @@ const RaceResultsScreen = () => {
 
     if (loading) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading race results...</Text>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     if (error) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <View style={styles.errorContainer}>
                     <Ionicons name="alert-circle" size={48} color={currentColors.error} />
@@ -1081,6 +1092,7 @@ const RaceResultsScreen = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
@@ -1097,6 +1109,7 @@ const RaceResultsScreen = () => {
 
     if (results.length === 0) {
         return (
+            <GlassBackground>
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <ScrollView style={styles.scrollView}>
                     {/* Header */}
@@ -1143,10 +1156,12 @@ const RaceResultsScreen = () => {
                     </View>
                 </ScrollView>
             </SafeAreaView>
+            </GlassBackground>
         );
     }
 
     return (
+        <GlassBackground>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Header */}
@@ -1377,12 +1392,7 @@ const RaceResultsScreen = () => {
                 {/* Actual Race Results */}
                 {hasScoredResults && (
                     <View style={styles.section}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                            <Ionicons name="clipboard-outline" size={14} color={currentColors.textTertiary} />
-                            <Text style={[styles.sectionTitle, { marginBottom: 0, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, color: currentColors.textSecondary }]}>
-                                Actual Race Results
-                            </Text>
-                        </View>
+                        <Text style={styles.sectionTitle}>Actual Race Results</Text>
                         <View style={{
                             borderRadius: borderRadius.md,
                             borderWidth: 1,
@@ -1627,6 +1637,7 @@ const RaceResultsScreen = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </GlassBackground>
     );
 };
 

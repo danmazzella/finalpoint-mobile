@@ -16,6 +16,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
 import { spacing, borderRadius, shadows } from '../utils/styles';
+import GlassBackground from '../src/components/GlassBackground';
 import Avatar from '../src/components/Avatar';
 
 interface MemberPicksV2 {
@@ -78,7 +79,7 @@ const MemberPicksScreen = () => {
     const styles = StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: currentColors.backgroundPrimary,
+            backgroundColor: currentColors.pageBackground,
         },
         scrollView: {
             flex: 1,
@@ -129,9 +130,9 @@ const MemberPicksScreen = () => {
             paddingRight: spacing.lg,
             paddingVertical: spacing.md,
             minHeight: 64,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
             borderBottomWidth: 1,
-            borderBottomColor: currentColors.borderLight,
+            borderBottomColor: currentColors.glassBorder,
         },
         backButton: {
             paddingLeft: spacing.md,
@@ -161,13 +162,19 @@ const MemberPicksScreen = () => {
         },
         summaryCard: {
             flex: 1,
-            backgroundColor: currentColors.cardBackground,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: spacing.md,
-            borderRadius: borderRadius.lg,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: 60,
-            ...shadows.sm,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.5,
+            shadowRadius: 10,
+            elevation: 6,
         },
         summaryLabel: {
             fontSize: 10,
@@ -192,11 +199,13 @@ const MemberPicksScreen = () => {
             marginBottom: spacing.md,
         },
         pickCard: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
             padding: spacing.md,
-            borderRadius: borderRadius.md,
+            borderRadius: borderRadius.lg,
             marginBottom: spacing.sm,
-            ...shadows.sm,
+            ...shadows.glass,
         },
         pickHeader: {
             flexDirection: 'row',
@@ -346,11 +355,12 @@ const MemberPicksScreen = () => {
         },
         eventTypeContainer: {
             flexDirection: 'row',
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             borderRadius: borderRadius.lg,
             padding: 6,
-            borderWidth: 2,
-            borderColor: currentColors.borderLight,
+            borderWidth: 1,
+            borderColor: currentColors.glassBorder,
+            ...shadows.glass,
         },
         eventTypeButton: {
             flex: 1,
@@ -382,20 +392,20 @@ const MemberPicksScreen = () => {
             paddingHorizontal: spacing.sm,
         },
         navigationButton: {
-            backgroundColor: currentColors.backgroundSecondary,
+            backgroundColor: currentColors.glassBackground,
             padding: spacing.sm,
             borderRadius: borderRadius.full,
             borderWidth: 1,
-            borderColor: currentColors.borderLight,
+            borderColor: currentColors.glassBorder,
             width: 40,
             height: 40,
             alignItems: 'center',
             justifyContent: 'center',
-            ...shadows.sm,
+            ...shadows.glass,
         },
         navigationButtonDisabled: {
-            backgroundColor: currentColors.borderLight,
-            borderColor: currentColors.borderLight,
+            backgroundColor: currentColors.inputBackground,
+            borderColor: 'transparent',
         },
     });
 
@@ -583,18 +593,18 @@ const MemberPicksScreen = () => {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <GlassBackground><SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={currentColors.primary} />
                     <Text style={styles.loadingText}>Loading member picks...</Text>
                 </View>
-            </SafeAreaView>
+            </SafeAreaView></GlassBackground>
         );
     }
 
     if (error) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <GlassBackground><SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <View style={styles.errorContainer}>
                     <Ionicons name="alert-circle" size={48} color={currentColors.error} />
                     <Text style={styles.errorTitle}>Error Loading Picks</Text>
@@ -603,13 +613,13 @@ const MemberPicksScreen = () => {
                         <Text style={styles.retryButtonText}>Try Again</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </SafeAreaView></GlassBackground>
         );
     }
 
     if (!memberPicks) {
         return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <GlassBackground><SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
                 <ScrollView style={styles.scrollView}>
                     <View style={styles.header}>
                         <TouchableOpacity
@@ -634,12 +644,12 @@ const MemberPicksScreen = () => {
                         </Text>
                     </View>
                 </ScrollView>
-            </SafeAreaView>
+            </SafeAreaView></GlassBackground>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <GlassBackground><SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.header}>
@@ -835,7 +845,7 @@ const MemberPicksScreen = () => {
                     )}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </SafeAreaView></GlassBackground>
     );
 };
 

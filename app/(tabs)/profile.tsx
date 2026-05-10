@@ -22,6 +22,8 @@ import { lightColors, darkColors } from '../../src/constants/Colors';
 import { createThemeStyles } from '../../src/styles/universalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { contactConfig } from '../../config/environment';
+import GlassBackground from '../../src/components/GlassBackground';
+import { shadows } from '../../utils/styles';
 
 const ProfileScreen = () => {
   const { user, logout, refreshUser } = useAuth();
@@ -247,7 +249,7 @@ const ProfileScreen = () => {
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: currentColors.cardBackground,
+      borderColor: currentColors.glassBackground,
     },
     avatarHint: {
       fontSize: 12,
@@ -270,7 +272,10 @@ const ProfileScreen = () => {
       alignItems: 'center',
       padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: currentColors.borderMedium,
+      borderBottomColor: currentColors.glassBorder,
+    },
+    menuItemLast: {
+      borderBottomWidth: 0,
     },
     menuItemText: {
       fontSize: 16,
@@ -295,7 +300,8 @@ const ProfileScreen = () => {
   });
 
   return (
-    <SafeAreaView style={universalStyles.container} edges={['top', 'left', 'right']}>
+    <GlassBackground>
+    <SafeAreaView style={[universalStyles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
       <ScrollView style={universalStyles.scrollView}>
         <View style={universalStyles.header}>
           <TouchableOpacity
@@ -381,7 +387,7 @@ const ProfileScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.menuItem}
+            style={[styles.menuItem, !user?.role || user.role !== 'admin' ? styles.menuItemLast : null]}
             onPress={() => router.push('/delete-account')}
           >
             <Text style={styles.deleteAccountText}>Delete Account</Text>
@@ -390,7 +396,7 @@ const ProfileScreen = () => {
 
           {user?.role === 'admin' && (
             <TouchableOpacity
-              style={styles.menuItem}
+              style={[styles.menuItem, styles.menuItemLast]}
               onPress={() => router.push('/admin')}
             >
               <Text style={styles.menuItemText}>Admin Dashboard</Text>
@@ -420,7 +426,7 @@ const ProfileScreen = () => {
             <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={handleHelpAndSupport}>
+          <TouchableOpacity style={[styles.menuItem, styles.menuItemLast]} onPress={handleHelpAndSupport}>
             <Text style={styles.menuItemText}>Help & Support</Text>
             <Ionicons name="chevron-forward" size={16} color={currentColors.textSecondary} />
           </TouchableOpacity>
@@ -442,6 +448,7 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </GlassBackground>
   );
 };
 

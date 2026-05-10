@@ -33,6 +33,22 @@ export const lightColors = {
     successLight: '#d1fae5',
     warningLight: '#fef3c7',
     errorLight: '#fee2e2',
+
+    // Glass UI
+    // (light mode glass tokens defined below dark section)
+
+    // Secondary button (ghost blue)
+    buttonSecondaryBg: 'rgba(59, 130, 246, 0.12)',
+    buttonSecondaryBorder: 'rgba(37, 99, 235, 0.30)',
+    buttonSecondaryText: '#2563eb',
+
+    // Glass UI
+    glassBackground: 'rgba(255, 255, 255, 0.82)',
+    glassBorder: 'rgba(59, 130, 246, 0.18)',
+    glassShadowColor: '#3b82f6',
+    pageBackground: '#dbeafe',
+    modalBackground: '#ffffff',
+    inputBackground: 'rgba(0, 0, 0, 0.04)',
 };
 
 export const darkColors = {
@@ -58,6 +74,19 @@ export const darkColors = {
     successLight: '#064e3b',
     warningLight: '#451a03',
     errorLight: '#450a0a',
+
+    // Glass UI
+    glassBackground: 'rgba(26, 26, 26, 0.72)',
+    glassBorder: 'rgba(255, 255, 255, 0.07)',
+    glassShadowColor: '#000000',
+    pageBackground: '#0f0f0f',
+    modalBackground: '#1e1e1e',
+    inputBackground: 'rgba(0, 0, 0, 0.20)',
+
+    // Secondary button (ghost blue)
+    buttonSecondaryBg: 'rgba(59, 130, 246, 0.10)',
+    buttonSecondaryBorder: 'rgba(37, 99, 235, 0.25)',
+    buttonSecondaryText: '#60a5fa',
 };
 
 // Re-export the hook from ThemeContext to avoid circular dependencies

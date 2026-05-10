@@ -235,17 +235,28 @@ const MemberPicksScreen = () => {
             color: currentColors.textSecondary,
             marginTop: spacing.xs,
         },
+        pickActualFinish: {
+            fontSize: 12,
+            color: currentColors.error,
+            marginTop: spacing.xs,
+        },
         scoreInfo: {
             alignItems: 'flex-end',
+            gap: spacing.xs,
         },
         pointsText: {
             fontSize: 16,
             fontWeight: 'bold',
             color: currentColors.textPrimary,
         },
-        correctText: {
-            fontSize: 12,
+        correctBadge: {
+            fontSize: 16,
             color: currentColors.success,
+            fontWeight: 'bold',
+        },
+        incorrectBadge: {
+            fontSize: 16,
+            color: currentColors.error,
             fontWeight: 'bold',
         },
         actualResult: {
@@ -253,48 +264,15 @@ const MemberPicksScreen = () => {
             borderRadius: borderRadius.sm,
             marginTop: spacing.sm,
         },
-        correctResult: {
-            backgroundColor: currentColors.successLight,
-        },
         incorrectResult: {
             backgroundColor: currentColors.errorLight,
         },
         actualResultLabel: {
             fontSize: 12,
             fontWeight: 'bold',
-            marginBottom: spacing.xs,
-        },
-        correctResultLabel: {
-            color: currentColors.success,
         },
         incorrectResultLabel: {
             color: currentColors.error,
-        },
-        actualResultDriver: {
-            fontSize: 14,
-            fontWeight: 'bold',
-        },
-        correctResultDriver: {
-            color: currentColors.success,
-        },
-        incorrectResultDriver: {
-            color: currentColors.error,
-        },
-        actualPosition: {
-            fontSize: 12,
-            marginTop: spacing.xs,
-        },
-        correctResultPosition: {
-            color: currentColors.success,
-        },
-        incorrectResultPosition: {
-            color: currentColors.error,
-        },
-        incorrectText: {
-            fontSize: 12,
-            color: currentColors.error,
-            fontWeight: 'bold',
-            marginTop: spacing.sm,
         },
         noResult: {
             backgroundColor: currentColors.warningLight,
@@ -816,44 +794,31 @@ const MemberPicksScreen = () => {
                                                 {pick.driverTeam}
                                             </Text>
                                         )}
-                                    </View>
-                                    {pick.points !== null && (
-                                        <View style={styles.scoreInfo}>
-                                            <Text style={styles.pointsText}>{pick.points} pts</Text>
-                                        </View>
-                                    )}
-                                </View>
-
-                                {/* Actual Result */}
-                                {pick.actualDriverName && (
-                                    <View style={[
-                                        styles.actualResult,
-                                        pick.isCorrect === true ? styles.correctResult : styles.incorrectResult
-                                    ]}>
-                                        <Text style={[
-                                            styles.actualResultLabel,
-                                            pick.isCorrect === true ? styles.correctResultLabel : styles.incorrectResultLabel
-                                        ]}>Actual:</Text>
-                                        <Text style={[
-                                            styles.actualResultDriver,
-                                            pick.isCorrect === true ? styles.correctResultDriver : styles.incorrectResultDriver
-                                        ]}>
-                                            {pick.actualDriverName} ({pick.actualDriverTeam})
-                                        </Text>
-                                        {pick.actualFinishPosition && (
-                                            <Text style={[
-                                                styles.actualPosition,
-                                                pick.isCorrect === true ? styles.correctResultPosition : styles.incorrectResultPosition
-                                            ]}>
+                                        {pick.isCorrect === false && pick.actualFinishPosition && (
+                                            <Text style={styles.pickActualFinish}>
                                                 Finished P{pick.actualFinishPosition}
                                             </Text>
                                         )}
+                                    </View>
+                                    <View style={styles.scoreInfo}>
                                         {pick.isCorrect === true && (
-                                            <Text style={styles.correctText}>✓ Correct</Text>
+                                            <Text style={styles.correctBadge}>✓</Text>
                                         )}
                                         {pick.isCorrect === false && (
-                                            <Text style={styles.incorrectText}>✗ Incorrect</Text>
+                                            <Text style={styles.incorrectBadge}>✗</Text>
                                         )}
+                                        {pick.points !== null && (
+                                            <Text style={styles.pointsText}>{pick.points} pts</Text>
+                                        )}
+                                    </View>
+                                </View>
+
+                                {/* Actual Result — only shown for incorrect picks */}
+                                {pick.actualDriverName && pick.isCorrect === false && (
+                                    <View style={[styles.actualResult, styles.incorrectResult]}>
+                                        <Text style={[styles.actualResultLabel, styles.incorrectResultLabel]}>
+                                            Actual P{pick.position}: {pick.actualDriverName} ({pick.actualDriverTeam})
+                                        </Text>
                                     </View>
                                 )}
 

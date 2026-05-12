@@ -133,13 +133,10 @@ const PicksScreen = () => {
             fontWeight: '500',
         },
         raceCard: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: 16,
-            borderWidth: 1,
-            borderColor: currentColors.glassBorder,
             padding: 16,
             marginTop: 0,
-            ...shadows.glass,
         },
         raceName: {
             fontSize: 18,
@@ -194,9 +191,7 @@ const PicksScreen = () => {
         },
         positionPreviewCard: {
             width: '48%',
-            backgroundColor: currentColors.glassBackground,
-            borderWidth: 1,
-            borderColor: currentColors.glassBorder,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: 12,
             padding: 12,
             alignItems: 'center',

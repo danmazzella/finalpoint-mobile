@@ -177,12 +177,10 @@ const JoinLeagueByCodeScreen = () => {
             textAlign: 'center',
         },
         infoBox: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: borderRadius.md,
             padding: spacing.md,
             marginBottom: 24,
-            borderWidth: 1,
-            borderColor: currentColors.glassBorder,
         },
         infoBoxContent: {
             flexDirection: 'row',

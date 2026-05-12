@@ -393,7 +393,7 @@ const LeagueStandingsScreen = () => {
         correctPicksContainer: {
             marginTop: 12,
             padding: 12,
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: 8,
         },
         correctPicksTitle: {
@@ -414,12 +414,10 @@ const LeagueStandingsScreen = () => {
         correctPickBadge: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 12,
-            borderWidth: 1,
-            borderColor: currentColors.glassBorder,
         },
         correctPickPosition: {
             fontSize: 10,

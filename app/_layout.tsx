@@ -272,10 +272,6 @@ function AppContent() {
               options={getScreenOptionsWithBackground(resolvedTheme)}
             />
             <Stack.Screen
-              name="app-versions"
-              options={getScreenOptionsWithBackground(resolvedTheme)}
-            />
-            <Stack.Screen
               name="notifications"
               options={getScreenOptionsWithBackground(resolvedTheme)}
             />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, Alert, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
+import { View, StyleSheet, Alert, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Platform, KeyboardAvoidingView, Keyboard, Linking, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IMessage } from 'react-native-gifted-chat';
 import { SecureChatService } from '../src/services/secureChatService';
@@ -9,6 +9,118 @@ import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { chatAPI } from '../src/services/apiService';
+
+const AVATAR_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+function getAvatarColor(userId: string): string {
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+const URL_REGEX = /https?:\/\/[^\s<>"']+/g;
+
+function extractFirstUrl(text: string): string | null {
+    const m = text.match(URL_REGEX);
+    return m ? m[0] : null;
+}
+
+const IG_POST_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/;
+
+function extractInstagramShortcode(url: string): string | null {
+    const m = url.match(IG_POST_RE);
+    return m ? m[1] : null;
+}
+
+function toEEInstagramUrl(url: string): string {
+    return url.replace(/(?:www\.)?instagram\.com/, 'eeinstagram.com');
+}
+
+interface PreviewData {
+    title: string;
+    description: string | null;
+    image: string | null;
+    domain: string;
+    siteName: string;
+    url: string;
+}
+
+const previewCache = new Map<string, PreviewData | null>();
+const previewPromises = new Map<string, Promise<PreviewData | null>>();
+
+function fetchPreview(url: string): Promise<PreviewData | null> {
+    if (previewCache.has(url)) return Promise.resolve(previewCache.get(url)!);
+    if (previewPromises.has(url)) return previewPromises.get(url)!;
+
+    const promise = chatAPI.getLinkPreview(url)
+        .then((res: any) => {
+            const data = res.data?.success ? res.data as PreviewData : null;
+            previewCache.set(url, data);
+            previewPromises.delete(url);
+            return data;
+        })
+        .catch((): null => {
+            previewCache.set(url, null);
+            previewPromises.delete(url);
+            return null;
+        });
+
+    previewPromises.set(url, promise);
+    return promise;
+}
+
+function LinkPreviewCard({ url, tapUrl, isDark }: { url: string; tapUrl?: string; isDark: boolean }) {
+    const [preview, setPreview] = useState<PreviewData | null | 'loading'>(
+        previewCache.has(url) ? previewCache.get(url)! : 'loading'
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+        fetchPreview(url).then(data => {
+            if (!cancelled) setPreview(data);
+        }).catch(() => {
+            if (!cancelled) setPreview(null);
+        });
+        return () => { cancelled = true; };
+    }, [url]);
+
+    if (preview === 'loading' || !preview) return null;
+
+    return (
+        <TouchableOpacity
+            onPress={() => Linking.openURL(tapUrl || url).catch(() => {})}
+            activeOpacity={0.8}
+            style={{
+                marginTop: 6,
+                borderRadius: 12,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+            }}
+        >
+            {preview.image && (
+                <Image
+                    source={{ uri: preview.image }}
+                    style={{ width: '100%', height: 140 }}
+                    resizeMode="cover"
+                />
+            )}
+            <View style={{ padding: 10 }}>
+                <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)', marginBottom: 3 }}>
+                    {preview.siteName || preview.domain}
+                </Text>
+                <Text numberOfLines={2} style={{ fontSize: 13, fontWeight: '600', lineHeight: 18, color: isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.85)' }}>
+                    {preview.title}
+                </Text>
+                {preview.description && (
+                    <Text numberOfLines={2} style={{ fontSize: 12, marginTop: 2, color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)', lineHeight: 16 }}>
+                        {preview.description}
+                    </Text>
+                )}
+            </View>
+        </TouchableOpacity>
+    );
+}
 
 interface LeagueChatProps {
     leagueId: string;
@@ -31,16 +143,32 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
     const [inputText, setInputText] = useState('');
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [, setKeyboardHeight] = useState(0);
+    const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
+    const [wsConnected, setWsConnected] = useState(true);
+    const [isAtBottom, setIsAtBottom] = useState(true);
+    const [newMsgBadge, setNewMsgBadge] = useState(0);
     const messagesEndRef = useRef<ScrollView>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isAtBottomRef = useRef(true);
 
-    // Enhanced function to scroll to bottom with keyboard awareness
     const scrollToBottom = useCallback((animated = true) => {
         if (messagesEndRef.current) {
-            // Use a small delay to ensure the layout has updated
             setTimeout(() => {
                 messagesEndRef.current?.scrollToEnd({ animated });
             }, 100);
         }
+        setNewMsgBadge(0);
+        setIsAtBottom(true);
+        isAtBottomRef.current = true;
+    }, []);
+
+    const handleScroll = useCallback((event: any) => {
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const dist = contentSize.height - contentOffset.y - layoutMeasurement.height;
+        const atBottom = dist < 80;
+        setIsAtBottom(atBottom);
+        isAtBottomRef.current = atBottom;
+        if (atBottom) setNewMsgBadge(0);
     }, []);
 
 
@@ -53,6 +181,15 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
 
     // Get current theme colors
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
+
+    const formatDateSeparator = (date: Date): string => {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        if (date.toDateString() === today.toDateString()) return 'Today';
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    };
 
     // Safe date formatting function
     const formatTime = (date: Date | string | any) => {
@@ -195,10 +332,18 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                                     );
                                 }
 
-                                // Convert new messages to IMessage format
-                                const newIMessages = chatMessages.map(convertToIMessage);
+                                const existingIds = new Set(prevMessages.map(m => m._id));
+                                const newIMessages = chatMessages
+                                    .filter(cm => !existingIds.has(cm.id))
+                                    .map(convertToIMessage);
+                                if (newIMessages.length === 0) return prevMessages;
 
-                                // Add new messages at the end so they appear at the bottom
+                                chatAPI.markMessagesAsRead(parseInt(leagueId)).catch(() => {});
+
+                                if (!isAtBottomRef.current && newMessage.user._id !== user?.id?.toString()) {
+                                    setNewMsgBadge(n => n + newIMessages.length);
+                                }
+
                                 return [...prevMessages, ...newIMessages];
                             });
                         }
@@ -300,6 +445,31 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
         };
     }, [user, leagueId]);
 
+    // Subscribe to typing events
+    useEffect(() => {
+        const unsub = SecureChatService.subscribeToTypingEvents((event) => {
+            setTypingUsers(prev => {
+                const next = new Map(prev);
+                if (event.type === 'typing') {
+                    next.set(event.userId, event.userName || 'Someone');
+                } else {
+                    next.delete(event.userId);
+                }
+                return next;
+            });
+        });
+        return unsub;
+    }, []);
+
+    // Subscribe to connection state
+    useEffect(() => {
+        const unsub = SecureChatService.subscribeToConnectionState(
+            () => setWsConnected(true),
+            () => setWsConnected(false)
+        );
+        return unsub;
+    }, []);
+
     // Keyboard event listeners for proper scroll behavior
     useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
@@ -338,38 +508,31 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
     }, [messages, scrollToBottom, isKeyboardVisible]);
 
 
-    // Send a new message
-    // Function to refresh online users list
-    const refreshOnlineUsers = useCallback(async () => {
+    const handleRetry = useCallback(async (failedMsg: IMessage) => {
+        if (!user) return;
+        setMessages(prev => prev.filter(m => m._id !== failedMsg._id));
         try {
-            // Use the proper getOnlineUsers endpoint
-            const onlineUsers = await SecureChatService.getOnlineUsers(leagueId);
-
-            // Ensure current user is included in the online users list
-            const currentUser = {
-                id: user?.id.toString() || '',
-                name: user?.name || user?.email || 'You',
-                email: user?.email || '',
-                isOnline: true,
-                lastSeen: new Date(),
-                leagues: [leagueId]
-            };
-
-            const hasCurrentUser = onlineUsers.some((u: any) => u.id === currentUser.id);
-            const updatedUsers = hasCurrentUser ? onlineUsers : [currentUser, ...onlineUsers];
-
-            setOnlineUsers(updatedUsers);
-        } catch (error) {
-            console.error('Error refreshing online users:', error);
-            // Don't show error to user as this is a background operation
+            const sent = await SecureChatService.sendMessage(leagueId, {
+                text: failedMsg.text as string,
+                user: { _id: failedMsg.user._id.toString(), name: failedMsg.user.name || '', avatar: failedMsg.user.avatar as string | undefined },
+                leagueId,
+                channelId: channelId || undefined,
+            });
+            if (sent.status === 'sent' || sent.status === 'sending') {
+                setMessages(prev => [...prev, convertToIMessage(sent)]);
+            }
+        } catch {
+            setMessages(prev => [...prev, { ...failedMsg } as IMessage]);
         }
-    }, [leagueId, user]);
+    }, [user, leagueId, channelId]);
 
     const sendMessage = useCallback(async () => {
         if (!user || !inputText.trim()) return;
 
         const messageText = inputText.trim();
         setInputText(''); // Clear input immediately
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        SecureChatService.sendTypingStop(leagueId);
 
         try {
             const sentMessage = await SecureChatService.sendMessage(leagueId, {
@@ -402,9 +565,6 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                 });
             }
 
-            // Refresh online users list after sending message to ensure up-to-date status
-            await refreshOnlineUsers();
-
             // Scroll to bottom after sending message
             setTimeout(() => {
                 scrollToBottom(true);
@@ -414,22 +574,23 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
             Alert.alert('Error', 'Failed to send message. Please try again.');
             setInputText(messageText); // Restore text on error
         }
-    }, [user, leagueId, channelId, inputText, refreshOnlineUsers, scrollToBottom, isKeyboardVisible]);
+    }, [user, leagueId, channelId, inputText, scrollToBottom, isKeyboardVisible]);
 
     // Render a single message
-    const renderMessage = (message: IMessage) => {
+    const renderMessage = (message: IMessage, isGrouped = false, seenShortcodes?: Set<string>) => {
         const isOwnMessage = message.user._id === user?.id.toString();
 
         return (
             <View key={message._id} style={[
                 themeStyles.messageContainer,
-                isOwnMessage ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' }
+                isOwnMessage ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+                isGrouped ? { marginTop: 2 } : { marginTop: 12 }
             ]}>
-                {/* Show sender name and avatar for incoming messages */}
-                {!isOwnMessage && (
+                {/* Show sender name and avatar only for first message in a group */}
+                {!isOwnMessage && !isGrouped && (
                     <View style={themeStyles.senderInfoContainer}>
                         <View style={themeStyles.avatarContainer}>
-                            <View style={themeStyles.avatar}>
+                            <View style={[themeStyles.avatar, { backgroundColor: getAvatarColor(message.user._id.toString()) }]}>
                                 <Text style={themeStyles.avatarText}>
                                     {message.user.name ? message.user.name.charAt(0).toUpperCase() : '?'}
                                 </Text>
@@ -440,17 +601,46 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                         </Text>
                     </View>
                 )}
+                {/* Spacer to maintain bubble alignment for grouped incoming messages */}
+                {!isOwnMessage && isGrouped && (
+                    <View style={{ height: 0, marginLeft: 44 }} />
+                )}
 
                 <View style={[
                     dynamicStyles.bubble,
                     isOwnMessage ? themeStyles.ownBubble : themeStyles.otherBubble
                 ]}>
-                    <Text style={[
-                        themeStyles.bubbleText,
-                        isOwnMessage ? themeStyles.ownBubbleText : themeStyles.otherBubbleText
-                    ]}>
-                        {message.text}
+                    <Text style={[themeStyles.bubbleText, isOwnMessage ? themeStyles.ownBubbleText : themeStyles.otherBubbleText]}>
+                        {(() => {
+                            const txt = message.text as string;
+                            const textParts = txt.split(URL_REGEX);
+                            const urlParts = txt.match(URL_REGEX) || [];
+                            return textParts.map((segment, si) => (
+                                <React.Fragment key={si}>
+                                    {segment}
+                                    {si < urlParts.length && (
+                                        <Text
+                                            style={{ textDecorationLine: 'underline', color: isOwnMessage ? 'rgba(255,255,255,0.85)' : '#3B82F6' }}
+                                            onPress={() => Linking.openURL(urlParts[si]).catch(() => {})}
+                                        >
+                                            {urlParts[si]}
+                                        </Text>
+                                    )}
+                                </React.Fragment>
+                            ));
+                        })()}
                     </Text>
+                    {(() => {
+                        const firstUrl = extractFirstUrl(message.text as string);
+                        if (!firstUrl) return null;
+                        const igShortcode = extractInstagramShortcode(firstUrl);
+                        if (igShortcode) {
+                            if (seenShortcodes?.has(igShortcode)) return null;
+                            seenShortcodes?.add(igShortcode);
+                            return <LinkPreviewCard url={toEEInstagramUrl(firstUrl)} tapUrl={firstUrl} isDark={isOwnMessage || resolvedTheme === 'dark'} />;
+                        }
+                        return <LinkPreviewCard url={firstUrl} isDark={isOwnMessage || resolvedTheme === 'dark'} />;
+                    })()}
                 </View>
 
                 {/* Message status and time row */}
@@ -475,11 +665,12 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                                 <Ionicons name="checkmark" size={12} color={currentColors.textSecondary} />
                             )}
                             {(message as any).status === 'failed' && (
-                                <TouchableOpacity onPress={() => {
-                                    // TODO: Implement retry functionality
-                                    console.log('Retry message:', message._id);
-                                }}>
+                                <TouchableOpacity
+                                    onPress={() => handleRetry(message)}
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+                                >
                                     <Ionicons name="alert-circle" size={12} color="#ff4444" />
+                                    <Text style={{ fontSize: 10, color: '#ff4444' }}>Retry</Text>
                                 </TouchableOpacity>
                             )}
                             {(message as any).status === 'queued' && (
@@ -808,7 +999,7 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                         ) : (
                             onlineUsers.map((onlineUser) => (
                                 <View key={onlineUser.id} style={styles.onlineUserItem}>
-                                    <View style={themeStyles.onlineUserAvatar}>
+                                    <View style={[themeStyles.onlineUserAvatar, { backgroundColor: getAvatarColor(onlineUser.id) }]}>
                                         <Text style={themeStyles.onlineUserInitial}>
                                             {onlineUser.name?.charAt(0)?.toUpperCase() || '?'}
                                         </Text>
@@ -821,6 +1012,25 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                             ))
                         )}
                     </ScrollView>
+                </View>
+            )}
+
+            {/* Connection banner */}
+            {!wsConnected && (
+                <View style={{
+                    backgroundColor: resolvedTheme === 'dark' ? '#451a03' : '#fffbeb',
+                    borderBottomWidth: 1,
+                    borderBottomColor: resolvedTheme === 'dark' ? '#78350f' : '#fde68a',
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#f59e0b' }} />
+                    <Text style={{ fontSize: 12, color: resolvedTheme === 'dark' ? '#fcd34d' : '#92400e', fontWeight: '500' }}>
+                        Reconnecting…
+                    </Text>
                 </View>
             )}
 
@@ -840,17 +1050,108 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                         keyboardDismissMode="on-drag"
                         automaticallyAdjustKeyboardInsets={false}
                         contentInsetAdjustmentBehavior="never"
+                        onScroll={handleScroll}
+                        scrollEventThrottle={100}
                     >
-                        {messages.map(renderMessage)}
+                        {(() => {
+                            const seenShortcodes = new Set<string>();
+                            return messages.flatMap((message, i) => {
+                                const prev = messages[i - 1];
+                                const msgDate = new Date(message.createdAt as Date);
+                                const isGrouped = !!prev &&
+                                    prev.user._id === message.user._id &&
+                                    Math.abs(msgDate.getTime() - new Date(prev.createdAt as Date).getTime()) < 5 * 60 * 1000;
+                                const showDate = !prev ||
+                                    new Date(prev.createdAt as Date).toDateString() !== msgDate.toDateString();
+                                const elements: React.ReactElement[] = [];
+                                if (showDate) {
+                                    elements.push(
+                                        <View key={`date-${message._id}`} style={themeStyles.dayContainer}>
+                                            <Text style={themeStyles.dayText}>{formatDateSeparator(msgDate)}</Text>
+                                        </View>
+                                    );
+                                }
+                                elements.push(renderMessage(message, isGrouped, seenShortcodes));
+                                return elements;
+                            });
+                        })()}
                     </ScrollView>
+
+                    {/* Jump-to-bottom button */}
+                    {!isAtBottom && (
+                        <View style={{ position: 'absolute', bottom: 90, alignSelf: 'center', zIndex: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => scrollToBottom(true)}
+                                activeOpacity={0.85}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    backgroundColor: currentColors.cardBackground,
+                                    borderWidth: 1,
+                                    borderColor: currentColors.borderLight,
+                                    borderRadius: 20,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 7,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.12,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }}
+                            >
+                                {newMsgBadge > 0 && (
+                                    <View style={{ backgroundColor: currentColors.buttonPrimary, borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 }}>
+                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>{newMsgBadge > 9 ? '9+' : newMsgBadge}</Text>
+                                    </View>
+                                )}
+                                <Text style={{ fontSize: 12, fontWeight: '500', color: currentColors.textPrimary }}>
+                                    {newMsgBadge > 0 ? 'New messages' : 'Jump to bottom'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={14} color={currentColors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Input Area */}
                     <View style={themeStyles.inputArea}>
+                        {/* Typing indicator */}
+                        {typingUsers.size > 0 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 }}>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    backgroundColor: currentColors.cardBackground,
+                                    borderWidth: 1,
+                                    borderColor: currentColors.borderLight,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 6,
+                                }}>
+                                    <Text style={{ fontSize: 12, color: currentColors.textSecondary }}>
+                                        {Array.from(typingUsers.values()).join(', ')} {typingUsers.size === 1 ? 'is' : 'are'} typing…
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                        {inputText.length > 800 && (
+                            <Text style={{ fontSize: 11, textAlign: 'right', marginBottom: 4, color: inputText.length > 950 ? '#EF4444' : currentColors.textSecondary, fontWeight: inputText.length > 950 ? '600' : '400' }}>
+                                {1000 - inputText.length}
+                            </Text>
+                        )}
                         <View style={themeStyles.inputContainer}>
                             <TextInput
                                 style={themeStyles.textInput}
                                 value={inputText}
-                                onChangeText={setInputText}
+                                onChangeText={(text) => {
+                                    setInputText(text);
+                                    SecureChatService.sendTypingStart(leagueId);
+                                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                    typingTimeoutRef.current = setTimeout(() => {
+                                        SecureChatService.sendTypingStop(leagueId);
+                                    }, 2000);
+                                }}
                                 placeholder={`Message ${leagueName}...`}
                                 placeholderTextColor={currentColors.textSecondary}
                                 multiline
@@ -898,17 +1199,108 @@ export const LeagueChat: React.FC<LeagueChatProps> = ({
                         keyboardDismissMode="on-drag"
                         automaticallyAdjustKeyboardInsets={false}
                         contentInsetAdjustmentBehavior="never"
+                        onScroll={handleScroll}
+                        scrollEventThrottle={100}
                     >
-                        {messages.map(renderMessage)}
+                        {(() => {
+                            const seenShortcodes = new Set<string>();
+                            return messages.flatMap((message, i) => {
+                                const prev = messages[i - 1];
+                                const msgDate = new Date(message.createdAt as Date);
+                                const isGrouped = !!prev &&
+                                    prev.user._id === message.user._id &&
+                                    Math.abs(msgDate.getTime() - new Date(prev.createdAt as Date).getTime()) < 5 * 60 * 1000;
+                                const showDate = !prev ||
+                                    new Date(prev.createdAt as Date).toDateString() !== msgDate.toDateString();
+                                const elements: React.ReactElement[] = [];
+                                if (showDate) {
+                                    elements.push(
+                                        <View key={`date-${message._id}`} style={themeStyles.dayContainer}>
+                                            <Text style={themeStyles.dayText}>{formatDateSeparator(msgDate)}</Text>
+                                        </View>
+                                    );
+                                }
+                                elements.push(renderMessage(message, isGrouped, seenShortcodes));
+                                return elements;
+                            });
+                        })()}
                     </ScrollView>
+
+                    {/* Jump-to-bottom button */}
+                    {!isAtBottom && (
+                        <View style={{ position: 'absolute', bottom: 90, alignSelf: 'center', zIndex: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => scrollToBottom(true)}
+                                activeOpacity={0.85}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    backgroundColor: currentColors.cardBackground,
+                                    borderWidth: 1,
+                                    borderColor: currentColors.borderLight,
+                                    borderRadius: 20,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 7,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.12,
+                                    shadowRadius: 4,
+                                    elevation: 4,
+                                }}
+                            >
+                                {newMsgBadge > 0 && (
+                                    <View style={{ backgroundColor: currentColors.buttonPrimary, borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 }}>
+                                        <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>{newMsgBadge > 9 ? '9+' : newMsgBadge}</Text>
+                                    </View>
+                                )}
+                                <Text style={{ fontSize: 12, fontWeight: '500', color: currentColors.textPrimary }}>
+                                    {newMsgBadge > 0 ? 'New messages' : 'Jump to bottom'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={14} color={currentColors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Input Area */}
                     <View style={themeStyles.inputArea}>
+                        {/* Typing indicator */}
+                        {typingUsers.size > 0 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 }}>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    backgroundColor: currentColors.cardBackground,
+                                    borderWidth: 1,
+                                    borderColor: currentColors.borderLight,
+                                    borderRadius: 16,
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 6,
+                                }}>
+                                    <Text style={{ fontSize: 12, color: currentColors.textSecondary }}>
+                                        {Array.from(typingUsers.values()).join(', ')} {typingUsers.size === 1 ? 'is' : 'are'} typing…
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                        {inputText.length > 800 && (
+                            <Text style={{ fontSize: 11, textAlign: 'right', marginBottom: 4, color: inputText.length > 950 ? '#EF4444' : currentColors.textSecondary, fontWeight: inputText.length > 950 ? '600' : '400' }}>
+                                {1000 - inputText.length}
+                            </Text>
+                        )}
                         <View style={themeStyles.inputContainer}>
                             <TextInput
                                 style={themeStyles.textInput}
                                 value={inputText}
-                                onChangeText={setInputText}
+                                onChangeText={(text) => {
+                                    setInputText(text);
+                                    SecureChatService.sendTypingStart(leagueId);
+                                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                    typingTimeoutRef.current = setTimeout(() => {
+                                        SecureChatService.sendTypingStop(leagueId);
+                                    }, 2000);
+                                }}
                                 placeholder={`Message ${leagueName}...`}
                                 placeholderTextColor={currentColors.textSecondary}
                                 multiline

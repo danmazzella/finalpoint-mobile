@@ -18,22 +18,15 @@ interface FeatureFlagProviderProps {
 
 export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
-    const [isChatFeatureEnabled, setIsChatFeatureEnabled] = useState(false);
+    const [isChatFeatureEnabled] = useState(true); // Chat enabled for all users
     const [isPositionChangesEnabled, setIsPositionChangesEnabled] = useState(false);
     const [isMultiPositionPicksEnabled, setIsMultiPositionPicksEnabled] = useState(false);
     const { user } = useAuth();
 
     const refreshFlags = useCallback(async () => {
         try {
-            // The user profile data is already loaded in AuthContext
-            // We just need to update our local state based on the current user data
             if (user) {
                 let flagsSet = 0;
-
-                if (user.chatFeatureEnabled !== undefined) {
-                    setIsChatFeatureEnabled(user.chatFeatureEnabled);
-                    flagsSet++;
-                }
 
                 if (user.positionChangesEnabled !== undefined) {
                     setIsPositionChangesEnabled(user.positionChangesEnabled);
@@ -65,59 +58,27 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ childr
 
     // Update feature flags when user changes
     useEffect(() => {
-        console.log('🔍 FeatureFlagContext: User changed:', {
-            user: !!user,
-            chatFeatureEnabled: user?.chatFeatureEnabled,
-            positionChangesEnabled: user?.positionChangesEnabled,
-            userType: typeof user?.chatFeatureEnabled,
-            userId: user?.id
-        });
-
         if (user === null) {
-            // User is not logged in
-            console.log('❌ FeatureFlagContext: User not logged in, disabling all features');
-            setIsChatFeatureEnabled(false);
             setIsPositionChangesEnabled(false);
             setIsMultiPositionPicksEnabled(false);
             setIsLoading(false);
         } else if (user) {
-            // User is logged in - handle each flag independently
             let flagsSet = 0;
-            const totalFlags = 3;
-
-            if (user.chatFeatureEnabled !== undefined) {
-                console.log('✅ FeatureFlagContext: Setting chat feature flag:', user.chatFeatureEnabled);
-                setIsChatFeatureEnabled(user.chatFeatureEnabled);
-                flagsSet++;
-            } else {
-                console.log('⚠️ FeatureFlagContext: chatFeatureEnabled is undefined, keeping current value');
-            }
 
             if (user.positionChangesEnabled !== undefined) {
-                console.log('✅ FeatureFlagContext: Setting position changes flag:', user.positionChangesEnabled);
                 setIsPositionChangesEnabled(user.positionChangesEnabled);
                 flagsSet++;
-            } else {
-                console.log('⚠️ FeatureFlagContext: positionChangesEnabled is undefined, keeping current value');
             }
 
             if (user.multiPositionPicksEnabled !== undefined) {
-                console.log('✅ FeatureFlagContext: Setting multi position picks flag:', user.multiPositionPicksEnabled);
                 setIsMultiPositionPicksEnabled(user.multiPositionPicksEnabled);
                 flagsSet++;
-            } else {
-                console.log('⚠️ FeatureFlagContext: multiPositionPicksEnabled is undefined, keeping current value');
             }
 
-            // If we got at least one flag or user is defined, we can stop loading
             if (flagsSet > 0 || user.id) {
-                console.log(`✅ FeatureFlagContext: Set ${flagsSet}/${totalFlags} flags, stopping loading`);
                 setIsLoading(false);
-            } else {
-                console.log('⚠️ FeatureFlagContext: No flags set and no user ID, keeping loading state');
             }
         }
-        // If user is undefined, we're still loading, so keep isLoading true
     }, [user]);
 
     // Add a timeout to handle cases where feature flags don't load properly

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,7 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    Image,
     Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,11 +20,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
-import { spacing, borderRadius, shadows } from '../utils/styles';
+import { shadows } from '../utils/styles';
 import GoogleSignInWrapper from '../components/GoogleSignInWrapper';
 import { shouldShowGoogleSignIn } from '../config/environment';
 import GlassBackground from '../src/components/GlassBackground';
-
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -44,12 +44,10 @@ const LoginScreen = () => {
     const currentColors = resolvedTheme === 'dark' ? darkColors : lightColors;
     const universalStyles = createThemeStyles(currentColors);
 
-    // Function to open finalpoint.app website
     const handleLearnMore = async () => {
         try {
             const url = 'https://finalpoint.app';
             const supported = await Linking.canOpenURL(url);
-
             if (supported) {
                 await Linking.openURL(url);
             } else {
@@ -69,8 +67,6 @@ const LoginScreen = () => {
         const result = await login(email, password);
         if (result.success && 'message' in result && result.message) {
             showToast(result.message, 'success');
-            // Redirect to the intended destination or default to tabs
-            // Validate redirect path to prevent navigation errors
             if (redirectTo && redirectTo.startsWith('/') && redirectTo !== '/login' && redirectTo !== '/signup') {
                 router.replace(redirectTo as any);
             } else {
@@ -83,187 +79,176 @@ const LoginScreen = () => {
         }
     };
 
-
     if (isLoading) {
         return (
             <GlassBackground>
-            <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
-                <ActivityIndicator size="large" color={currentColors.primary} />
-            </SafeAreaView>
+                <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
+                    <ActivityIndicator size="large" color={currentColors.primary} />
+                </SafeAreaView>
             </GlassBackground>
         );
     }
 
     return (
         <GlassBackground>
-        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right', 'bottom']}>
-            <KeyboardAvoidingView
-                style={universalStyles.keyboardAvoidingView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
-            >
-                <ScrollView
-                    ref={scrollViewRef}
-                    style={universalStyles.scrollView}
-                    contentContainerStyle={[universalStyles.scrollContent, styles.scrollContent]}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    automaticallyAdjustKeyboardInsets={true}
-                    contentInsetAdjustmentBehavior="automatic"
+            <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right', 'bottom']}>
+                <KeyboardAvoidingView
+                    style={universalStyles.keyboardAvoidingView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
                 >
-                    {/* Logo and Branding Section */}
-                    <View style={styles.logoSection}>
-                        <View style={styles.logoContainer}>
-                            <View style={[styles.logo, { backgroundColor: currentColors.primary }]}>
-                                <Text style={[styles.logoText, { color: currentColors.textInverse }]}>FP</Text>
-                                <View style={[styles.logoAccent, { backgroundColor: currentColors.warning }]} />
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={universalStyles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={true}
+                        contentInsetAdjustmentBehavior="automatic"
+                    >
+                        {/* Logo Section */}
+                        <View style={styles.logoSection}>
+                            <View style={styles.logoWrapper}>
+                                <Image
+                                    source={require('../assets/android-icons/playstore-icon.png')}
+                                    style={styles.logoImage}
+                                    resizeMode="cover"
+                                />
                             </View>
-                        </View>
-                        <Text style={[styles.appName, { color: currentColors.textPrimary }]}>FinalPoint</Text>
-                        <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>F1 Prediction Game</Text>
-                    </View>
-
-                    {/* Form Section */}
-                    <View style={styles.formSection}>
-                        {/* Email Field */}
-                        <View style={styles.inputContainer}>
-                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Email address</Text>
-                            <TextInput
-                                ref={emailInputRef}
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: currentColors.inputBackground,
-                                        borderColor: currentColors.glassBorder,
-                                        color: currentColors.textPrimary
-                                    },
-                                    emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
-                                ]}
-                                placeholder="Enter your email address"
-                                placeholderTextColor={currentColors.textSecondary}
-                                value={email}
-                                onChangeText={setEmail}
-                                onFocus={() => {
-                                    setEmailFocused(true);
-                                }}
-                                onBlur={() => setEmailFocused(false)}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                autoComplete="email"
-                                returnKeyType="next"
-                                blurOnSubmit={false}
-                                onSubmitEditing={() => passwordInputRef.current?.focus()}
-                            />
+                            <Text style={[styles.appName, { color: currentColors.textPrimary }]}>FinalPoint</Text>
+                            <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>F1 Prediction Game</Text>
                         </View>
 
-                        {/* Password Field */}
-                        <View style={styles.inputContainer}>
-                            <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Password</Text>
-                            <View style={styles.passwordContainer}>
+                        {/* Form Card */}
+                        <View style={[styles.formCard, {
+                            backgroundColor: currentColors.glassBackground,
+                            borderColor: currentColors.glassBorder,
+                        }]}>
+                            <Text style={[styles.formTitle, { color: currentColors.textPrimary }]}>Sign in</Text>
+
+                            {/* Email Field */}
+                            <View style={styles.inputContainer}>
+                                <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Email address</Text>
                                 <TextInput
-                                    ref={passwordInputRef}
+                                    ref={emailInputRef}
                                     style={[
-                                        styles.passwordInput,
+                                        styles.input,
                                         {
                                             backgroundColor: currentColors.inputBackground,
-                                            borderColor: currentColors.glassBorder,
-                                            color: currentColors.textPrimary
+                                            borderColor: emailFocused ? currentColors.primary : currentColors.glassBorder,
+                                            color: currentColors.textPrimary,
+                                            borderWidth: emailFocused ? 2 : 1,
                                         },
-                                        passwordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
                                     ]}
-                                    placeholder="Enter your password"
-                                    placeholderTextColor={currentColors.textSecondary}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    onFocus={() => {
-                                        setPasswordFocused(true);
-                                    }}
-                                    onBlur={() => setPasswordFocused(false)}
-                                    secureTextEntry={!showPassword}
+                                    placeholder="Enter your email"
+                                    placeholderTextColor={currentColors.textTertiary}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    onFocus={() => setEmailFocused(true)}
+                                    onBlur={() => setEmailFocused(false)}
+                                    keyboardType="email-address"
                                     autoCapitalize="none"
                                     autoCorrect={false}
-                                    autoComplete="password"
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleLogin}
+                                    autoComplete="email"
+                                    returnKeyType="next"
+                                    blurOnSubmit={false}
+                                    onSubmitEditing={() => passwordInputRef.current?.focus()}
                                 />
-                                <TouchableOpacity
-                                    style={styles.eyeButton}
-                                    onPress={() => setShowPassword(!showPassword)}
-                                >
-                                    <Ionicons
-                                        name={showPassword ? 'eye-off' : 'eye'}
-                                        size={20}
-                                        color={currentColors.textSecondary}
+                            </View>
+
+                            {/* Password Field */}
+                            <View style={styles.inputContainer}>
+                                <View style={styles.labelRow}>
+                                    <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Password</Text>
+                                    <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+                                        <Text style={[styles.forgotLink, { color: currentColors.primary }]}>Forgot?</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={styles.passwordContainer}>
+                                    <TextInput
+                                        ref={passwordInputRef}
+                                        style={[
+                                            styles.passwordInput,
+                                            {
+                                                backgroundColor: currentColors.inputBackground,
+                                                borderColor: passwordFocused ? currentColors.primary : currentColors.glassBorder,
+                                                color: currentColors.textPrimary,
+                                                borderWidth: passwordFocused ? 2 : 1,
+                                            },
+                                        ]}
+                                        placeholder="Enter your password"
+                                        placeholderTextColor={currentColors.textTertiary}
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        onFocus={() => setPasswordFocused(true)}
+                                        onBlur={() => setPasswordFocused(false)}
+                                        secureTextEntry={!showPassword}
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                        autoComplete="password"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleLogin}
                                     />
+                                    <TouchableOpacity
+                                        style={styles.eyeButton}
+                                        onPress={() => setShowPassword(!showPassword)}
+                                    >
+                                        <Ionicons
+                                            name={showPassword ? 'eye-off' : 'eye'}
+                                            size={20}
+                                            color={currentColors.textTertiary}
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Sign In Button */}
+                            <TouchableOpacity
+                                style={[
+                                    styles.primaryButton,
+                                    { backgroundColor: currentColors.primary },
+                                    isAuthenticating && { opacity: 0.7 },
+                                ]}
+                                onPress={handleLogin}
+                                activeOpacity={0.85}
+                                disabled={isAuthenticating}
+                            >
+                                {isAuthenticating ? (
+                                    <ActivityIndicator size="small" color="#ffffff" />
+                                ) : (
+                                    <Text style={styles.primaryButtonText}>Sign in</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* Google Sign-In */}
+                            {shouldShowGoogleSignIn() && (
+                                <>
+                                    <View style={styles.dividerRow}>
+                                        <View style={[styles.dividerLine, { backgroundColor: currentColors.glassBorder }]} />
+                                        <Text style={[styles.dividerText, { color: currentColors.textTertiary }]}>or</Text>
+                                        <View style={[styles.dividerLine, { backgroundColor: currentColors.glassBorder }]} />
+                                    </View>
+                                    <GoogleSignInWrapper disabled={isAuthenticating || false} />
+                                </>
+                            )}
+                        </View>
+
+                        {/* Footer */}
+                        <View style={styles.footer}>
+                            <View style={styles.footerRow}>
+                                <Text style={[styles.footerText, { color: currentColors.textSecondary }]}>Don't have an account? </Text>
+                                <TouchableOpacity onPress={() => router.push('/signup')}>
+                                    <Text style={[styles.footerLink, { color: currentColors.primary }]}>Create account</Text>
                                 </TouchableOpacity>
                             </View>
-                        </View>
-
-                        {/* Sign In Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.signInButton,
-                                { backgroundColor: currentColors.primary },
-                                isAuthenticating && { opacity: 0.7 }
-                            ]}
-                            onPress={handleLogin}
-                            activeOpacity={0.8}
-                            disabled={isAuthenticating}
-                        >
-                            {isAuthenticating ? (
-                                <ActivityIndicator size="small" color={currentColors.textInverse} />
-                            ) : (
-                                <Text style={[styles.signInButtonText, { color: currentColors.textInverse }]}>Sign in</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        {/* Google Sign-In Section */}
-                        {shouldShowGoogleSignIn() && (
-                            <>
-                                {/* Divider */}
-                                <View style={styles.dividerContainer}>
-                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
-                                    <Text style={[styles.dividerText, { color: currentColors.textSecondary }]}>or</Text>
-                                    <View style={[styles.dividerLine, { backgroundColor: currentColors.borderMedium }]} />
-                                </View>
-
-                                {/* Conditional Google Sign-In Button */}
-                                <GoogleSignInWrapper disabled={isAuthenticating || false} />
-                            </>
-                        )}
-
-                        {/* Forgot Password Link */}
-                        <TouchableOpacity
-                            style={styles.forgotPasswordButton}
-                            onPress={() => router.push('/forgot-password')}
-                        >
-                            <Text style={[styles.forgotPasswordText, { color: currentColors.primary }]}>Forgot your password?</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Footer Links */}
-                    <View style={styles.footerSection}>
-                        <View style={styles.footerTextContainer}>
-                            <Text style={[styles.footerText, { color: currentColors.textSecondary }]}>Don&apos;t have an account? </Text>
-                            <TouchableOpacity onPress={() => router.push('/signup')}>
-                                <Text style={[styles.footerLink, { color: currentColors.primary }]}>Create an account</Text>
+                            <TouchableOpacity onPress={handleLearnMore} style={styles.learnMoreButton}>
+                                <Text style={[styles.learnMoreText, { color: currentColors.textTertiary }]}>Learn more at finalpoint.app</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity
-                            style={styles.learnMoreButton}
-                            onPress={handleLearnMore}
-                        >
-                            <Text style={[styles.learnMoreText, { color: currentColors.textSecondary }]}>Learn more about FinalPoint</Text>
-                        </TouchableOpacity>
-
-
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
         </GlassBackground>
     );
 };
@@ -277,93 +262,87 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    keyboardAvoidingView: {
-        flex: 1,
-    },
-    scrollView: {
-        flex: 1,
-    },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 16,
-        paddingVertical: 24,
-        paddingBottom: 48, // Add extra bottom padding
+        paddingHorizontal: 20,
+        paddingTop: 24,
+        paddingBottom: 48,
     },
     logoSection: {
         alignItems: 'center',
-        marginTop: 32,
-        marginBottom: 32,
+        marginBottom: 28,
     },
-    logoContainer: {
+    logoWrapper: {
+        width: 96,
+        height: 96,
+        borderRadius: 22,
+        overflow: 'hidden',
         marginBottom: 16,
+        shadowColor: '#0A1628',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
     },
-    logo: {
-        width: 80,
-        height: 80,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    logoText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    logoAccent: {
-        position: 'absolute',
-        right: 8,
-        top: 8,
-        width: 12,
-        height: 12,
-        borderRadius: 2,
+    logoImage: {
+        width: 96,
+        height: 96,
     },
     appName: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontSize: 30,
+        fontWeight: '800',
+        letterSpacing: -0.5,
         marginBottom: 4,
     },
     tagline: {
-        fontSize: 16,
+        fontSize: 15,
+        fontWeight: '400',
     },
-    formSection: {
-        marginBottom: 32,
+    formCard: {
+        borderRadius: 20,
+        borderWidth: 1,
+        padding: 24,
+        marginBottom: 20,
+        ...shadows.glass,
+    },
+    formTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 20,
     },
     inputContainer: {
         marginBottom: 16,
     },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: '600',
+    labelRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 6,
     },
-    input: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        fontSize: 16,
+    inputLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        marginBottom: 6,
     },
-    inputFocused: {
-        borderWidth: 2,
+    forgotLink: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    input: {
+        borderRadius: 10,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        fontSize: 15,
     },
     passwordContainer: {
         position: 'relative',
     },
     passwordInput: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        paddingRight: 50,
-        fontSize: 16,
+        borderRadius: 10,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        paddingRight: 48,
+        fontSize: 15,
     },
     eyeButton: {
         position: 'absolute',
@@ -372,58 +351,18 @@ const styles = StyleSheet.create({
         transform: [{ translateY: -10 }],
         padding: 4,
     },
-    signInButton: {
-        borderRadius: 8,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+    primaryButton: {
+        borderRadius: 12,
+        paddingVertical: 14,
         alignItems: 'center',
-        marginTop: 16,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.22,
-        shadowRadius: 2.22,
-        elevation: 3,
+        marginTop: 8,
     },
-    signInButtonText: {
+    primaryButtonText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '700',
+        color: '#ffffff',
     },
-    forgotPasswordButton: {
-        alignItems: 'center',
-        marginTop: 12,
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    footerSection: {
-        alignItems: 'center',
-        marginTop: 24,
-        paddingBottom: 16,
-    },
-    footerTextContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    footerText: {
-        fontSize: 14,
-    },
-    footerLink: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    learnMoreButton: {
-        paddingVertical: 6,
-    },
-    learnMoreText: {
-        fontSize: 14,
-        textDecorationLine: 'underline',
-    },
-    dividerContainer: {
+    dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginVertical: 16,
@@ -434,10 +373,30 @@ const styles = StyleSheet.create({
     },
     dividerText: {
         marginHorizontal: 12,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '500',
+    },
+    footer: {
+        alignItems: 'center',
+        gap: 10,
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    footerText: {
+        fontSize: 14,
+    },
+    footerLink: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    learnMoreButton: {
+        paddingVertical: 4,
+    },
+    learnMoreText: {
+        fontSize: 13,
     },
 });
 
 export default LoginScreen;
-

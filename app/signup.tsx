@@ -5,12 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +20,7 @@ import { router } from 'expo-router';
 import { useTheme } from '../src/context/ThemeContext';
 import { lightColors, darkColors } from '../src/constants/Colors';
 import { createThemeStyles } from '../src/styles/universalStyles';
-import { spacing, borderRadius, shadows, inputStyles, buttonStyles } from '../utils/styles';
+import { shadows } from '../utils/styles';
 import GlassBackground from '../src/components/GlassBackground';
 
 const SignupScreen = () => {
@@ -64,7 +63,6 @@ const SignupScreen = () => {
       }
     });
 
-    // Check for common weak patterns
     const weakPatterns = [
       { test: /(.)\1{2,}/, message: 'Avoid repeated characters' },
       { test: /123456/, message: 'Avoid sequential numbers' },
@@ -76,7 +74,7 @@ const SignupScreen = () => {
     for (const pattern of weakPatterns) {
       if (pattern.test.test(password)) {
         errors.push(pattern.message);
-        break; // Only show one weak pattern error
+        break;
       }
     }
 
@@ -91,42 +89,30 @@ const SignupScreen = () => {
 
   const handleSignup = async () => {
     try {
-      // Field validation
       if (!name || !email || !password || !confirmPassword) {
         showToast('Please fill in all fields', 'error');
         return;
       }
-
-      // Email format validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         showToast('Please enter a valid email address', 'error');
         return;
       }
-
-      // Username validation
       if (name.length < 3) {
         showToast('Username must be at least 3 characters long', 'error');
         return;
       }
-
-      // Password validation
       if (!passwordValidation.isValid) {
         showToast('Please fix password requirements', 'error');
         return;
       }
-
-      // Password confirmation
       if (password !== confirmPassword) {
         showToast('Passwords do not match', 'error');
         return;
       }
-
-      // Attempt signup
       const result = await signup(email, password, name);
       if (result.success) {
         showToast('Account created successfully!', 'success');
-        // Navigate to main app
         router.replace('/(tabs)');
       } else {
         showToast(result.error || 'Signup failed', 'error');
@@ -137,296 +123,275 @@ const SignupScreen = () => {
     }
   };
 
-  const handleBackToLogin = () => {
-    router.push('/login');
-  };
+  const isFormValid = !!(name && email && password && confirmPassword && passwordValidation.isValid && password === confirmPassword);
 
   if (isLoading || isAuthenticating) {
     return (
       <GlassBackground>
-      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
-        <ActivityIndicator size="large" color={currentColors.primary} />
-      </SafeAreaView>
+        <SafeAreaView style={[styles.loadingContainer, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
+          <ActivityIndicator size="large" color={currentColors.primary} />
+        </SafeAreaView>
       </GlassBackground>
     );
   }
 
   return (
     <GlassBackground>
-    <>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
-        <KeyboardAvoidingView
-          style={universalStyles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
-        >
-          <ScrollView
-            ref={scrollViewRef}
-            style={universalStyles.scrollView}
-            contentContainerStyle={[universalStyles.scrollContent, styles.scrollContent]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            automaticallyAdjustKeyboardInsets={true}
-            contentInsetAdjustmentBehavior="automatic"
+      <>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top', 'left', 'right']}>
+          <KeyboardAvoidingView
+            style={universalStyles.keyboardAvoidingView}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 20}
           >
-            {/* Logo and Branding Section */}
-            <View style={styles.logoSection}>
-              <View style={styles.logoContainer}>
-                <View style={[styles.logo, { backgroundColor: currentColors.primary }]}>
-                  <Text style={[styles.logoText, { color: currentColors.textInverse }]}>FP</Text>
-                  <View style={[styles.logoAccent, { backgroundColor: currentColors.warning }]} />
+            <ScrollView
+              ref={scrollViewRef}
+              style={universalStyles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              automaticallyAdjustKeyboardInsets={true}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              {/* Logo Section */}
+              <View style={styles.logoSection}>
+                <View style={styles.logoWrapper}>
+                  <Image
+                    source={require('../assets/android-icons/playstore-icon.png')}
+                    style={styles.logoImage}
+                    resizeMode="cover"
+                  />
                 </View>
-              </View>
-              <Text style={[styles.appName, { color: currentColors.textPrimary }]}>FinalPoint</Text>
-              <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>F1 Prediction Game</Text>
-            </View>
-
-            {/* Form Section */}
-            <View style={styles.formSection}>
-              {/* Name Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Username</Text>
-                <TextInput
-                  ref={nameInputRef}
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: currentColors.inputBackground,
-                      borderColor: currentColors.glassBorder,
-                      color: currentColors.textPrimary
-                    },
-                    nameFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
-                  ]}
-                  placeholder="Enter your username"
-                  placeholderTextColor={currentColors.textSecondary}
-                  value={name}
-                  onChangeText={setName}
-                  onFocus={() => setNameFocused(true)}
-                  onBlur={() => setNameFocused(false)}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  autoComplete="username"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => emailInputRef.current?.focus()}
-                />
+                <Text style={[styles.appName, { color: currentColors.textPrimary }]}>FinalPoint</Text>
+                <Text style={[styles.tagline, { color: currentColors.textSecondary }]}>Create your account</Text>
               </View>
 
-              {/* Email Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Email address</Text>
-                <TextInput
-                  ref={emailInputRef}
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: currentColors.inputBackground,
-                      borderColor: currentColors.glassBorder,
-                      color: currentColors.textPrimary
-                    },
-                    emailFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
-                  ]}
-                  placeholder="Enter your email address"
-                  placeholderTextColor={currentColors.textSecondary}
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="email"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => passwordInputRef.current?.focus()}
-                />
-              </View>
+              {/* Form Card */}
+              <View style={[styles.formCard, {
+                backgroundColor: currentColors.glassBackground,
+                borderColor: currentColors.glassBorder,
+              }]}>
+                <Text style={[styles.formTitle, { color: currentColors.textPrimary }]}>Get started</Text>
 
-              {/* Password Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Password</Text>
-                <View style={styles.passwordContainer}>
+                {/* Username */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Username</Text>
                   <TextInput
-                    ref={passwordInputRef}
+                    ref={nameInputRef}
                     style={[
-                      styles.passwordInput,
+                      styles.input,
                       {
                         backgroundColor: currentColors.inputBackground,
-                        borderColor: currentColors.glassBorder,
-                        color: currentColors.textPrimary
+                        borderColor: nameFocused ? currentColors.primary : currentColors.glassBorder,
+                        color: currentColors.textPrimary,
+                        borderWidth: nameFocused ? 2 : 1,
                       },
-                      passwordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
                     ]}
-                    placeholder="Create a password"
-                    placeholderTextColor={currentColors.textSecondary}
-                    value={password}
-                    onChangeText={setPassword}
-                    onFocus={() => setPasswordFocused(true)}
-                    onBlur={() => setPasswordFocused(false)}
-                    secureTextEntry={!showPassword}
+                    placeholder="Choose a username"
+                    placeholderTextColor={currentColors.textTertiary}
+                    value={name}
+                    onChangeText={setName}
+                    onFocus={() => setNameFocused(true)}
+                    onBlur={() => setNameFocused(false)}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    autoComplete="new-password"
+                    autoComplete="username"
                     returnKeyType="next"
                     blurOnSubmit={false}
-                    onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+                    onSubmitEditing={() => emailInputRef.current?.focus()}
                   />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons
-                      name={showPassword ? 'eye-off' : 'eye'}
-                      size={20}
-                      color={currentColors.textSecondary}
-                    />
-                  </TouchableOpacity>
                 </View>
 
-                {/* Password Requirements */}
-                {password.length > 0 && (
-                  <View style={[styles.requirementsContainer, { backgroundColor: currentColors.inputBackground }]}>
-                    <Text style={[styles.requirementsTitle, { color: currentColors.textPrimary }]}>Password Requirements:</Text>
-                    {[
-                      { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
-                      { test: (p: string) => /[a-z]/.test(p), label: 'Contains lowercase letter' },
-                      { test: (p: string) => /[A-Z]/.test(p), label: 'Contains uppercase letter' },
-                      { test: (p: string) => /\d/.test(p), label: 'Contains number' },
-                      { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Contains special character' }
-                    ].map((req, index) => {
-                      const isMet = req.test(password);
-                      return (
-                        <View key={index} style={styles.requirementItem}>
-                          <Ionicons
-                            name={isMet ? 'checkmark-circle' : 'close-circle'}
-                            size={16}
-                            color={isMet ? currentColors.success : currentColors.error}
-                          />
-                          <Text style={[styles.requirementText, { color: currentColors.textSecondary }, isMet && { color: currentColors.success }]}>
-                            {req.label}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                    {passwordValidation.errors.some(error =>
-                      error.includes('repeated') ||
-                      error.includes('sequential') ||
-                      error.includes('keyboard') ||
-                      error.includes('common')
-                    ) && (
-                        <View style={styles.requirementItem}>
-                          <Ionicons
-                            name="close-circle"
-                            size={16}
-                            color={currentColors.error}
-                          />
-                          <Text style={[styles.requirementText, { color: currentColors.error }]}>
-                            {passwordValidation.errors.find(error =>
-                              error.includes('repeated') ||
-                              error.includes('sequential') ||
-                              error.includes('keyboard') ||
-                              error.includes('common')
-                            )}
-                          </Text>
-                        </View>
-                      )}
-                  </View>
-                )}
-              </View>
-
-              {/* Confirm Password Field */}
-              <View style={styles.inputContainer}>
-                <Text style={[styles.inputLabel, { color: currentColors.textPrimary }]}>Confirm password</Text>
-                <View style={styles.passwordContainer}>
+                {/* Email */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Email address</Text>
                   <TextInput
-                    ref={confirmPasswordInputRef}
+                    ref={emailInputRef}
                     style={[
-                      styles.passwordInput,
+                      styles.input,
                       {
                         backgroundColor: currentColors.inputBackground,
-                        borderColor: currentColors.glassBorder,
-                        color: currentColors.textPrimary
+                        borderColor: emailFocused ? currentColors.primary : currentColors.glassBorder,
+                        color: currentColors.textPrimary,
+                        borderWidth: emailFocused ? 2 : 1,
                       },
-                      confirmPasswordFocused && [styles.inputFocused, { borderColor: currentColors.primary }],
                     ]}
-                    placeholder="Confirm your password"
-                    placeholderTextColor={currentColors.textSecondary}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    onFocus={() => setConfirmPasswordFocused(true)}
-                    onBlur={() => setConfirmPasswordFocused(false)}
-                    secureTextEntry={!showConfirmPassword}
+                    placeholder="Enter your email"
+                    placeholderTextColor={currentColors.textTertiary}
+                    value={email}
+                    onChangeText={setEmail}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    autoComplete="new-password"
-                    returnKeyType="done"
-                    onSubmitEditing={handleSignup}
+                    autoComplete="email"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => passwordInputRef.current?.focus()}
                   />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Ionicons
-                      name={showConfirmPassword ? 'eye-off' : 'eye'}
-                      size={20}
-                      color={currentColors.textSecondary}
-                    />
-                  </TouchableOpacity>
                 </View>
-                {confirmPassword.length > 0 && password !== confirmPassword && (
-                  <Text style={[styles.errorText, { color: currentColors.error }]}>Passwords do not match</Text>
-                )}
-              </View>
 
-              {/* Create Account Button */}
-              <TouchableOpacity
-                style={[
-                  styles.createAccountButton,
-                  { backgroundColor: currentColors.primary },
-                  (!name || !email || !password || !confirmPassword || !passwordValidation.isValid || password !== confirmPassword) &&
-                  [styles.createAccountButtonDisabled, { backgroundColor: currentColors.borderMedium }],
-                  isAuthenticating && { opacity: 0.7 }
-                ]}
-                onPress={handleSignup}
-                activeOpacity={0.8}
-                disabled={!name || !email || !password || !confirmPassword || !passwordValidation.isValid || password !== confirmPassword || isAuthenticating}
-              >
-                {isAuthenticating ? (
-                  <ActivityIndicator size="small" color={currentColors.textInverse} />
-                ) : (
-                  <Text style={[styles.createAccountButtonText, { color: currentColors.textInverse }]}>Create account</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+                {/* Password */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      ref={passwordInputRef}
+                      style={[
+                        styles.passwordInput,
+                        {
+                          backgroundColor: currentColors.inputBackground,
+                          borderColor: passwordFocused ? currentColors.primary : currentColors.glassBorder,
+                          color: currentColors.textPrimary,
+                          borderWidth: passwordFocused ? 2 : 1,
+                        },
+                      ]}
+                      placeholder="Create a password"
+                      placeholderTextColor={currentColors.textTertiary}
+                      value={password}
+                      onChangeText={setPassword}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="new-password"
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        color={currentColors.textTertiary}
+                      />
+                    </TouchableOpacity>
+                  </View>
 
-            {/* Footer Links */}
-            <View style={styles.footerSection}>
-              <View style={styles.footerTextContainer}>
-                <Text style={[styles.footerText, { color: currentColors.textSecondary }]}>Already have an account? </Text>
-                <TouchableOpacity onPress={() => router.push('/login')}>
-                  <Text style={[styles.footerLink, { color: currentColors.primary }]}>Sign in</Text>
+                  {/* Password Requirements */}
+                  {password.length > 0 && (
+                    <View style={[styles.requirementsContainer, { backgroundColor: currentColors.inputBackground }]}>
+                      {[
+                        { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
+                        { test: (p: string) => /[a-z]/.test(p), label: 'Lowercase letter' },
+                        { test: (p: string) => /[A-Z]/.test(p), label: 'Uppercase letter' },
+                        { test: (p: string) => /\d/.test(p), label: 'Number' },
+                        { test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(p), label: 'Special character' }
+                      ].map((req, index) => {
+                        const isMet = req.test(password);
+                        return (
+                          <View key={index} style={styles.requirementItem}>
+                            <Ionicons
+                              name={isMet ? 'checkmark-circle' : 'ellipse-outline'}
+                              size={14}
+                              color={isMet ? currentColors.success : currentColors.textTertiary}
+                            />
+                            <Text style={[
+                              styles.requirementText,
+                              { color: isMet ? currentColors.success : currentColors.textTertiary }
+                            ]}>
+                              {req.label}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                {/* Confirm Password */}
+                <View style={styles.inputContainer}>
+                  <Text style={[styles.inputLabel, { color: currentColors.textSecondary }]}>Confirm password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      ref={confirmPasswordInputRef}
+                      style={[
+                        styles.passwordInput,
+                        {
+                          backgroundColor: currentColors.inputBackground,
+                          borderColor: confirmPasswordFocused ? currentColors.primary : currentColors.glassBorder,
+                          color: currentColors.textPrimary,
+                          borderWidth: confirmPasswordFocused ? 2 : 1,
+                        },
+                        confirmPassword.length > 0 && password !== confirmPassword && {
+                          borderColor: currentColors.error,
+                          borderWidth: 1,
+                        },
+                      ]}
+                      placeholder="Confirm your password"
+                      placeholderTextColor={currentColors.textTertiary}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      onFocus={() => setConfirmPasswordFocused(true)}
+                      onBlur={() => setConfirmPasswordFocused(false)}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="new-password"
+                      returnKeyType="done"
+                      onSubmitEditing={handleSignup}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      <Ionicons
+                        name={showConfirmPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        color={currentColors.textTertiary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {confirmPassword.length > 0 && password !== confirmPassword && (
+                    <Text style={[styles.errorText, { color: currentColors.error }]}>Passwords do not match</Text>
+                  )}
+                </View>
+
+                {/* Create Account Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: isFormValid ? currentColors.primary : currentColors.borderMedium },
+                    isAuthenticating && { opacity: 0.7 },
+                  ]}
+                  onPress={handleSignup}
+                  activeOpacity={0.85}
+                  disabled={!isFormValid || isAuthenticating}
+                >
+                  {isAuthenticating ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Create account</Text>
+                  )}
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={styles.learnMoreButton}
-                onPress={() => showToast('Learn more about FinalPoint', 'info')}
-              >
-                <Text style={[styles.learnMoreText, { color: currentColors.textSecondary }]}>Learn more about FinalPoint</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-      <SimpleToast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onHide={hideToast}
-        duration={toast.duration}
-      />
-    </>
+              {/* Footer */}
+              <View style={styles.footer}>
+                <View style={styles.footerRow}>
+                  <Text style={[styles.footerText, { color: currentColors.textSecondary }]}>Already have an account? </Text>
+                  <TouchableOpacity onPress={() => router.push('/login')}>
+                    <Text style={[styles.footerLink, { color: currentColors.primary }]}>Sign in</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+        <SimpleToast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onHide={hideToast}
+          duration={toast.duration}
+        />
+      </>
     </GlassBackground>
   );
 };
@@ -442,87 +407,75 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 48,
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  logoContainer: {
-    marginBottom: 16,
+  logoWrapper: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 14,
+    shadowColor: '#0A1628',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  logoAccent: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 12,
-    height: 12,
-    borderRadius: 2,
+  logoImage: {
+    width: 88,
+    height: 88,
   },
   appName: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '400',
   },
-  formSection: {
-    marginBottom: 32,
+  formCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    marginBottom: 20,
+    ...shadows.glass,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 20,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    minHeight: 44,
-  },
-  inputFocused: {
-    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    fontSize: 15,
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    paddingRight: 50,
-    fontSize: 16,
-    minHeight: 44,
+    borderRadius: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    paddingRight: 48,
+    fontSize: 15,
   },
   eyeButton: {
     position: 'absolute',
@@ -532,81 +485,53 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   requirementsContainer: {
-    marginTop: 12,
+    marginTop: 10,
     padding: 12,
-    borderRadius: 8,
-  },
-  requirementsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    borderRadius: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   requirementItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 4,
+    width: '47%',
   },
   requirementText: {
-    fontSize: 12,
-    marginLeft: 8,
-    flex: 1,
-  },
-  requirementMet: {
+    fontSize: 11,
     fontWeight: '500',
   },
   errorText: {
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 5,
     fontWeight: '500',
   },
-  createAccountButton: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  primaryButton: {
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 16,
-    minHeight: 44,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
+    marginTop: 8,
   },
-  createAccountButtonDisabled: {
-    opacity: 0.6,
-  },
-  createAccountButtonText: {
+  primaryButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#ffffff',
   },
-  footerSection: {
+  footer: {
     alignItems: 'center',
-    marginTop: 24,
-    paddingBottom: 16,
   },
-  footerTextContainer: {
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   footerText: {
     fontSize: 14,
   },
   footerLink: {
     fontSize: 14,
-    fontWeight: '600',
-  },
-  learnMoreButton: {
-    paddingVertical: 6,
-  },
-  learnMoreText: {
-    fontSize: 14,
-    textDecorationLine: 'underline',
+    fontWeight: '700',
   },
 });
 
 export default SignupScreen;
-

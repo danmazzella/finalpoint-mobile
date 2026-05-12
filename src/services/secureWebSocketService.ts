@@ -1,3 +1,4 @@
+import { AppState, AppStateStatus } from 'react-native';
 import { ChatMessage, ChatUser } from '../types/chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -15,6 +16,8 @@ interface WebSocketCallbacks {
     onMessage?: (message: ChatMessage) => void;
     onUserJoined?: (user: ChatUser | ChatUser[]) => void;
     onUserLeft?: (userId: string) => void;
+    onUserTyping?: (userId: string, userName: string) => void;
+    onUserStoppedTyping?: (userId: string) => void;
     onError?: (error: string) => void;
     onConnected?: () => void;
     onDisconnected?: () => void;
@@ -26,13 +29,33 @@ export class SecureWebSocketService {
     private callbacks: WebSocketCallbacks = {};
     private joinedLeagues: Set<string> = new Set();
     private reconnectAttempts = 0;
-    private maxReconnectAttempts = 10; // Increased from 5
-    private reconnectDelay = 1000; // Start with 1 second
+    private maxReconnectAttempts = 10;
+    private reconnectDelay = 1000;
     private isConnecting = false;
-    private lastMessageTimestamps: Map<string, Date> = new Map(); // Track last message time per league
-    private offlineMessageQueue: { leagueId: string, message: { text: string; channelId?: string } }[] = []; // Queue messages when offline
+    private isBackgrounded = false;
+    private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+    private lastMessageTimestamps: Map<string, Date> = new Map();
+    private offlineMessageQueue: { leagueId: string, message: { text: string; channelId?: string } }[] = [];
 
-    // Constructor removed - token will be set explicitly via updateToken method
+    constructor() {
+        this.appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+            if (nextState === 'background' || nextState === 'inactive') {
+                this.isBackgrounded = true;
+                if (this.ws) {
+                    this.ws.close(1000, 'App backgrounded');
+                    this.ws = null;
+                }
+                this.isConnecting = false;
+            } else if (nextState === 'active' && this.isBackgrounded) {
+                this.isBackgrounded = false;
+                if (this.joinedLeagues.size > 0 && !this.isConnected()) {
+                    this.reconnectAttempts = 0;
+                    this.reconnectDelay = 1000;
+                    this.connect();
+                }
+            }
+        });
+    }
 
     /**
      * Load authentication token from AsyncStorage
@@ -112,18 +135,20 @@ export class SecureWebSocketService {
 
             this.ws.onclose = (event) => {
                 this.isConnecting = false;
-                this.callbacks.onDisconnected?.();
-
-                // Attempt to reconnect if not a manual close
-                if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
-                    this.attemptReconnect();
+                if (!this.isBackgrounded) {
+                    this.callbacks.onDisconnected?.();
+                    if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.attemptReconnect();
+                    }
                 }
             };
 
             this.ws.onerror = (error) => {
                 this.isConnecting = false;
-                console.error('Mobile WebSocket error:', error);
-                this.callbacks.onError?.('WebSocket connection error');
+                if (!this.isBackgrounded) {
+                    console.error('Mobile WebSocket error:', (error as any)?.message || 'connection failed');
+                    this.callbacks.onError?.('WebSocket connection error');
+                }
             };
 
         } catch (error) {
@@ -137,6 +162,8 @@ export class SecureWebSocketService {
      * Disconnect from the WebSocket server
      */
     disconnect(): void {
+        this.appStateSubscription?.remove();
+        this.appStateSubscription = null;
         if (this.ws) {
             this.ws.close(1000, 'Manual disconnect');
             this.ws = null;
@@ -210,6 +237,14 @@ export class SecureWebSocketService {
         });
     }
 
+    sendTypingStart(leagueId: string): void {
+        this.send({ type: 'typing_start', leagueId });
+    }
+
+    sendTypingStop(leagueId: string): void {
+        this.send({ type: 'typing_stop', leagueId });
+    }
+
     /**
      * Set WebSocket event callbacks
      */
@@ -279,6 +314,18 @@ export class SecureWebSocketService {
             case 'user_left':
                 if (data.userId) {
                     this.callbacks.onUserLeft?.(data.userId);
+                }
+                break;
+
+            case 'user_typing':
+                if (data.userId) {
+                    this.callbacks.onUserTyping?.(data.userId as string, (data.userName as string) || 'Someone');
+                }
+                break;
+
+            case 'user_stopped_typing':
+                if (data.userId) {
+                    this.callbacks.onUserStoppedTyping?.(data.userId as string);
                 }
                 break;
 

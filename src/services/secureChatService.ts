@@ -486,4 +486,37 @@ export class SecureChatService {
     static updateWebSocketToken(token: string): void {
         secureWebSocketService.updateToken(token);
     }
+
+    static sendTypingStart(leagueId: string): void {
+        secureWebSocketService.sendTypingStart(leagueId);
+    }
+
+    static sendTypingStop(leagueId: string): void {
+        secureWebSocketService.sendTypingStop(leagueId);
+    }
+
+    static subscribeToTypingEvents(
+        callback: (event: { type: 'typing' | 'stopped'; userId: string; userName?: string }) => void
+    ): () => void {
+        secureWebSocketService.setCallbacks({
+            onUserTyping: (userId, userName) => callback({ type: 'typing', userId, userName }),
+            onUserStoppedTyping: (userId) => callback({ type: 'stopped', userId }),
+        });
+        return () => {
+            secureWebSocketService.setCallbacks({
+                onUserTyping: undefined,
+                onUserStoppedTyping: undefined,
+            });
+        };
+    }
+
+    static subscribeToConnectionState(
+        onConnected: () => void,
+        onDisconnected: () => void
+    ): () => void {
+        secureWebSocketService.setCallbacks({ onConnected, onDisconnected });
+        return () => {
+            secureWebSocketService.setCallbacks({ onConnected: undefined, onDisconnected: undefined });
+        };
+    }
 }

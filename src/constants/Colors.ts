@@ -4,9 +4,9 @@ import { useTheme } from '../context/ThemeContext';
 export const lightColors = {
     // Background colors
     backgroundPrimary: '#f9fafb',
-    backgroundSecondary: '#ffffff',
-    cardBackground: '#ffffff',
-    backgroundTertiary: '#f3f4f6',
+    backgroundSecondary: '#EEF4FF',
+    cardBackground: '#F5F9FF',
+    backgroundTertiary: '#E6EEFB',
 
     // Text colors
     textPrimary: '#171717',
@@ -43,12 +43,12 @@ export const lightColors = {
     buttonSecondaryText: '#2563eb',
 
     // Glass UI
-    glassBackground: 'rgba(255, 255, 255, 0.82)',
+    glassBackground: '#F5F9FF',
     glassBorder: 'rgba(59, 130, 246, 0.18)',
     glassShadowColor: '#3b82f6',
     pageBackground: '#dbeafe',
     modalBackground: '#ffffff',
-    inputBackground: 'rgba(0, 0, 0, 0.04)',
+    inputBackground: '#E6EEFB',
 };
 
 export const darkColors = {

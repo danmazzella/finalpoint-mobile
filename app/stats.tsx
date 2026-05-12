@@ -189,7 +189,7 @@ const StatsScreen = () => {
             marginLeft: 8,
         },
         driverCard: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: 8,
             padding: 12,
             marginBottom: 8,

@@ -556,7 +556,7 @@ const RaceResultsScreen = () => {
             color: currentColors.textSecondary,
         },
         picksContainer: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: borderRadius.md,
             padding: spacing.md,
         },

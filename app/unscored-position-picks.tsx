@@ -288,7 +288,7 @@ const UnscoredPositionPicksScreen = () => {
             gap: spacing.sm,
         },
         pickCard: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
             marginBottom: spacing.md,
@@ -359,7 +359,7 @@ const UnscoredPositionPicksScreen = () => {
             gap: spacing.sm,
         },
         popularPickCard: {
-            backgroundColor: currentColors.glassBackground,
+            backgroundColor: currentColors.inputBackground,
             borderRadius: borderRadius.lg,
             padding: spacing.md,
         },

@@ -275,7 +275,6 @@ const PicksScreen = () => {
             padding: 14,
             borderWidth: 1,
             borderColor: currentColors.glassBorder,
-            ...shadows.glass,
         },
         positionRowClickable: {
             borderColor: 'rgba(59,130,246,0.35)',
